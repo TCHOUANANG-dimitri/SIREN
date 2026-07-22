@@ -1,0 +1,59 @@
+{
+  "common": {
+    "next": "Next",
+    "back": "Back",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveAndContinue": "Save and continue",
+    "completeLater": "Complete later",
+    "retry": "Retry",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "seeAll": "See all",
+    "optional": "optional"
+  },
+  "riskState": {
+    "veille": "Standby",
+    "prealerte": "Pre-alert",
+    "urgence": "Emergency",
+    "disparition": "Missing"
+  },
+  "tabs": {
+    "home": "Home",
+    "map": "Map",
+    "alerts": "Alerts",
+    "sharing": "Sharing",
+    "settings": "Settings"
+  },
+  "auth": {
+    "welcomeBack": "Welcome back!",
+    "loginSubtitle": "Sign in to monitor your children.",
+    "email": "Email address",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "forgotPassword": "Forgot password?",
+    "login": "Sign in",
+    "noAccount": "Don't have an account yet?",
+    "createAccount": "Create an account",
+    "createAccountTitle": "Create an account",
+    "createAccountSubtitle": "Join SIREN to protect your children.",
+    "fullName": "Full name",
+    "phone": "Phone number",
+    "acceptTerms": "I accept the terms of use and privacy policy",
+    "alreadyHaveAccount": "I already have an account",
+    "invalidCredentials": "Incorrect credentials",
+    "emailAlreadyUsed": "This email is already in use",
+    "otpTitle": "Verification",
+    "otpSubtitle": "Code sent to {{destination}}. Enter the 6-digit code.",
+    "resendIn": "Resend code in",
+    "verify": "Verify",
+    "otpInvalid": "Incorrect or expired code",
+    "forgotTitle": "Forgot password",
+    "sendLink": "Send link"
+  }
+}

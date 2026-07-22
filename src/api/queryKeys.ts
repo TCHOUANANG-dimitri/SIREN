@@ -1,0 +1,20 @@
+export const queryKeys = {
+  children: ['children'] as const,
+  childStatus: (childId: string) => ['children', childId, 'status'] as const,
+  position: (childId: string) => ['children', childId, 'position'] as const,
+  history: (childId: string, from?: string, to?: string) =>
+    ['children', childId, 'history', from ?? null, to ?? null] as const,
+  places: (childId: string) => ['children', childId, 'places'] as const,
+  geofences: (childId: string) => ['children', childId, 'geofences'] as const,
+  risk: (childId: string) => ['children', childId, 'risk'] as const,
+  riskHistory: (childId: string) => ['children', childId, 'riskHistory'] as const,
+  alerts: (childId: string) => ['children', childId, 'alerts'] as const,
+  allAlerts: ['alerts', 'all'] as const,
+  searchZone: (childId: string) => ['children', childId, 'searchZone'] as const,
+  shares: (childId: string) => ['children', childId, 'shares'] as const,
+  accessAudit: (childId: string) => ['children', childId, 'shares', 'audit'] as const,
+  deviceSettings: (childId: string) => ['children', childId, 'device', 'settings'] as const,
+  community: ['community', 'reports'] as const,
+  emergencyContacts: (childId: string) => ['children', childId, 'emergencyContacts'] as const,
+  audioLogs: (childId: string) => ['children', childId, 'audioLogs'] as const,
+};

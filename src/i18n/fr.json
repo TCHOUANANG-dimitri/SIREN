@@ -1,0 +1,59 @@
+{
+  "common": {
+    "next": "Suivant",
+    "back": "Retour",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saveAndContinue": "Enregistrer et continuer",
+    "completeLater": "Compléter plus tard",
+    "retry": "Réessayer",
+    "loading": "Chargement…",
+    "error": "Une erreur est survenue",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "close": "Fermer",
+    "seeAll": "Tout voir",
+    "optional": "optionnel"
+  },
+  "riskState": {
+    "veille": "Veille",
+    "prealerte": "Pré-alerte",
+    "urgence": "Urgence",
+    "disparition": "Disparition"
+  },
+  "tabs": {
+    "home": "Accueil",
+    "map": "Carte",
+    "alerts": "Alertes",
+    "sharing": "Partage",
+    "settings": "Réglages"
+  },
+  "auth": {
+    "welcomeBack": "Bon retour !",
+    "loginSubtitle": "Connectez-vous pour surveiller vos enfants.",
+    "email": "Adresse email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "login": "Se connecter",
+    "noAccount": "Pas encore de compte ?",
+    "createAccount": "Créer un compte",
+    "createAccountTitle": "Créer un compte",
+    "createAccountSubtitle": "Rejoignez SIREN pour protéger vos enfants.",
+    "fullName": "Nom complet",
+    "phone": "Téléphone",
+    "acceptTerms": "J'accepte les conditions d'utilisation et la politique de confidentialité",
+    "alreadyHaveAccount": "J'ai déjà un compte",
+    "invalidCredentials": "Identifiants incorrects",
+    "emailAlreadyUsed": "Cet email est déjà utilisé",
+    "otpTitle": "Vérification",
+    "otpSubtitle": "Code envoyé au {{destination}}. Saisissez le code à 6 chiffres.",
+    "resendIn": "Renvoyer le code dans",
+    "verify": "Vérifier",
+    "otpInvalid": "Code incorrect ou expiré",
+    "forgotTitle": "Mot de passe oublié",
+    "sendLink": "Envoyer le lien"
+  }
+}
