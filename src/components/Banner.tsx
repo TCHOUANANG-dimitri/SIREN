@@ -12,7 +12,7 @@ interface BannerProps {
 
 const kindConfig: Record<BannerKind, { bg: string; fg: string; Icon: typeof Info }> = {
   info: { bg: colors.surfaceAlt, fg: colors.primary, Icon: Info },
-  success: { bg: '#E8F5EE', fg: colors.veille, Icon: CheckCircle2 },
+  success: { bg: colors.veilleSurface, fg: colors.veille, Icon: CheckCircle2 },
   error: { bg: colors.urgenceSurface, fg: colors.urgence, Icon: AlertCircle },
   warning: { bg: colors.prealerteSurface, fg: colors.prealerte, Icon: TriangleAlert },
 };

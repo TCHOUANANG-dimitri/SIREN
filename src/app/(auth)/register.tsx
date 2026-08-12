@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,10 +19,11 @@ const schema = z
     telephone: z.string().optional(),
     password: z
       .string()
-      .min(10, '10 caractères minimum')
+      .min(6, '6 caractères minimum')
+      .regex(/[a-z]/, 'Une minuscule requise')
       .regex(/[A-Z]/, 'Une majuscule requise')
       .regex(/[0-9]/, 'Un chiffre requis')
-      .regex(/[^A-Za-z0-9]/, 'Un symbole requis'),
+      .regex(/[^A-Za-z0-9]/, 'Un caractère spécial requis'),
     confirmPassword: z.string(),
     acceptTerms: z.boolean(),
   })
@@ -63,6 +65,7 @@ export default function RegisterScreen() {
   }
 
   return (
+    <SafeAreaView style={styles.flex} edges={['top']}>
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={8}>
@@ -188,13 +191,14 @@ export default function RegisterScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.surface },
   content: { flexGrow: 1, padding: spacing.xxl, paddingTop: spacing.lg },
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xl },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xl },
   backText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.primary },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.muted, marginBottom: spacing.xl },

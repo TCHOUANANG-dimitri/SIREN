@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -44,7 +45,7 @@ export default function OtpScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={8}>
         <ArrowLeft size={18} color={colors.primary} />
         <Text style={styles.backText}>{t('common.back')}</Text>
@@ -102,17 +103,17 @@ export default function OtpScreen() {
           <Text style={styles.devHintText}>Démo : code de vérification = {devHint}</Text>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface, padding: spacing.xxl, paddingTop: spacing.xxxl },
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xxl },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xxl },
   backText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.primary },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.sm },
   subtitle: { ...typography.body, color: colors.muted, lineHeight: 22, marginBottom: spacing.xxxl },
-  boxesRow: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: spacing.xl },
+  boxesRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md, marginBottom: spacing.xl },
   box: {
     width: 46,
     height: 56,

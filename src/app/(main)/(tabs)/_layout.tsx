@@ -13,7 +13,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: { borderTopColor: colors.border },
-        tabBarLabelStyle: { fontFamily: fontFamily.semiBold, fontSize: 11 },
+        tabBarLabelStyle: { fontFamily: fontFamily.semiBold, fontSize: 12 },
       }}
     >
       <Tabs.Screen

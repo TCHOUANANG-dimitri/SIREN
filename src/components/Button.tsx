@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
   },
-  fullWidth: { alignSelf: 'stretch' },
+  fullWidth: { alignSelf: 'center', width: '100%', maxWidth: 680 },
   emergencySize: { minHeight: 56, borderRadius: radii.lg },
   content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   label: { ...typography.button, fontFamily: fontFamily.semiBold },

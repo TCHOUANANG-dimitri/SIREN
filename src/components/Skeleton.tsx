@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { colors, radii } from '@/theme';
+import { colors, radii, spacing } from '@/theme';
 
 interface SkeletonProps {
   width?: number | `${number}%`;
@@ -38,7 +38,7 @@ export function SkeletonCard() {
   return (
     <View style={styles.card}>
       <Skeleton width={48} height={48} radius={24} />
-      <View style={{ flex: 1, gap: 8 }}>
+      <View style={{ flex: 1, gap: spacing.sm }}>
         <Skeleton width="60%" height={16} />
         <Skeleton width="40%" height={12} />
       </View>
@@ -51,9 +51,9 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
     backgroundColor: colors.white,
     borderRadius: radii.lg,
-    padding: 16,
+    padding: spacing.lg,
   },
 });

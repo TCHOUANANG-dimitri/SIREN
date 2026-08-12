@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Home, MapPin, Plus, School } from 'lucide-react-native';
-import { Banner, BottomSheet, Button, Card, TextField } from '@/components';
+import { Banner, BottomSheet, Button, Card, Skeleton, TextField } from '@/components';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { usePlaces, usePatchPlace, useCreatePlace } from '@/api/hooks/usePlaces';
 import { useChildren } from '@/api/hooks/useChildren';
@@ -51,7 +51,7 @@ export function PlacesTab({ childId }: { childId: string }) {
     setAddOpen(false);
   }
 
-  if (isLoading) return null;
+  if (isLoading) return <View style={styles.padded}><Skeleton height={200} radius={16} /></View>;
 
   return (
     <View style={styles.flex}>
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   name: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
   newBadge: { backgroundColor: colors.prealerteSurface, borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 2 },
-  newBadgeText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.prealerte, fontSize: 10 },
+  newBadgeText: { ...typography.label, fontFamily: fontFamily.semiBold, color: colors.prealerte },
   sourceBadge: { ...typography.caption, color: colors.muted, marginTop: 2 },
   schedule: { ...typography.caption, color: colors.muted, marginTop: 2 },
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },

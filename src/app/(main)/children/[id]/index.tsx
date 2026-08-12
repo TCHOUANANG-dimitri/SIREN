@@ -47,7 +47,7 @@ export default function ChildDetailScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={8}>
+        <Pressable onPress={() => router.back()} hitSlop={8} accessibilityLabel="Retour">
           <ArrowLeft size={22} color={colors.ink} />
         </Pressable>
         <View style={styles.headerInfo}>
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   headerInfo: { flex: 1 },
   name: { ...typography.title2, fontFamily: fontFamily.bold, color: colors.ink },
   headerMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 4 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   metaText: { ...typography.caption, color: colors.muted },
   tabContent: { flex: 1 },
   emergencyBar: {

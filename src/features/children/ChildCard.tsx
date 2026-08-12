@@ -13,7 +13,7 @@ export function ChildCard({ child }: { child: Child }) {
   const { data: risk } = useRisk(child.id);
 
   return (
-    <Pressable onPress={() => router.push(`/(main)/children/${child.id}`)}>
+    <Pressable onPress={() => router.push(`/(main)/children/${child.id}`)} accessibilityLabel={`Voir les détails de ${child.prenom}`}>
       <Card style={styles.card}>
         <View style={styles.row}>
           {child.photoUrl ? (
@@ -72,13 +72,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarInitial: { ...typography.title2, fontFamily: fontFamily.bold, color: colors.primary },
-  infoCol: { flex: 1, gap: 4 },
+  infoCol: { flex: 1, gap: spacing.xs },
   name: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
   score: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink },
   metaRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   metaText: { ...typography.caption, color: colors.muted },
-  confidenceRow: { marginTop: spacing.md, gap: 4 },
+  confidenceRow: { marginTop: spacing.md, gap: spacing.xs },
   confidenceTrack: { height: 4, borderRadius: 2, backgroundColor: colors.border },
   confidenceFill: { height: 4, borderRadius: 2, backgroundColor: colors.primary },
   confidenceText: { ...typography.caption, color: colors.muted },

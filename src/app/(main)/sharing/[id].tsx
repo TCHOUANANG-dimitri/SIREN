@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Alert as RNAlert, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert as RNAlert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import { Banner, Button, Card, PermissionToggle } from '@/components';
+import { Banner, Button, Card, PermissionToggle, Skeleton } from '@/components';
 import { colors, fontFamily, spacing, typography } from '@/theme';
 import { useShare, usePatchShare } from '@/api/hooks/useSharing';
 import { ALL_PERMISSIONS, permissionLabels } from '@/features/sharing/permissions';
@@ -14,7 +15,7 @@ export default function SecondaryDetailScreen() {
   const patchShare = usePatchShare(share?.childId);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  if (!share) return null;
+  if (!share) return <View style={styles.container}><View style={styles.content}><Skeleton height={200} radius={16} /></View></View>;
 
   async function togglePermission(permission: Permission, value: boolean) {
     const next = value ? [...share!.permissions, permission] : share!.permissions.filter((p) => p !== permission);
@@ -38,8 +39,9 @@ export default function SecondaryDetailScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScrollView contentContainerStyle={styles.content}>
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
       <Text style={styles.title}>{share.nom}</Text>
@@ -64,6 +66,7 @@ export default function SecondaryDetailScreen() {
 
       {share.status !== 'revoque' && <Button label="Révoquer l'accès" variant="secondary" onPress={confirmRevoke} />}
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

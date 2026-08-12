@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Ear, ShieldAlert } from 'lucide-react-native';
 import { Banner, Button, Card, TextField } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { useAudioLogs, useRequestAudioActivation } from '@/api/hooks/useAudio';
 import { ApiError } from '@/api/network';
 import { formatClock } from '@/utils/format';
@@ -36,8 +37,10 @@ export default function AudioListeningScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
 
@@ -85,12 +88,15 @@ export default function AudioListeningScreen() {
           </Card>
         ))
       )}
-    </ScrollView>
+      </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
+  scroll: { flex: 1 },
   content: { padding: spacing.xl, paddingBottom: spacing.xxxl },
   backButton: { marginBottom: spacing.md },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.lg },
@@ -98,7 +104,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     backgroundColor: colors.surfaceAlt,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     padding: spacing.md,
     marginBottom: spacing.lg,
   },
@@ -107,7 +113,7 @@ const styles = StyleSheet.create({
   activeCard: { marginBottom: spacing.xl, gap: spacing.sm },
   activeHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   activeTitle: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
-  labelPill: { backgroundColor: colors.surfaceAlt, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, alignSelf: 'flex-start', marginBottom: 6 },
+  labelPill: { backgroundColor: colors.surfaceAlt, borderRadius: radii.xl, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, alignSelf: 'flex-start', marginBottom: spacing.xs },
   labelPillText: { ...typography.caption, fontFamily: fontFamily.medium, color: colors.primaryDark },
   journalTitle: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink, marginBottom: spacing.sm },
   emptyText: { ...typography.body, color: colors.muted },

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import MapView, { Circle, Marker } from 'react-native-maps';
 import { AlertOctagon, Share2, Users } from 'lucide-react-native';
 import { Banner, Button, Card, Skeleton } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { useSearchZone } from '@/api/hooks/useSearchZone';
 import { useChildren } from '@/api/hooks/useChildren';
 import { useShares } from '@/api/hooks/useSharing';
@@ -21,7 +22,8 @@ export default function PostDisappearanceScreen() {
   const activeSecondaries = (shares ?? []).filter((s) => s.status === 'actif');
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <AlertOctagon size={26} color={colors.white} />
         <Text style={styles.headerTitle}>Mode post-disparition</Text>
@@ -113,17 +115,19 @@ export default function PostDisappearanceScreen() {
         </>
       )}
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.disparition },
+  scroll: { flex: 1 },
   content: { paddingBottom: spacing.xxxl },
   header: { padding: spacing.xxl, paddingTop: spacing.xxxl, alignItems: 'center', gap: spacing.sm },
   headerTitle: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.white },
   headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.9)' },
   padded: { padding: spacing.lg },
-  mapWrapper: { marginHorizontal: spacing.lg, borderRadius: 16, overflow: 'hidden' },
+  mapWrapper: { marginHorizontal: spacing.lg, borderRadius: radii.lg, overflow: 'hidden' },
   map: { height: 240 },
   card: { marginBottom: spacing.md, backgroundColor: colors.white },
   cardTitle: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink, marginBottom: spacing.sm },

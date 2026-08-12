@@ -1,17 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
-  Dimensions,
   Modal,
   Pressable,
   StyleSheet,
   View,
+  useWindowDimensions,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, spacing } from '@/theme';
-
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 interface BottomSheetProps {
   visible: boolean;
@@ -21,8 +19,9 @@ interface BottomSheetProps {
 }
 
 export function BottomSheet({ visible, onClose, children, style }: BottomSheetProps) {
+  const { height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const translateY = useRef(new Animated.Value(screenHeight)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -32,10 +31,10 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
         Animated.timing(backdropOpacity, { toValue: 1, duration: 260, useNativeDriver: true }),
       ]).start();
     } else {
-      translateY.setValue(SCREEN_HEIGHT);
+      translateY.setValue(screenHeight);
       backdropOpacity.setValue(0);
     }
-  }, [visible, translateY, backdropOpacity]);
+  }, [visible, screenHeight, translateY, backdropOpacity]);
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
@@ -46,7 +45,7 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
         <Animated.View
           style={[
             styles.sheet,
-            { paddingBottom: insets.bottom + spacing.lg, transform: [{ translateY }] },
+            { paddingBottom: insets.bottom + spacing.lg, maxHeight: screenHeight * 0.9, transform: [{ translateY }] },
             style,
           ]}
         >
@@ -67,7 +66,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.xl,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.sm,
-    maxHeight: SCREEN_HEIGHT * 0.9,
   },
   handle: {
     alignSelf: 'center',

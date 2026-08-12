@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import MapView, { Marker } from 'react-native-maps';
 import { Ear, Phone, PhoneCall, Siren } from 'lucide-react-native';
 import { Banner, Button } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { usePosition } from '@/api/hooks/useTracking';
 import { useRisk } from '@/api/hooks/useRisk';
 import { useChildren } from '@/api/hooks/useChildren';
@@ -37,7 +38,7 @@ export default function EmergencyScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Siren size={28} color={colors.white} />
@@ -96,7 +97,7 @@ export default function EmergencyScreen() {
           />
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
   header: { padding: spacing.xxl, paddingTop: spacing.xxxl, alignItems: 'center', gap: spacing.sm },
   headerTitle: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.white },
   headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.9)', textAlign: 'center' },
-  mapWrapper: { marginHorizontal: spacing.xl, borderRadius: 16, overflow: 'hidden', marginBottom: spacing.lg },
+  mapWrapper: { marginHorizontal: spacing.xl, borderRadius: radii.lg, overflow: 'hidden', marginBottom: spacing.lg },
   map: { height: 220 },
   actions: { padding: spacing.xl, gap: spacing.md },
 });

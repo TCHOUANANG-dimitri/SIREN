@@ -16,6 +16,9 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: radii.lg,
+    maxWidth: 680,
+    width: '100%',
+    alignSelf: 'center',
     ...shadow.card,
   },
   padded: { padding: spacing.lg },

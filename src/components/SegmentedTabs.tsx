@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { colors, fontFamily, radii, spacing } from '@/theme';
+import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 
 interface SegmentedTabsProps<T extends string> {
   tabs: { key: T; label: string }[];
@@ -45,8 +45,8 @@ const styles = StyleSheet.create({
   row: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   pill: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill },
   pillActive: { backgroundColor: colors.primary },
-  pillInactive: { backgroundColor: '#F0EDE8' },
-  label: { fontSize: 13, fontFamily: fontFamily.semiBold },
+  pillInactive: { backgroundColor: colors.surfaceChip },
+  label: { ...typography.caption, fontFamily: fontFamily.semiBold },
   labelActive: { color: colors.white },
   labelInactive: { color: colors.muted },
 });

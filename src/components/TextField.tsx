@@ -75,14 +75,14 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
 });
 
 const styles = StyleSheet.create({
-  wrapper: { marginBottom: spacing.md },
+  wrapper: { marginBottom: spacing.md, maxWidth: 680, width: '100%', alignSelf: 'center' },
   label: {
     ...typography.label,
     fontFamily: fontFamily.semiBold,
     color: colors.slate,
     marginBottom: spacing.xs + 2,
   },
-  optional: { fontFamily: fontFamily.regular, color: colors.muted, fontWeight: '400' },
+  optional: { fontFamily: fontFamily.regular, color: colors.muted },
   inputRow: {
     borderRadius: radii.md,
     backgroundColor: colors.white,

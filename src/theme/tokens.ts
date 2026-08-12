@@ -18,6 +18,7 @@ export const colors = {
   disparition: '#9E1F1E',
   surface: '#FBFAF8',
   surfaceAlt: '#FBE9E9',
+  surfaceChip: '#F0EDE8',
   border: '#D9D4CC',
   white: '#FFFFFF',
   black: '#000000',

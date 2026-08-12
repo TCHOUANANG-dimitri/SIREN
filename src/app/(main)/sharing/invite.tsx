@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { Banner, Button, Card, PermissionToggle, TextField } from '@/components';
@@ -41,8 +42,10 @@ export default function InviteSecondaryScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <ScrollView contentContainerStyle={styles.content}>
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
       <Text style={styles.title}>Inviter un secondaire</Text>
@@ -82,6 +85,8 @@ export default function InviteSecondaryScreen() {
 
       <Button label="Envoyer l'invitation" onPress={submit} loading={createShare.isPending} disabled={identifier.trim().length < 3} />
     </ScrollView>
+    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

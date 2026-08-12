@@ -51,9 +51,9 @@ export function ProgressSteps({ steps, currentIndex }: ProgressStepsProps) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-start' },
-  stepCol: { alignItems: 'center', gap: 4, flex: 1 },
+  stepCol: { alignItems: 'center', gap: spacing.xs, flex: 1 },
   circle: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  circleLabel: { ...typography.caption, fontFamily: fontFamily.bold, fontSize: 13 },
-  stepLabel: { fontFamily: fontFamily.semiBold, fontSize: 10, textAlign: 'center' },
+  circleLabel: { ...typography.caption, fontFamily: fontFamily.bold },
+  stepLabel: { ...typography.label, fontFamily: fontFamily.semiBold, textAlign: 'center' },
   connector: { flex: 1, height: 2, marginBottom: 14, marginTop: 15 },
 });

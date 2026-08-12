@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AlertTriangle } from 'lucide-react-native';
@@ -67,10 +66,9 @@ export default function AlertsScreen() {
           <Text style={styles.emptyText}>Aucune alerte — tout va bien.</Text>
         </View>
       ) : (
-        <FlashList
+        <FlatList
           data={filtered}
           keyExtractor={(a) => a.id}
-          estimatedItemSize={92}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <Pressable onPress={() => router.push(`/(main)/alerts/${item.id}`)}>
@@ -96,7 +94,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, paddingHorizontal: spacing.xl, paddingTop: spacing.md },
   filterRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingTop: spacing.md, flexWrap: 'wrap' },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: '#F0EDE8' },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceChip },
   chipActive: { backgroundColor: colors.primary },
   chipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
   chipTextActive: { color: colors.white },

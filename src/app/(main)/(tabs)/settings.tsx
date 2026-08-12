@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Alert as RNAlert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert as RNAlert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { usePatchMe, useDeleteAccount } from '@/api/hooks/useUsers';
 import { resetMockBackend } from '@/api/mock/bootstrap';
 import { mockEventBus } from '@/api/mock/mockEventBus';
+import { isTranslationApiActive } from '@/services/translationService';
 import { storage } from '@/utils/storage';
 
 const NOTIF_PREFS_KEY = 'siren.prefs.notifications';
@@ -104,7 +106,9 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{t('tabs.settings')}</Text>
 
       {saved && <Banner kind="success" message="Préférences enregistrées" />}
@@ -118,7 +122,7 @@ export default function SettingsScreen() {
       </Card>
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Langue</Text>
+        <Text style={styles.cardTitle}>Langue & Traduction</Text>
         <View style={styles.langRow}>
           <Button
             label="Français"
@@ -134,6 +138,13 @@ export default function SettingsScreen() {
             fullWidth={false}
             style={styles.langButton}
           />
+        </View>
+        <View style={styles.apiBadgeRow}>
+          <Text style={styles.apiBadgeText}>
+            {isTranslationApiActive()
+              ? '⚡ Clé API Traduction active (DeepL / Google Translate)'
+              : 'ℹ️ Mode dictionnaire local (Définissez EXPO_PUBLIC_TRANSLATION_API_KEY pour l\'API)'}
+          </Text>
         </View>
       </Card>
 
@@ -205,11 +216,14 @@ export default function SettingsScreen() {
         onPress={confirmDeleteAccount}
       />
     </ScrollView>
+    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
+  scrollContainer: { flex: 1 },
   content: { padding: spacing.xl, paddingTop: spacing.xxxl, paddingBottom: spacing.xxxl, gap: spacing.md },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.sm },
   card: { marginBottom: spacing.md },
@@ -217,6 +231,8 @@ const styles = StyleSheet.create({
   cardBody: { ...typography.caption, color: colors.muted, marginBottom: spacing.md },
   langRow: { flexDirection: 'row', gap: spacing.sm },
   langButton: { flex: 1 },
+  apiBadgeRow: { marginTop: spacing.sm, paddingTop: spacing.xs },
+  apiBadgeText: { ...typography.caption, color: colors.muted, lineHeight: 18 },
   aboutRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   aboutText: { ...typography.body, color: colors.slate },
   aboutLink: { ...typography.body, fontFamily: fontFamily.medium, color: colors.primary, marginBottom: spacing.sm },

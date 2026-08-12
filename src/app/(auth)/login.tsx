@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { Banner, Button, TextField } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { useLogin } from '@/api/hooks/useAuth';
 import { ApiError } from '@/api/network';
 
@@ -47,6 +48,7 @@ export default function LoginScreen() {
   }
 
   return (
+    <SafeAreaView style={styles.flex} edges={['top']}>
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -129,6 +131,7 @@ export default function LoginScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -143,9 +146,9 @@ const styles = StyleSheet.create({
   forgotText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.primary },
   demoBox: {
     backgroundColor: colors.surfaceAlt,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     padding: spacing.md,
-    gap: 4,
+    gap: spacing.xs,
     marginBottom: spacing.xl,
   },
   demoTitle: { ...typography.label, fontFamily: fontFamily.semiBold, color: colors.primaryDark, marginBottom: 4 },
