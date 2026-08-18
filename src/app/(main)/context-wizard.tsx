@@ -12,7 +12,6 @@ import { usePatchChildContext } from '@/api/hooks/useChildren';
 import { useCreateEmergencyContact } from '@/api/hooks/useEmergencyContacts';
 import { useLocationStore } from '@/stores/locationStore';
 
-const FALLBACK_CENTER = { lat: 3.848, lon: 11.5021 }; // Yaoundé — repli si la position n'est pas accessible
 const STEP_LABELS = ['1 Maison', '2 École', '3 Lieux', '4 Périmètre', '5 Sommeil'];
 const DAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -26,7 +25,7 @@ export default function ContextWizardScreen() {
   const storeLat = useLocationStore((s) => s.latitude);
   const storeLon = useLocationStore((s) => s.longitude);
   const initialCenter = { lat: storeLat, lon: storeLon };
-  const [center, setCenter] = useState(initialCenter);
+  const [center] = useState(initialCenter);
 
   const [homeAddress, setHomeAddress] = useState('');
   const [home, setHome] = useState<PointRadius>({ ...initialCenter, radiusM: 75 });
@@ -136,7 +135,7 @@ export default function ContextWizardScreen() {
         {step === 0 && (
           <View>
             <Text style={styles.title}>Où est votre domicile ?</Text>
-            <Text style={styles.subtitle}>Sélectionnez l'adresse et le rayon de protection autour de chez vous.</Text>
+            <Text style={styles.subtitle}>Sélectionnez l&apos;adresse et le rayon de protection autour de chez vous.</Text>
             <TextField label="Adresse (facultatif)" value={homeAddress} onChangeText={setHomeAddress} placeholder="12 Rue des Acacias, Yaoundé" />
             <MapPointRadiusPicker
               latitude={home.lat}
@@ -151,7 +150,7 @@ export default function ContextWizardScreen() {
 
         {step === 1 && (
           <View>
-            <Text style={styles.title}>Où est l'école ?</Text>
+            <Text style={styles.title}>Où est l&apos;école ?</Text>
             <Text style={styles.subtitle}>Adresse, rayon et horaires de présence attendue.</Text>
             <TextField label="Adresse (facultatif)" value={schoolAddress} onChangeText={setSchoolAddress} placeholder="École primaire du quartier" />
             <MapPointRadiusPicker
@@ -220,7 +219,7 @@ export default function ContextWizardScreen() {
 
         {step === 4 && (
           <View>
-            <Text style={styles.title}>Sommeil & contacts d'urgence</Text>
+            <Text style={styles.title}>Sommeil &amp; contacts d&apos;urgence</Text>
             <Text style={styles.subtitle}>Plage horaire habituelle de sommeil et personnes à prévenir.</Text>
             <View style={styles.timeRow}>
               <View style={styles.timeField}>
@@ -231,7 +230,7 @@ export default function ContextWizardScreen() {
               </View>
             </View>
 
-            <Text style={styles.fieldLabel}>Contacts d'urgence</Text>
+            <Text style={styles.fieldLabel}>Contacts d&apos;urgence</Text>
             {contacts.map((c, i) => (
               <Card key={`${c.nom}-${i}`} style={styles.placeCard}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>

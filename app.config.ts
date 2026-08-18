@@ -5,7 +5,7 @@ const config: ExpoConfig = {
   slug: 'siren-app',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/images/icon.png',
+  icon: './assets/images/image.png',
   scheme: 'sirenapp',
   userInterfaceStyle: 'light',
   ios: {
@@ -43,7 +43,8 @@ const config: ExpoConfig = {
       {
         backgroundColor: '#FBFAF8',
         image: './assets/images/image.png',
-        imageWidth: 180,
+        imageWidth: 200,
+        resizeMode: 'contain',
       },
     ],
     [

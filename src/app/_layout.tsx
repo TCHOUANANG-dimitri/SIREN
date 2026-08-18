@@ -35,7 +35,7 @@ export default function RootLayout() {
         setBackendReady(true);
       }
     })();
-  }, [hydrate]);
+  }, [hydrate, initLocation]);
 
   const ready = (fontsLoaded || !!fontsError) && backendReady;
 

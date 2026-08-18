@@ -49,7 +49,7 @@ export default function AudioListeningScreen() {
       <View style={styles.warningBox}>
         <ShieldAlert size={18} color={colors.primaryDark} />
         <Text style={styles.warningText}>
-          Le son ambiant n'est jamais transmis brut. Seules des étiquettes classées sur l'appareil sont
+          Le son ambiant n&apos;est jamais transmis brut. Seules des étiquettes classées sur l&apos;appareil sont
           affichées (cri, voix, véhicule…), et toute activation est journalisée.
         </Text>
       </View>
@@ -75,7 +75,7 @@ export default function AudioListeningScreen() {
         </View>
       )}
 
-      <Text style={styles.journalTitle}>Journal d'activation</Text>
+      <Text style={styles.journalTitle}>Journal d&apos;activation</Text>
       {!logs || logs.length === 0 ? (
         <Text style={styles.emptyText}>Aucune activation enregistrée.</Text>
       ) : (

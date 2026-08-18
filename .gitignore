@@ -30,6 +30,10 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# keystore credentials
+android/keystore.properties
+android/app/*.keystore
+
 # environment secret files
 .env
 .env.*

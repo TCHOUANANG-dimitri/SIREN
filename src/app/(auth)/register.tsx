@@ -46,7 +46,6 @@ export default function RegisterScreen() {
   const {
     control,
     handleSubmit,
-    watch,
     formState: { errors, isValid },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),

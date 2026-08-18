@@ -2,10 +2,10 @@ import { env } from '@/config/env';
 import { logger } from '@/utils/logger';
 
 interface DeepLTranslationResponse {
-  translations?: Array<{
+  translations?: {
     detected_source_language: string;
     text: string;
-  }>;
+  }[];
 }
 
 /**

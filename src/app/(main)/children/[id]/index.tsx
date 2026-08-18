@@ -91,7 +91,7 @@ export default function ChildDetailScreen() {
           style={styles.emergencyBar}
           onPress={() => router.push({ pathname: '/(emergency)/urgence', params: { childId: id } })}
         >
-          <Text style={styles.emergencyText}>Voir l'urgence en cours →</Text>
+          <Text style={styles.emergencyText}>Voir l&apos;urgence en cours →</Text>
         </Pressable>
       )}
     </SafeAreaView>

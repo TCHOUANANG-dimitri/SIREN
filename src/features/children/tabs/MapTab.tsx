@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
-import MapView, { Circle, Marker, Callout } from 'react-native-maps';
+import MapView, { Circle, Marker } from 'react-native-maps';
 import { MapPinOff, Navigation, Search, X } from 'lucide-react-native';
 import { Banner, Button, Card, Skeleton } from '@/components';
 import { colors, fontFamily, radii, shadow, spacing, typography } from '@/theme';
@@ -23,7 +23,7 @@ export function MapTab({ childId }: { childId: string }) {
   return (
     <View style={styles.center}>
       <MapPinOff size={28} color={colors.muted} />
-      <Text style={styles.deniedText}>Vous n'avez pas les droits pour voir la position de cet enfant.</Text>
+      <Text style={styles.deniedText}>Vous n&apos;avez pas les droits pour voir la position de cet enfant.</Text>
     </View>
   );
 }
@@ -43,7 +43,7 @@ function ZoneStateView({ childId }: { childId: string }) {
         <Text style={styles.zoneTitle}>{zone.inZone ? `Dans la zone ${zone.zoneName}` : 'Hors des zones connues'}</Text>
         <Text style={styles.zoneMeta}>Mis à jour {formatRelativeTime(zone.asOf)}</Text>
       </Card>
-      <Text style={styles.zoneHint}>La position précise n'est pas partagée avec votre accès.</Text>
+      <Text style={styles.zoneHint}>La position précise n&apos;est pas partagée avec votre accès.</Text>
     </View>
   );
 }
@@ -63,7 +63,7 @@ function PreciseMap({ childId }: { childId: string }) {
         600
       );
     }
-  }, [position?.lat, position?.lon]);
+  }, [position]);
 
   if (isLoading || !position) {
     return (

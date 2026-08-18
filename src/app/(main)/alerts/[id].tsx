@@ -68,7 +68,7 @@ export default function AlertDetailScreen() {
       <View style={styles.padded}>
         <Card style={styles.card}>
           <View style={styles.scoreRow}>
-            <Text style={styles.cardTitle}>Score au moment de l'alerte</Text>
+            <Text style={styles.cardTitle}>Score au moment de l&apos;alerte</Text>
             <StateBadge state={alert.level} compact />
           </View>
           <Text style={styles.scoreValue}>{alert.score}</Text>

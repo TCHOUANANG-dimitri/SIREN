@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { RefreshCw } from 'lucide-react-native';
 import { Banner, Button, Card, Skeleton } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { colors, fontFamily, spacing, typography } from '@/theme';
 import { useDeviceSettings, usePatchDeviceSettings } from '@/api/hooks/useDevice';
 import { formatRelativeTime } from '@/utils/format';
 import type { DeviceStatus } from '@/models/entities';
@@ -41,7 +41,7 @@ export function DeviceTab({ childId }: { childId: string }) {
       {saved && <Banner kind="success" message="Réglages enregistrés" />}
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Mode d'énergie</Text>
+        <Text style={styles.cardTitle}>Mode d&apos;énergie</Text>
         {ENERGY_MODES.map((mode) => (
           <Pressable
             key={mode.key}

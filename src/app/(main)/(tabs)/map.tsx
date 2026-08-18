@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Pressable } from 'react-native';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { useChildren } from '@/api/hooks/useChildren';
 import { useUiStore } from '@/stores/uiStore';

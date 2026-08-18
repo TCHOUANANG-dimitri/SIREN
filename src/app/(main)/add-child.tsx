@@ -68,7 +68,7 @@ export default function AddChildScreen() {
 
         {step === 'profil' && (
           <View style={styles.stepBlock}>
-            <Text style={styles.title}>Profil de l'enfant</Text>
+            <Text style={styles.title}>Profil de l&apos;enfant</Text>
             <Text style={styles.subtitle}>Ces informations aident à identifier votre enfant.</Text>
 
             <Pressable style={styles.photoPicker} onPress={pickPhoto}>
@@ -131,7 +131,7 @@ export default function AddChildScreen() {
                 </View>
                 <Pressable onPress={() => setManualEntry(true)} style={styles.manualLink}>
                   <Keyboard size={14} color={colors.primary} />
-                  <Text style={styles.manualLinkText}>ou saisir l'identifiant manuellement</Text>
+                  <Text style={styles.manualLinkText}>ou saisir l&apos;identifiant manuellement</Text>
                 </Pressable>
               </>
             ) : (
