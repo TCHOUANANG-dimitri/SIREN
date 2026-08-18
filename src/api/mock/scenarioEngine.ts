@@ -3,7 +3,7 @@ import { mockEventBus } from './mockEventBus';
 import { computeFusionScore, stateFromScore, HysteresisGate } from './fusionScore';
 import { destinationPoint, interpolate, bearingBetween } from '@/utils/geo';
 import { DEMO_IDS, DEMO_HOME, DEMO_SCHOOL } from './seed';
-import type { Alert, Place, Position, RiskScore, RiskState } from '@/models/entities';
+import type { Alert, Place, Position, RiskScore, RiskState, SearchZoneCell, SearchZoneTop } from '@/models/entities';
 
 type Phase = 'apprentissage' | 'anomalie' | 'urgence' | 'disparition' | 'stable';
 
@@ -338,8 +338,8 @@ function tickDisparition(rt: ChildRuntime) {
     const confidence = Math.max(15, 90 - rt.disparitionTicks * 15);
     const heading = lastPos.heading ?? 90;
     const speedMs = (lastPos.speedKmh || 40) / 3.6;
-    const cells = [];
-    const topZones = [];
+    const cells: SearchZoneCell[] = [];
+    const topZones: SearchZoneTop[] = [];
     const labels = ['Zone nord', 'Zone est', 'Zone sud-est', 'Zone sud', 'Zone ouest'];
     for (let i = 0; i < 5; i += 1) {
       const angleOffset = (i - 2) * 22;

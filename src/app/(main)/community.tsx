@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft, MessageSquareWarning } from 'lucide-react-native';
 import { Banner, Button, Card, PermissionToggle, TextField } from '@/components';
@@ -30,8 +31,9 @@ export default function CommunityScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
       <Text style={styles.title}>Volet communautaire</Text>
@@ -88,7 +90,8 @@ export default function CommunityScreen() {
           <Button label="Signaler un comportement suspect" onPress={() => setFormOpen(true)} />
         </View>
       )}
-    </View>
+    </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -102,7 +105,7 @@ const styles = StyleSheet.create({
   emptyText: { ...typography.body, color: colors.muted, textAlign: 'center' },
   list: { paddingHorizontal: spacing.xl, gap: spacing.sm },
   reportCard: { marginBottom: spacing.sm },
-  reportDescription: { ...typography.body, color: colors.ink, marginBottom: 4 },
+  reportDescription: { ...typography.body, color: colors.ink, marginBottom: spacing.xs },
   reportMeta: { ...typography.caption, color: colors.muted },
   formPanel: { padding: spacing.xl, borderTopWidth: 1, borderTopColor: colors.border },
   formActions: { flexDirection: 'row', gap: spacing.sm },

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as Location from 'expo-location';
 import { Phone, Plus, Trash2, User } from 'lucide-react-native';
 import { Banner, Button, Card, TextField } from '@/components';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
@@ -10,8 +10,8 @@ import { useCreatePlace } from '@/api/hooks/usePlaces';
 import { useCreateGeofence } from '@/api/hooks/useGeofences';
 import { usePatchChildContext } from '@/api/hooks/useChildren';
 import { useCreateEmergencyContact } from '@/api/hooks/useEmergencyContacts';
+import { useLocationStore } from '@/stores/locationStore';
 
-const FALLBACK_CENTER = { lat: 3.848, lon: 11.5021 }; // Yaoundé — repli si la position n'est pas accessible
 const STEP_LABELS = ['1 Maison', '2 École', '3 Lieux', '4 Périmètre', '5 Sommeil'];
 const DAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -22,13 +22,16 @@ type Contact = { nom: string; telephone: string };
 export default function ContextWizardScreen() {
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const [step, setStep] = useState(0);
-  const [center, setCenter] = useState(FALLBACK_CENTER);
+  const storeLat = useLocationStore((s) => s.latitude);
+  const storeLon = useLocationStore((s) => s.longitude);
+  const initialCenter = { lat: storeLat, lon: storeLon };
+  const [center] = useState(initialCenter);
 
   const [homeAddress, setHomeAddress] = useState('');
-  const [home, setHome] = useState<PointRadius>({ ...FALLBACK_CENTER, radiusM: 75 });
+  const [home, setHome] = useState<PointRadius>({ ...initialCenter, radiusM: 75 });
 
   const [schoolAddress, setSchoolAddress] = useState('');
-  const [school, setSchool] = useState<PointRadius>({ ...FALLBACK_CENTER, radiusM: 100 });
+  const [school, setSchool] = useState<PointRadius>({ ...initialCenter, radiusM: 100 });
   const [schoolDays, setSchoolDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [schoolStart, setSchoolStart] = useState('07:00');
   const [schoolEnd, setSchoolEnd] = useState('15:30');
@@ -36,7 +39,7 @@ export default function ContextWizardScreen() {
   const [frequentPlaces, setFrequentPlaces] = useState<FrequentPlace[]>([]);
   const [newPlaceName, setNewPlaceName] = useState('');
 
-  const [perimeter, setPerimeter] = useState<PointRadius>({ ...FALLBACK_CENTER, radiusM: 1200 });
+  const [perimeter, setPerimeter] = useState<PointRadius>({ ...initialCenter, radiusM: 1200 });
 
   const [sleepStart, setSleepStart] = useState('22:00');
   const [sleepEnd, setSleepEnd] = useState('06:00');
@@ -52,22 +55,7 @@ export default function ContextWizardScreen() {
   const patchContext = usePatchChildContext(childId);
   const createContact = useCreateEmergencyContact(childId);
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      try {
-        const position = await Location.getCurrentPositionAsync({});
-        const point = { lat: position.coords.latitude, lon: position.coords.longitude };
-        setCenter(point);
-        setHome((h) => ({ ...h, ...point }));
-        setSchool((s) => ({ ...s, ...point }));
-        setPerimeter((p) => ({ ...p, ...point }));
-      } catch {
-        // Position indisponible : le repli Yaoundé reste utilisé.
-      }
-    })();
-  }, []);
+
 
   function toggleDay(index: number) {
     setSchoolDays((days) => (days.includes(index) ? days.filter((d) => d !== index) : [...days, index].sort()));
@@ -133,6 +121,7 @@ export default function ContextWizardScreen() {
   const isLastStep = step === STEP_LABELS.length - 1;
 
   return (
+    <SafeAreaView style={styles.flex} edges={['top']}>
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.tabsRow}>
         {STEP_LABELS.map((label, i) => (
@@ -146,7 +135,7 @@ export default function ContextWizardScreen() {
         {step === 0 && (
           <View>
             <Text style={styles.title}>Où est votre domicile ?</Text>
-            <Text style={styles.subtitle}>Sélectionnez l'adresse et le rayon de protection autour de chez vous.</Text>
+            <Text style={styles.subtitle}>Sélectionnez l&apos;adresse et le rayon de protection autour de chez vous.</Text>
             <TextField label="Adresse (facultatif)" value={homeAddress} onChangeText={setHomeAddress} placeholder="12 Rue des Acacias, Yaoundé" />
             <MapPointRadiusPicker
               latitude={home.lat}
@@ -161,7 +150,7 @@ export default function ContextWizardScreen() {
 
         {step === 1 && (
           <View>
-            <Text style={styles.title}>Où est l'école ?</Text>
+            <Text style={styles.title}>Où est l&apos;école ?</Text>
             <Text style={styles.subtitle}>Adresse, rayon et horaires de présence attendue.</Text>
             <TextField label="Adresse (facultatif)" value={schoolAddress} onChangeText={setSchoolAddress} placeholder="École primaire du quartier" />
             <MapPointRadiusPicker
@@ -230,7 +219,7 @@ export default function ContextWizardScreen() {
 
         {step === 4 && (
           <View>
-            <Text style={styles.title}>Sommeil & contacts d'urgence</Text>
+            <Text style={styles.title}>Sommeil &amp; contacts d&apos;urgence</Text>
             <Text style={styles.subtitle}>Plage horaire habituelle de sommeil et personnes à prévenir.</Text>
             <View style={styles.timeRow}>
               <View style={styles.timeField}>
@@ -241,7 +230,7 @@ export default function ContextWizardScreen() {
               </View>
             </View>
 
-            <Text style={styles.fieldLabel}>Contacts d'urgence</Text>
+            <Text style={styles.fieldLabel}>Contacts d&apos;urgence</Text>
             {contacts.map((c, i) => (
               <Card key={`${c.nom}-${i}`} style={styles.placeCard}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
@@ -276,13 +265,14 @@ export default function ContextWizardScreen() {
         )}
       </View>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.surface },
-  tabsRow: { flexDirection: 'row', gap: 4, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm, flexWrap: 'wrap' },
-  tabChip: { backgroundColor: '#F0EDE8', borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 5 },
+  tabsRow: { flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm, flexWrap: 'wrap' },
+  tabChip: { backgroundColor: colors.surfaceChip, borderRadius: radii.pill, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   tabChipActive: { backgroundColor: colors.primary },
   tabChipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
   tabChipTextActive: { color: colors.white },
@@ -290,8 +280,8 @@ const styles = StyleSheet.create({
   title: { ...typography.title2, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: 4 },
   subtitle: { ...typography.caption, color: colors.muted, marginBottom: spacing.lg },
   fieldLabel: { ...typography.label, fontFamily: fontFamily.semiBold, color: colors.slate, marginBottom: spacing.sm },
-  daysRow: { flexDirection: 'row', gap: 8, marginBottom: spacing.lg },
-  dayChip: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0EDE8' },
+  daysRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
+  dayChip: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceChip },
   dayChipActive: { backgroundColor: colors.primary },
   dayChipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
   dayChipTextActive: { color: colors.white },

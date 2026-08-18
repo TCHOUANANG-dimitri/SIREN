@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Camera as CameraIcon, CheckCircle2, Keyboard, Plus } from 'lucide-react-native';
@@ -23,8 +24,10 @@ type Step = 'profil' | 'appairage' | 'verification';
 export default function AddChildScreen() {
   const [step, setStep] = useState<Step>('profil');
   const [prenom, setPrenom] = useState('');
+  const [prenomError, setPrenomError] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
   const [deviceIdInput, setDeviceIdInput] = useState('');
+  const [deviceIdError, setDeviceIdError] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [createdChildId, setCreatedChildId] = useState<string | null>(null);
@@ -58,13 +61,14 @@ export default function AddChildScreen() {
   }
 
   return (
+    <SafeAreaView style={styles.flex} edges={['top']}>
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ProgressSteps steps={['Profil', 'Appairage', 'Vérification']} currentIndex={stepIndex} />
 
         {step === 'profil' && (
           <View style={styles.stepBlock}>
-            <Text style={styles.title}>Profil de l'enfant</Text>
+            <Text style={styles.title}>Profil de l&apos;enfant</Text>
             <Text style={styles.subtitle}>Ces informations aident à identifier votre enfant.</Text>
 
             <Pressable style={styles.photoPicker} onPress={pickPhoto}>
@@ -78,12 +82,26 @@ export default function AddChildScreen() {
               </View>
             </Pressable>
 
-            <TextField label="Prénom de l'enfant" value={prenom} onChangeText={setPrenom} placeholder="Léa" />
+            <TextField
+              label="Prénom de l'enfant *"
+              value={prenom}
+              onChangeText={(text) => {
+                setPrenom(text);
+                if (text.trim()) setPrenomError('');
+              }}
+              placeholder="Léa"
+              error={prenomError}
+            />
 
             <Button
               label="Suivant →"
-              onPress={() => setStep('appairage')}
-              disabled={prenom.trim().length < 1}
+              onPress={() => {
+                if (!prenom.trim()) {
+                  setPrenomError("Le prénom de l'enfant est obligatoire.");
+                  return;
+                }
+                setStep('appairage');
+              }}
             />
           </View>
         )}
@@ -113,17 +131,21 @@ export default function AddChildScreen() {
                 </View>
                 <Pressable onPress={() => setManualEntry(true)} style={styles.manualLink}>
                   <Keyboard size={14} color={colors.primary} />
-                  <Text style={styles.manualLinkText}>ou saisir l'identifiant manuellement</Text>
+                  <Text style={styles.manualLinkText}>ou saisir l&apos;identifiant manuellement</Text>
                 </Pressable>
               </>
             ) : (
               <>
                 <TextField
-                  label="Identifiant du dispositif"
+                  label="Identifiant du dispositif *"
                   value={deviceIdInput}
-                  onChangeText={setDeviceIdInput}
+                  onChangeText={(text) => {
+                    setDeviceIdInput(text);
+                    if (text.trim()) setDeviceIdError('');
+                  }}
                   placeholder="SIREN-XXXX-XXXX"
                   autoCapitalize="characters"
+                  error={deviceIdError}
                 />
                 {(findDevice.isError || createChild.isError) && (
                   <View style={{ marginBottom: spacing.md }}>
@@ -141,9 +163,18 @@ export default function AddChildScreen() {
                 )}
                 <Button
                   label={findDevice.isPending || createChild.isPending ? 'Recherche du dispositif…' : 'Rechercher le dispositif'}
-                  onPress={() => handleDeviceSubmit(deviceIdInput)}
+                  onPress={() => {
+                    if (!deviceIdInput.trim()) {
+                      setDeviceIdError("L'identifiant du dispositif est obligatoire.");
+                      return;
+                    }
+                    if (deviceIdInput.trim().length < 5) {
+                      setDeviceIdError("L'identifiant doit contenir au moins 5 caractères.");
+                      return;
+                    }
+                    handleDeviceSubmit(deviceIdInput);
+                  }}
                   loading={findDevice.isPending || createChild.isPending}
-                  disabled={deviceIdInput.trim().length < 5}
                 />
               </>
             )}
@@ -180,6 +211,7 @@ export default function AddChildScreen() {
         )}
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -221,9 +253,9 @@ const styles = StyleSheet.create({
   scanner: { flex: 1 },
   scannerFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   scannerFallbackText: { ...typography.caption, color: colors.white, textAlign: 'center' },
-  manualLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: spacing.lg },
+  manualLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.lg },
   manualLinkText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.primary },
-  successIcon: { width: 88, height: 88, borderRadius: 44, backgroundColor: '#E8F5EE', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
+  successIcon: { width: 88, height: 88, borderRadius: 44, backgroundColor: colors.veilleSurface, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
   cardLabel: { ...typography.label, color: colors.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md },
   cardRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
   cardKey: { ...typography.body, color: colors.slate },

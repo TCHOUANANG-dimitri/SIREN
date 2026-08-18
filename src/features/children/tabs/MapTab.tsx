@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
 import MapView, { Circle, Marker } from 'react-native-maps';
-import { MapPinOff, Navigation } from 'lucide-react-native';
+import { MapPinOff, Navigation, Search, X } from 'lucide-react-native';
 import { Banner, Button, Card, Skeleton } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { colors, fontFamily, radii, shadow, spacing, typography } from '@/theme';
 import { usePosition, useRequestPositionFix, useZoneState } from '@/api/hooks/useTracking';
 import { useGeofences } from '@/api/hooks/useGeofences';
 import { usePlaces } from '@/api/hooks/usePlaces';
@@ -23,7 +23,7 @@ export function MapTab({ childId }: { childId: string }) {
   return (
     <View style={styles.center}>
       <MapPinOff size={28} color={colors.muted} />
-      <Text style={styles.deniedText}>Vous n'avez pas les droits pour voir la position de cet enfant.</Text>
+      <Text style={styles.deniedText}>Vous n&apos;avez pas les droits pour voir la position de cet enfant.</Text>
     </View>
   );
 }
@@ -43,7 +43,7 @@ function ZoneStateView({ childId }: { childId: string }) {
         <Text style={styles.zoneTitle}>{zone.inZone ? `Dans la zone ${zone.zoneName}` : 'Hors des zones connues'}</Text>
         <Text style={styles.zoneMeta}>Mis à jour {formatRelativeTime(zone.asOf)}</Text>
       </Card>
-      <Text style={styles.zoneHint}>La position précise n'est pas partagée avec votre accès.</Text>
+      <Text style={styles.zoneHint}>La position précise n&apos;est pas partagée avec votre accès.</Text>
     </View>
   );
 }
@@ -54,6 +54,7 @@ function PreciseMap({ childId }: { childId: string }) {
   const { data: places } = usePlaces(childId);
   const requestFix = useRequestPositionFix(childId);
   const mapRef = useRef<MapView>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (position) {
@@ -62,7 +63,7 @@ function PreciseMap({ childId }: { childId: string }) {
         600
       );
     }
-  }, [position?.lat, position?.lon]);
+  }, [position]);
 
   if (isLoading || !position) {
     return (
@@ -78,6 +79,9 @@ function PreciseMap({ childId }: { childId: string }) {
       : position.fixQuality === 'estimee'
         ? { kind: 'warning' as const, message: 'Position estimée' }
         : { kind: 'error' as const, message: `Signal perdu depuis ${formatRelativeTime(position.timestamp)}` };
+
+  const activeSearch = searchQuery.trim();
+  const matchedPlace = places?.find((p) => p.nom.toLowerCase().includes(activeSearch.toLowerCase()));
 
   return (
     <View style={styles.flex}>
@@ -111,9 +115,43 @@ function PreciseMap({ childId }: { childId: string }) {
             pinColor={p.source === 'appris' ? colors.prealerte : colors.veille}
           />
         ))}
+
+        {activeSearch !== '' && (
+          <Marker
+            coordinate={{
+              latitude: matchedPlace ? matchedPlace.lat : position.lat + 0.001,
+              longitude: matchedPlace ? matchedPlace.lon : position.lon + 0.001,
+            }}
+            pinColor="#2196F3"
+            title={activeSearch}
+            description={`Recherche : "${activeSearch}"`}
+          />
+        )}
       </MapView>
 
       <View style={styles.overlayTop}>
+        <View style={styles.searchBar}>
+          <Search size={18} color={colors.slate} style={{ marginRight: spacing.xs }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Rechercher un nom sur la carte…"
+            placeholderTextColor={colors.muted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery !== '' && (
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+              <X size={18} color={colors.muted} />
+            </Pressable>
+          )}
+        </View>
+
+        {activeSearch !== '' && (
+          <View style={styles.searchBadge}>
+            <Text style={styles.searchBadgeText}>Nom affiché sur la carte : {activeSearch}</Text>
+          </View>
+        )}
+
         <Banner kind={reliability.kind} message={reliability.message} />
       </View>
 
@@ -134,7 +172,25 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   deniedText: { ...typography.body, color: colors.muted, textAlign: 'center' },
   map: { flex: 1 },
-  overlayTop: { position: 'absolute', top: spacing.md, left: spacing.md, right: spacing.md },
+  overlayTop: { position: 'absolute', top: spacing.md, left: spacing.md, right: spacing.md, gap: spacing.xs },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    ...shadow.card,
+  },
+  searchInput: { flex: 1, ...typography.body, color: colors.ink, padding: 0 },
+  searchBadge: {
+    backgroundColor: '#2196F3',
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    alignSelf: 'flex-start',
+  },
+  searchBadgeText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.white },
   overlayBottom: { position: 'absolute', bottom: spacing.md, left: spacing.md, right: spacing.md },
   zoneContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
   zoneCard: { width: '100%', alignItems: 'center' },

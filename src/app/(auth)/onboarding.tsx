@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   topBar: { height: 44, justifyContent: 'center', alignItems: 'flex-end', paddingHorizontal: spacing.xxl },
   skip: { ...typography.body, fontFamily: fontFamily.medium, color: colors.muted },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 7, paddingVertical: spacing.md },
+  dots: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md },
   dot: { width: 7, height: 5, borderRadius: 3, backgroundColor: colors.border },
   dotActive: { width: 22, backgroundColor: colors.primary },
   illustration: { flex: 1, alignItems: 'center', justifyContent: 'center' },

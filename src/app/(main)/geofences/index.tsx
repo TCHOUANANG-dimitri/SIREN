@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { Alert as RNAlert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft, Plus, ShieldBan, ShieldCheck } from 'lucide-react-native';
 import { Card } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { colors, fontFamily, radii, shadow, spacing, typography } from '@/theme';
 import { useChildren } from '@/api/hooks/useChildren';
 import { useDeleteGeofence, useGeofences } from '@/api/hooks/useGeofences';
 import { useUiStore } from '@/stores/uiStore';
@@ -29,8 +30,8 @@ export default function GeofencesListScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
       <Text style={styles.title}>Périmètres</Text>
@@ -89,16 +90,16 @@ export default function GeofencesListScreen() {
       >
         <Plus size={26} color={colors.white} />
       </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.surface, paddingTop: spacing.xxxl },
+  container: { flex: 1, backgroundColor: colors.surface },
   backButton: { marginLeft: spacing.xl, marginBottom: spacing.md },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
   switcherRow: { gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: '#F0EDE8' },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceChip },
   chipActive: { backgroundColor: colors.primary },
   chipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
   chipTextActive: { color: colors.white },
@@ -119,5 +120,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadow.floating,
   },
 });

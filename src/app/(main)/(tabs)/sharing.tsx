@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FileClock, Plus, Users } from 'lucide-react-native';
 import { Card } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { colors, fontFamily, radii, shadow, spacing, typography } from '@/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { useChildren } from '@/api/hooks/useChildren';
 import { useShares } from '@/api/hooks/useSharing';
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: spacing.md },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink },
   switcherRow: { gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: '#F0EDE8' },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceChip },
   chipActive: { backgroundColor: colors.primary },
   chipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
   chipTextActive: { color: colors.white },
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   emptyText: { ...typography.body, color: colors.muted, textAlign: 'center' },
   list: { padding: spacing.xl, paddingBottom: 96 },
   card: { marginBottom: spacing.sm },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs },
   name: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
   status: { ...typography.caption, color: colors.muted },
   statusActive: { color: colors.veille, fontFamily: fontFamily.semiBold },
@@ -135,6 +135,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadow.floating,
   },
   restricted: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   restrictedText: { ...typography.body, color: colors.muted, textAlign: 'center' },

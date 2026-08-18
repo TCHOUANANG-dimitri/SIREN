@@ -18,4 +18,8 @@ i18n.use(initReactI18next).init({
   compatibilityJSON: 'v4',
 });
 
+export async function changeAppLanguage(lang: 'fr' | 'en') {
+  await i18n.changeLanguage(lang);
+}
+
 export default i18n;

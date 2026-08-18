@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { useEffect, useMemo, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { Play, Square } from 'lucide-react-native';
 import { Skeleton } from '@/components';
@@ -97,10 +96,9 @@ export function HistoryTab({ childId }: { childId: string }) {
             )}
           </MapView>
 
-          <FlashList
+          <FlatList
             data={[...positions].reverse()}
             keyExtractor={(item, index) => `${item.timestamp}-${index}`}
-            estimatedItemSize={44}
             contentContainerStyle={styles.list}
             renderItem={({ item }: { item: Position }) => (
               <View style={styles.row}>
@@ -118,7 +116,7 @@ export function HistoryTab({ childId }: { childId: string }) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   periodRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: '#F0EDE8' },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceChip },
   chipActive: { backgroundColor: colors.primary },
   chipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
   chipTextActive: { color: colors.white },

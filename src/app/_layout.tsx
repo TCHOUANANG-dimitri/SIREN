@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { queryClient } from '@/api/queryClient';
 import { initMockBackend } from '@/api/mock/bootstrap';
 import { useAuthStore } from '@/stores/authStore';
+import { useLocationStore } from '@/stores/locationStore';
 import { useAppFonts } from '@/theme';
 import { EmergencyGate } from '@/features/emergency/EmergencyGate';
 import { useNotificationDeepLink } from '@/features/notifications/useNotificationDeepLink';
@@ -21,19 +22,20 @@ export default function RootLayout() {
   const { fontsLoaded, fontsError } = useAppFonts();
   const [backendReady, setBackendReady] = useState(false);
   const hydrate = useAuthStore((s) => s.hydrate);
+  const initLocation = useLocationStore((s) => s.initialize);
   useNotificationDeepLink();
 
   useEffect(() => {
     (async () => {
       try {
-        await Promise.all([hydrate(), initMockBackend()]);
+        await Promise.all([hydrate(), initMockBackend(), initLocation()]);
       } catch (error) {
         logger.error(error, { stage: 'bootstrap' });
       } finally {
         setBackendReady(true);
       }
     })();
-  }, [hydrate]);
+  }, [hydrate, initLocation]);
 
   const ready = (fontsLoaded || !!fontsError) && backendReady;
 

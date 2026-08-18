@@ -8,6 +8,7 @@
     "@tanstack/react-query": "^5.101.4",
     "axios": "^1.18.1",
     "expo": "^54.0.0",
+    "expo-build-properties": "~1.0.10",
     "expo-constants": "~18.0.13",
     "expo-device": "~8.0.10",
     "expo-font": "~14.0.12",
@@ -45,6 +46,8 @@
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "29.5.14",
     "@types/react": "~19.1.10",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~10.0.0",
     "expo-blur": "~15.0.8",
     "expo-camera": "~17.0.10",
     "expo-haptics": "~15.0.8",
@@ -69,7 +72,10 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:apk:debug": "cd android && ./gradlew assembleDebug",
+    "build:apk:release": "cd android && ./gradlew assembleRelease",
+    "build:apk:eas": "eas build -p android --profile preview"
   },
   "private": true
 }

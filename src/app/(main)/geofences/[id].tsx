@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import { Button, PermissionToggle, TextField } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { Button, PermissionToggle, Skeleton, TextField } from '@/components';
+import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { MapPointRadiusPicker } from '@/features/tracking/MapPointRadiusPicker';
 import { useGeofences, useCreateGeofence, usePatchGeofence } from '@/api/hooks/useGeofences';
 import { usePosition } from '@/api/hooks/useTracking';
@@ -52,11 +53,13 @@ export default function GeofenceEditorScreen() {
     router.back();
   }
 
-  if (!initialised) return null;
+  if (!initialised) return <SafeAreaView style={styles.container} edges={['top']}><View style={styles.content}><Skeleton height={300} radius={16} /></View></SafeAreaView>;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <ScrollView contentContainerStyle={styles.content}>
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
       <Text style={styles.title}>{isNew ? 'Nouveau périmètre' : 'Modifier le périmètre'}</Text>
@@ -93,6 +96,8 @@ export default function GeofenceEditorScreen() {
         style={{ marginTop: spacing.lg }}
       />
     </ScrollView>
+    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -102,7 +107,7 @@ const styles = StyleSheet.create({
   backButton: { marginBottom: spacing.lg },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.lg },
   typeRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
-  typeChip: { flex: 1, paddingVertical: spacing.sm, borderRadius: 12, backgroundColor: '#F0EDE8', alignItems: 'center' },
+  typeChip: { flex: 1, paddingVertical: spacing.sm, borderRadius: radii.md, backgroundColor: colors.surfaceChip, alignItems: 'center' },
   typeChipAutorise: { backgroundColor: colors.veille },
   typeChipInterdit: { backgroundColor: colors.urgence },
   typeChipText: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.muted },

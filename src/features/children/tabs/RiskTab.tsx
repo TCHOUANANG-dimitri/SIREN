@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   reasonRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
   reasonText: { ...typography.body, color: colors.slate },
   subScoreRow: { marginBottom: spacing.sm },
-  subScoreLabel: { ...typography.caption, color: colors.muted, marginBottom: 4 },
+  subScoreLabel: { ...typography.caption, color: colors.muted, marginBottom: spacing.xs },
   subScoreTrack: { height: 8, borderRadius: radii.sm, backgroundColor: colors.border, overflow: 'hidden' },
   subScoreFill: { height: 8, borderRadius: radii.sm },
   confidenceHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },

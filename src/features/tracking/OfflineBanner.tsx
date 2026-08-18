@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { mockEventBus, type BusEvent } from '@/api/mock/mockEventBus';
 import { useUiStore } from '@/stores/uiStore';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { colors, fontFamily, typography } from '@/theme';
 
 /**
  * Bandeau hors-ligne — CDC1 §12. Reflète le canal temps réel simulé (mockEventBus) : il n'y a

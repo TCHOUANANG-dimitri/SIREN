@@ -29,7 +29,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Bonjour {user?.nom?.split(' ')[0] ?? ''}</Text>
-          <Text style={styles.subGreeting}>Voici l'état de vos enfants</Text>
+          <Text style={styles.subGreeting}>Voici l&apos;état de vos enfants</Text>
         </View>
         <Pressable onPress={() => router.push('/(main)/(tabs)/settings')} hitSlop={8} style={styles.settingsIcon}>
           <ShieldCheck size={22} color={colors.primary} />

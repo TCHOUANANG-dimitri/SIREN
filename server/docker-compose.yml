@@ -1,0 +1,111 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./:/app
+      - osm_data:/app/data/osm
+    restart: unless-stopped
+    networks:
+      - siren_net
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./:/app
+    restart: unless-stopped
+    networks:
+      - siren_net
+
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./:/app
+    restart: unless-stopped
+    networks:
+      - siren_net
+
+  db:
+    image: postgis/postgis:15-3.4
+    environment:
+      POSTGRES_USER: siren
+      POSTGRES_PASSWORD: siren_password
+      POSTGRES_DB: siren
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U siren"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - siren_net
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - siren_net
+
+  proxy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    env_file: .env
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - siren_net
+
+volumes:
+  pg_data:
+  osm_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  siren_net:
+    driver: bridge

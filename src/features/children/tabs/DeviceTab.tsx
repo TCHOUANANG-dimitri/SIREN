@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { RefreshCw } from 'lucide-react-native';
-import { Banner, Button, Card } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { Banner, Button, Card, Skeleton } from '@/components';
+import { colors, fontFamily, spacing, typography } from '@/theme';
 import { useDeviceSettings, usePatchDeviceSettings } from '@/api/hooks/useDevice';
 import { formatRelativeTime } from '@/utils/format';
 import type { DeviceStatus } from '@/models/entities';
@@ -19,7 +19,7 @@ export function DeviceTab({ childId }: { childId: string }) {
   const patch = usePatchDeviceSettings(childId);
   const [saved, setSaved] = useState(false);
 
-  if (isLoading || !device) return null;
+  if (isLoading || !device) return <View style={styles.content}><Skeleton height={200} radius={16} /><Skeleton height={120} radius={16} style={{ marginTop: spacing.md }} /></View>;
 
   async function setEnergyMode(mode: DeviceStatus['energyMode']) {
     await patch.mutateAsync({ energyMode: mode });
@@ -41,7 +41,7 @@ export function DeviceTab({ childId }: { childId: string }) {
       {saved && <Banner kind="success" message="Réglages enregistrés" />}
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Mode d'énergie</Text>
+        <Text style={styles.cardTitle}>Mode d&apos;énergie</Text>
         {ENERGY_MODES.map((mode) => (
           <Pressable
             key={mode.key}

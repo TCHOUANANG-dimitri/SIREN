@@ -5,12 +5,13 @@ const config: ExpoConfig = {
   slug: 'siren-app',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/images/icon.png',
+  icon: './assets/images/image.png',
   scheme: 'sirenapp',
   userInterfaceStyle: 'light',
   ios: {
+    bundleIdentifier: 'com.siren.app',
     icon: './assets/expo.icon',
-    supportsTablet: false,
+    supportsTablet: true,
     infoPlist: {
       NSCameraUsageDescription:
         "SIREN utilise l'appareil photo pour scanner le QR code du dispositif lors de l'appairage.",
@@ -28,6 +29,7 @@ const config: ExpoConfig = {
     },
     predictiveBackGestureEnabled: false,
     permissions: ['CAMERA', 'USE_BIOMETRIC', 'USE_FINGERPRINT'],
+    package: 'com.siren.app',
   },
   web: {
     output: 'static',
@@ -42,7 +44,8 @@ const config: ExpoConfig = {
       {
         backgroundColor: '#FBFAF8',
         image: './assets/images/image.png',
-        imageWidth: 180,
+        imageWidth: 200,
+        resizeMode: 'contain',
       },
     ],
     [
@@ -59,6 +62,17 @@ const config: ExpoConfig = {
           "SIREN utilise l'appareil photo pour scanner le QR code du dispositif.",
       },
     ],
+    [
+      'expo-build-properties',
+      {
+        android: {
+          minSdkVersion: 30,
+          compileSdkVersion: 36,
+          targetSdkVersion: 36,
+          ndkVersion: '30.0.15729638',
+        },
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,
@@ -68,6 +82,7 @@ const config: ExpoConfig = {
     apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8000',
     wsUrl: process.env.EXPO_PUBLIC_WS_URL ?? 'ws://localhost:8000/ws',
     mapsApiKey: process.env.EXPO_PUBLIC_MAPS_API_KEY ?? '',
+    translationApiKey: process.env.EXPO_PUBLIC_TRANSLATION_API_KEY ?? '',
   },
 };
 

@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Pressable } from 'react-native';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { useChildren } from '@/api/hooks/useChildren';
 import { useUiStore } from '@/stores/uiStore';
@@ -53,7 +52,7 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   switcherRow: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: '#F0EDE8' },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceChip },
   chipActive: { backgroundColor: colors.primary },
   chipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
   chipTextActive: { color: colors.white },
