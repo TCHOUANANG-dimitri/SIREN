@@ -94,9 +94,10 @@ function tickAll() {
   for (const rt of runtimes.values()) tickChild(rt);
 }
 
-function lastPosition(childId: string): Position {
+function lastPosition(childId: string): Position | undefined {
   const db = getDb();
   const hist = db.positions[childId];
+  if (!hist || hist.length === 0) return undefined;
   return hist[hist.length - 1];
 }
 
@@ -192,6 +193,8 @@ function buildReasons(params: {
 }
 
 function tickChild(rt: ChildRuntime) {
+  const lastPos = lastPosition(rt.childId);
+  if (!lastPos) return;
   const db = getDb();
   const child = db.children.find((c) => c.id === rt.childId);
   if (!child) return;
@@ -315,9 +318,9 @@ function tickDisparition(rt: ChildRuntime) {
   const lastPos = lastPosition(rt.childId);
 
   mutateDb((db2) => {
-    const device = db2.devices.find((d) =>
-      d.deviceId === db2.children.find((c) => c.id === rt.childId)?.deviceId
-    );
+    const child = db2.children.find((c) => c.id === rt.childId);
+    const deviceId = child?.deviceId;
+    const device = deviceId ? db2.devices.find((d) => d.deviceId === deviceId) : undefined;
     if (device) {
       device.fixQuality = rt.disparitionTicks === 1 ? 'estimee' : 'perdu';
       device.online = rt.disparitionTicks < 3;

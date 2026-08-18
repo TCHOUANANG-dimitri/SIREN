@@ -19,6 +19,7 @@ const config: ExpoConfig = {
     },
   },
   android: {
+    package: 'com.siren.app',
     adaptiveIcon: {
       backgroundColor: '#D32F2E',
       foregroundImage: './assets/images/android-icon-foreground.png',
