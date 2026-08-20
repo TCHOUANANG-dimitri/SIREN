@@ -29,7 +29,12 @@ const config: ExpoConfig = {
     },
     predictiveBackGestureEnabled: false,
     permissions: ['CAMERA', 'USE_BIOMETRIC', 'USE_FINGERPRINT'],
-    package: 'com.siren.app',
+    // react-native-maps exige la meta-data com.google.android.geo.API_KEY dans le
+    // manifeste : sans elle, les 6 écrans carte ne s'affichent pas en build autonome.
+    // Renseigner EXPO_PUBLIC_MAPS_API_KEY avant le prebuild pour l'injecter.
+    ...(process.env.EXPO_PUBLIC_MAPS_API_KEY
+      ? { config: { googleMaps: { apiKey: process.env.EXPO_PUBLIC_MAPS_API_KEY } } }
+      : {}),
   },
   web: {
     output: 'static',
@@ -69,7 +74,8 @@ const config: ExpoConfig = {
           minSdkVersion: 30,
           compileSdkVersion: 36,
           targetSdkVersion: 36,
-          ndkVersion: '30.0.15729638',
+          // Pas de ndkVersion forcée : on laisse Expo 54 / RN 0.81 choisir la sienne
+          // (27.1.12297006), la seule installée et la seule validée pour cette version.
         },
       },
     ],
