@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import MapView, { Circle, Marker } from 'react-native-maps';
+import { Circle, MapView, Marker } from '@/features/tracking/map';
 import { AlertOctagon, Share2, Users } from 'lucide-react-native';
 import { Banner, Button, Card, Skeleton } from '@/components';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
@@ -10,8 +10,10 @@ import { useSearchZone } from '@/api/hooks/useSearchZone';
 import { useChildren } from '@/api/hooks/useChildren';
 import { useShares } from '@/api/hooks/useSharing';
 import { formatClock } from '@/utils/format';
+import { useTranslation } from 'react-i18next';
 
 export default function PostDisappearanceScreen() {
+  const { t } = useTranslation();
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const { data: zone, isLoading } = useSearchZone(childId, true);
   const { data: children } = useChildren();
@@ -26,13 +28,13 @@ export default function PostDisappearanceScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <AlertOctagon size={26} color={colors.white} />
-        <Text style={styles.headerTitle}>Mode post-disparition</Text>
+        <Text style={styles.headerTitle}>{t('emergency.postTitle')}</Text>
         <Text style={styles.headerSubtitle}>{child?.prenom}</Text>
       </View>
 
       {isLoading || !zone ? (
         <View style={styles.padded}>
-          <Banner kind="warning" message="Calcul de la zone de recherche…" />
+          <Banner kind="warning" message={t('emergency.computingZone')} />
           <View style={{ height: spacing.md }} />
           <Skeleton height={220} radius={16} />
         </View>
@@ -41,7 +43,7 @@ export default function PostDisappearanceScreen() {
           <View style={styles.padded}>
             <Banner
               kind="warning"
-              message={`Fiabilité de la zone en baisse avec le temps — confiance actuelle ${Math.round(zone.confidence)}%`}
+              message={t('emergency.zoneConfidence', { confidence: Math.round(zone.confidence) })}
             />
           </View>
 
@@ -55,7 +57,7 @@ export default function PostDisappearanceScreen() {
                 longitudeDelta: 0.08,
               }}
             >
-              <Marker coordinate={{ latitude: zone.lastPoint.lat, longitude: zone.lastPoint.lon }} pinColor={colors.urgence} title="Dernier point connu" />
+              <Marker coordinate={{ latitude: zone.lastPoint.lat, longitude: zone.lastPoint.lon }} pinColor={colors.urgence} title={t('emergency.lastKnownPoint')} />
               {zone.cells.map((cell, i) => (
                 <Circle
                   key={i}
@@ -70,7 +72,7 @@ export default function PostDisappearanceScreen() {
 
           <View style={styles.padded}>
             <Card style={styles.card}>
-              <Text style={styles.cardTitle}>Zones prioritaires</Text>
+              <Text style={styles.cardTitle}>{t('emergency.priorityZones')}</Text>
               {zone.topZones.map((z) => (
                 <Text key={z.rank} style={styles.zoneItem}>
                   {z.rank}. {z.label}
@@ -79,7 +81,7 @@ export default function PostDisappearanceScreen() {
             </Card>
 
             <Card style={styles.card}>
-              <Text style={styles.cardTitle}>Fiche de disparition</Text>
+              <Text style={styles.cardTitle}>{t('emergency.missingSheet')}</Text>
               <View style={styles.ficheRow}>
                 {child?.photoUrl ? (
                   <Image source={{ uri: child.photoUrl }} style={styles.fichePhoto} />
@@ -96,17 +98,17 @@ export default function PostDisappearanceScreen() {
               </View>
             </Card>
 
-            {notified && <Banner kind="success" message={`${activeSecondaries.length} proche(s) notifié(s).`} />}
+            {notified && <Banner kind="success" message={t('emergency.notified', { count: activeSecondaries.length })} />}
 
             <View style={{ height: spacing.md }} />
             <Button
-              label="Partager la fiche"
+              label={t('emergency.shareSheet')}
               icon={<Share2 size={16} color={colors.white} />}
               onPress={() => {}}
               style={{ marginBottom: spacing.sm }}
             />
             <Button
-              label={`Notifier le cercle de confiance (${activeSecondaries.length})`}
+              label={t('emergency.notifyCircle', { count: activeSecondaries.length })}
               icon={<Users size={16} color={colors.primary} />}
               variant="secondary"
               onPress={() => setNotified(true)}

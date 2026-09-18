@@ -1,6 +1,7 @@
 import { getDb, mutateDb, genId } from '../mock/db';
 import { ApiError, makeToken, simulateLatency } from '../network';
 import type { User } from '@/models/entities';
+import i18n from '@/i18n';
 
 interface AuthResult {
   user: User;
@@ -19,7 +20,7 @@ export async function register(input: {
   await simulateLatency(300, 700);
   const db = getDb();
   if (db.users.some((u) => u.email.toLowerCase() === input.email.toLowerCase())) {
-    throw new ApiError('Cet email est déjà utilisé', 409);
+    throw new ApiError(i18n.t('errors.emailAlreadyUsed'), 409);
   }
   const user: User = {
     id: genId('user'),
@@ -43,7 +44,7 @@ export async function login(input: { email: string; password: string }): Promise
   const user = db.users.find((u) => u.email.toLowerCase() === input.email.toLowerCase());
   const expectedPassword = db.passwordsByEmail[input.email.toLowerCase()];
   if (!user || expectedPassword !== input.password) {
-    throw new ApiError('Identifiants incorrects', 401);
+    throw new ApiError(i18n.t('errors.invalidCredentials'), 401);
   }
   return { user, accessToken: makeToken(user.id), refreshToken: makeToken(user.id) };
 }
@@ -51,7 +52,7 @@ export async function login(input: { email: string; password: string }): Promise
 export async function refresh(refreshToken: string): Promise<{ accessToken: string }> {
   await simulateLatency(150, 350);
   const match = refreshToken.match(/^tok_(.+?)__/);
-  if (!match) throw new ApiError('Jeton invalide', 401);
+  if (!match) throw new ApiError(i18n.t('errors.invalidToken'), 401);
   return { accessToken: makeToken(match[1]) };
 }
 
@@ -62,7 +63,7 @@ export async function requestOtp(): Promise<{ devHint: string }> {
 
 export async function verifyOtp(code: string, pending: AuthResult): Promise<AuthResult> {
   await simulateLatency(300, 600);
-  if (code !== OTP_CODE) throw new ApiError('Code incorrect ou expiré', 401);
+  if (code !== OTP_CODE) throw new ApiError(i18n.t('errors.otpInvalid'), 401);
   return pending;
 }
 

@@ -9,8 +9,10 @@ import { useAllAlerts } from '@/api/hooks/useAlerts';
 import { useChildren } from '@/api/hooks/useChildren';
 import { formatRelativeTime } from '@/utils/format';
 import type { Alert } from '@/models/entities';
+import { useTranslation } from 'react-i18next';
 
 export default function AlertsScreen() {
+  const { t } = useTranslation();
   const { data: alerts, isLoading } = useAllAlerts();
   const { data: children } = useChildren();
   const [childFilter, setChildFilter] = useState<string | null>(null);
@@ -30,11 +32,11 @@ export default function AlertsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.title}>Alertes</Text>
+      <Text style={styles.title}>{t('alerts.title')}</Text>
 
       <View style={styles.filterRow}>
         <Pressable onPress={() => setChildFilter(null)} style={[styles.chip, !childFilter && styles.chipActive]}>
-          <Text style={[styles.chipText, !childFilter && styles.chipTextActive]}>Tous</Text>
+          <Text style={[styles.chipText, !childFilter && styles.chipTextActive]}>{t('common.all')}</Text>
         </Pressable>
         {children?.map((c) => (
           <Pressable
@@ -63,7 +65,7 @@ export default function AlertsScreen() {
       {!isLoading && filtered.length === 0 ? (
         <View style={styles.empty}>
           <AlertTriangle size={32} color={colors.muted} />
-          <Text style={styles.emptyText}>Aucune alerte — tout va bien.</Text>
+          <Text style={styles.emptyText}>{t('alerts.empty')}</Text>
         </View>
       ) : (
         <FlatList

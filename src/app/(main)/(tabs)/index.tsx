@@ -10,8 +10,10 @@ import { useChildren } from '@/api/hooks/useChildren';
 import { useAllAlerts } from '@/api/hooks/useAlerts';
 import { ChildCard } from '@/features/children/ChildCard';
 import type { Child } from '@/models/entities';
+import { useTranslation } from 'react-i18next';
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const { data: children, isLoading, isError, refetch, isRefetching } = useChildren();
   const { data: allAlerts } = useAllAlerts();
@@ -29,7 +31,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Bonjour {user?.nom?.split(' ')[0] ?? ''}</Text>
-          <Text style={styles.subGreeting}>Voici l&apos;état de vos enfants</Text>
+          <Text style={styles.subGreeting}>{t('home.subtitle')}</Text>
         </View>
         <Pressable onPress={() => router.push('/(main)/(tabs)/settings')} hitSlop={8} style={styles.settingsIcon}>
           <ShieldCheck size={22} color={colors.primary} />
@@ -44,12 +46,12 @@ export default function HomeScreen() {
         </View>
       ) : isError ? (
         <View style={styles.list}>
-          <Banner kind="error" message="Impossible de charger vos enfants. Vérifiez votre connexion." />
+          <Banner kind="error" message={t('home.loadError')} />
         </View>
       ) : sortedChildren.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Ajoutez votre premier enfant</Text>
-          <Text style={styles.emptyBody}>Appairez un dispositif SIREN pour commencer la protection.</Text>
+          <Text style={styles.emptyTitle}>{t('home.emptyTitle')}</Text>
+          <Text style={styles.emptyBody}>{t('home.emptyBody')}</Text>
         </View>
       ) : (
         <FlatList

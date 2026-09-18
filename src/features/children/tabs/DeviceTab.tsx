@@ -7,6 +7,7 @@ import { colors, fontFamily, spacing, typography } from '@/theme';
 import { useDeviceSettings, usePatchDeviceSettings } from '@/api/hooks/useDevice';
 import { formatRelativeTime } from '@/utils/format';
 import type { DeviceStatus } from '@/models/entities';
+import { useTranslation } from 'react-i18next';
 
 const ENERGY_MODES: { key: DeviceStatus['energyMode']; label: string; autonomy: string }[] = [
   { key: 'continu', label: 'Continu', autonomy: '~18 h' },
@@ -15,6 +16,7 @@ const ENERGY_MODES: { key: DeviceStatus['energyMode']; label: string; autonomy: 
 ];
 
 export function DeviceTab({ childId }: { childId: string }) {
+  const { t } = useTranslation();
   const { data: device, isLoading } = useDeviceSettings(childId);
   const patch = usePatchDeviceSettings(childId);
   const [saved, setSaved] = useState(false);
@@ -38,10 +40,10 @@ export function DeviceTab({ childId }: { childId: string }) {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      {saved && <Banner kind="success" message="Réglages enregistrés" />}
+      {saved && <Banner kind="success" message={t('childTabs.settingsSaved')} />}
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Mode d&apos;énergie</Text>
+        <Text style={styles.cardTitle}>{t('childTabs.powerMode')}</Text>
         {ENERGY_MODES.map((mode) => (
           <Pressable
             key={mode.key}
@@ -57,7 +59,7 @@ export function DeviceTab({ childId }: { childId: string }) {
 
       <Card style={styles.card}>
         <View style={styles.sensitivityHeader}>
-          <Text style={styles.cardTitle}>Sensibilité des alertes</Text>
+          <Text style={styles.cardTitle}>{t('childTabs.alertSensitivity')}</Text>
           <Text style={styles.sensitivityValue}>{device.sensitivity}</Text>
         </View>
         <Slider
@@ -71,29 +73,29 @@ export function DeviceTab({ childId }: { childId: string }) {
           onSlidingComplete={setSensitivity}
         />
         <View style={styles.sliderBounds}>
-          <Text style={styles.sliderBoundText}>Prudent</Text>
-          <Text style={styles.sliderBoundText}>Tolérant</Text>
+          <Text style={styles.sliderBoundText}>{t('childTabs.cautious')}</Text>
+          <Text style={styles.sliderBoundText}>{t('childTabs.tolerant')}</Text>
         </View>
       </Card>
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Informations</Text>
+        <Text style={styles.cardTitle}>{t('childTabs.information')}</Text>
         <View style={styles.infoRow}>
-          <Text style={styles.infoKey}>Version des paramètres</Text>
+          <Text style={styles.infoKey}>{t('childTabs.settingsVersion')}</Text>
           <Text style={styles.infoValue}>v{device.configVersion}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoKey}>Firmware</Text>
+          <Text style={styles.infoKey}>{t('childTabs.firmware')}</Text>
           <Text style={styles.infoValue}>{device.firmwareVersion}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoKey}>Dernière synchronisation</Text>
+          <Text style={styles.infoKey}>{t('childTabs.lastSync')}</Text>
           <Text style={styles.infoValue}>{formatRelativeTime(device.lastSeen)}</Text>
         </View>
       </Card>
 
       <Button
-        label="Forcer une synchronisation"
+        label={t('childTabs.forceSync')}
         variant="secondary"
         icon={<RefreshCw size={16} color={colors.primary} />}
         onPress={() => setEnergyMode(device.energyMode)}

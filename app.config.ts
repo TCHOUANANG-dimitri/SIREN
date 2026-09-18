@@ -5,12 +5,14 @@ const config: ExpoConfig = {
   slug: 'siren-app',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/images/image.png',
+  icon: './assets/images/icon.png',
   scheme: 'sirenapp',
   userInterfaceStyle: 'light',
   ios: {
     bundleIdentifier: 'com.siren.app',
-    icon: './assets/expo.icon',
+    // Pas de surcharge d'icône iOS : le paquet ./assets/expo.icon livré avec le
+    // gabarit contient le symbole Expo. iOS reprend donc l'icône SIREN définie
+    // à la racine de la configuration.
     supportsTablet: true,
     infoPlist: {
       NSCameraUsageDescription:
@@ -44,12 +46,18 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-secure-store',
     'expo-localization',
+    '@react-native-community/datetimepicker',
+    '@maplibre/maplibre-react-native',
     [
       'expo-splash-screen',
       {
         backgroundColor: '#FBFAF8',
-        image: './assets/images/image.png',
-        imageWidth: 200,
+        // Canevas carré : Android 12+ masque l'icône de démarrage en cercle.
+        // Un logo au format 3:2 posé pleine largeur y perdait ses extrémités
+        // (le « S » et le « N » de SIREN). Le logo occupe donc 53 % du canevas,
+        // ce qui le fait tenir entièrement dans le cercle visible.
+        image: './assets/images/splash-logo.png',
+        imageWidth: 240,
         resizeMode: 'contain',
       },
     ],
@@ -65,6 +73,16 @@ const config: ExpoConfig = {
       {
         cameraPermission:
           "SIREN utilise l'appareil photo pour scanner le QR code du dispositif.",
+      },
+    ],
+    [
+      // Sans ce plugin, le manifeste ne déclare que READ_EXTERNAL_STORAGE, qui
+      // ne donne plus accès aux médias depuis Android 13 (API 33). Le plugin
+      // ajoute READ_MEDIA_IMAGES, nécessaire au choix de la photo de l'enfant.
+      'expo-image-picker',
+      {
+        photosPermission:
+          "SIREN accède à vos photos pour définir la photo de profil de votre enfant.",
       },
     ],
     [
@@ -88,7 +106,16 @@ const config: ExpoConfig = {
     apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8000',
     wsUrl: process.env.EXPO_PUBLIC_WS_URL ?? 'ws://localhost:8000/ws',
     mapsApiKey: process.env.EXPO_PUBLIC_MAPS_API_KEY ?? '',
+    // Tuiles vectorielles OpenStreetMap servies par OpenFreeMap : ni clé ni
+    // quota, et remplaçable par une instance auto-hébergée le jour venu.
+    mapStyleUrl:
+      process.env.EXPO_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/liberty',
     translationApiKey: process.env.EXPO_PUBLIC_TRANSLATION_API_KEY ?? '',
+    // Passerelle temporaire vers Faucon (tracking GPS réel), le temps que le
+    // pipeline patch → serveur SIREN soit opérationnel. Aucun identifiant n'est
+    // embarqué : l'utilisateur saisit ses accès sur la page de connexion Faucon,
+    // et la session est conservée par les cookies de la WebView.
+    fauconUrl: process.env.EXPO_PUBLIC_FAUCON_URL ?? 'https://faucon.169.58.69.36.sslip.io/',
   },
 };
 

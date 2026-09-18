@@ -3,13 +3,14 @@ import { ApiError, simulateLatency } from '../network';
 import { assertChildAccess, assertPrincipal, resolveCurrentUser } from '../mock/session';
 import { resolveScenarioAlert } from '../mock/scenarioEngine';
 import type { Alert } from '@/models/entities';
+import i18n from '@/i18n';
 
 export async function listAlerts(token: string | null, childId: string): Promise<Alert[]> {
   await simulateLatency();
   const user = resolveCurrentUser(token);
   const perms = assertChildAccess(childId, user);
   if (user.role === 'secondaire' && !perms.includes('alertes_prealerte') && !perms.includes('alertes_urgence')) {
-    throw new ApiError('Accès refusé', 403);
+    throw new ApiError(i18n.t('errors.accessDenied'), 403);
   }
   return getDb()
     .alerts.filter((a) => a.childId === childId)
@@ -46,7 +47,7 @@ export async function patchAlert(
   const user = resolveCurrentUser(token);
   const db = getDb();
   const alert = db.alerts.find((a) => a.id === alertId);
-  if (!alert) throw new ApiError('Alerte introuvable', 404);
+  if (!alert) throw new ApiError(i18n.t('errors.alertNotFound'), 404);
   assertChildAccess(alert.childId, user);
   assertPrincipal(user); // "Clore une urgence / marquer fausse" réservé au principal — CDC §7.2
   mutateDb((d) => {

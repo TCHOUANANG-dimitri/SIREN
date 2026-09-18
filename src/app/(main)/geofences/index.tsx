@@ -8,8 +8,10 @@ import { colors, fontFamily, radii, shadow, spacing, typography } from '@/theme'
 import { useChildren } from '@/api/hooks/useChildren';
 import { useDeleteGeofence, useGeofences } from '@/api/hooks/useGeofences';
 import { useUiStore } from '@/stores/uiStore';
+import { useTranslation } from 'react-i18next';
 
 export default function GeofencesListScreen() {
+  const { t } = useTranslation();
   const { data: children } = useChildren();
   const selectedChildId = useUiStore((s) => s.selectedChildId);
   const setSelectedChildId = useUiStore((s) => s.setSelectedChildId);
@@ -34,7 +36,7 @@ export default function GeofencesListScreen() {
       <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
-      <Text style={styles.title}>Périmètres</Text>
+      <Text style={styles.title}>{t('geofences.title')}</Text>
 
       {children && children.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.switcherRow}>
@@ -52,7 +54,7 @@ export default function GeofencesListScreen() {
 
       {!geofences || geofences.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>Aucun périmètre. Dessinez une zone autorisée.</Text>
+          <Text style={styles.emptyText}>{t('geofences.empty')}</Text>
         </View>
       ) : (
         <FlatList

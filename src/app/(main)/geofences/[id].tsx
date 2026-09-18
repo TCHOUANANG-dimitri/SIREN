@@ -9,8 +9,10 @@ import { MapPointRadiusPicker } from '@/features/tracking/MapPointRadiusPicker';
 import { useGeofences, useCreateGeofence, usePatchGeofence } from '@/api/hooks/useGeofences';
 import { usePosition } from '@/api/hooks/useTracking';
 import type { Geofence } from '@/models/entities';
+import { useTranslation } from 'react-i18next';
 
 export default function GeofenceEditorScreen() {
+  const { t } = useTranslation();
   const { id, childId } = useLocalSearchParams<{ id: string; childId: string }>();
   const isNew = id === 'new';
   const { data: geofences } = useGeofences(childId);
@@ -64,14 +66,14 @@ export default function GeofenceEditorScreen() {
       </Pressable>
       <Text style={styles.title}>{isNew ? 'Nouveau périmètre' : 'Modifier le périmètre'}</Text>
 
-      <TextField label="Nom" value={nom} onChangeText={setNom} placeholder="Quartier, trajet école…" />
+      <TextField label={t('common.name')} value={nom} onChangeText={setNom} placeholder={t('geofences.namePlaceholder')} />
 
       <View style={styles.typeRow}>
         <Pressable style={[styles.typeChip, type === 'autorise' && styles.typeChipAutorise]} onPress={() => setType('autorise')}>
-          <Text style={[styles.typeChipText, type === 'autorise' && styles.typeChipTextActive]}>Autorisé</Text>
+          <Text style={[styles.typeChipText, type === 'autorise' && styles.typeChipTextActive]}>{t('geofences.allowed')}</Text>
         </Pressable>
         <Pressable style={[styles.typeChip, type === 'interdit' && styles.typeChipInterdit]} onPress={() => setType('interdit')}>
-          <Text style={[styles.typeChipText, type === 'interdit' && styles.typeChipTextActive]}>Interdit</Text>
+          <Text style={[styles.typeChipText, type === 'interdit' && styles.typeChipTextActive]}>{t('geofences.forbidden')}</Text>
         </Pressable>
       </View>
 
@@ -85,11 +87,11 @@ export default function GeofenceEditorScreen() {
         onChange={(v) => setPoint(v)}
       />
 
-      <PermissionToggle label="Notifier à l'entrée" value={notifyOnEnter} onValueChange={setNotifyOnEnter} />
-      <PermissionToggle label="Notifier à la sortie" value={notifyOnExit} onValueChange={setNotifyOnExit} />
+      <PermissionToggle label={t('geofences.notifyOnEnter')} value={notifyOnEnter} onValueChange={setNotifyOnEnter} />
+      <PermissionToggle label={t('geofences.notifyOnExit')} value={notifyOnExit} onValueChange={setNotifyOnExit} />
 
       <Button
-        label="Enregistrer"
+        label={t('common.save')}
         onPress={save}
         loading={createGeofence.isPending || patchGeofence.isPending}
         disabled={nom.trim().length < 2}

@@ -1,5 +1,6 @@
 export * from './Button';
 export * from './TextField';
+export * from './TimeField';
 export * from './Card';
 export * from './StateBadge';
 export * from './ScoreGauge';

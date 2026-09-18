@@ -34,6 +34,15 @@ export default function SettingsScreen() {
   const [biometricLock, setBiometricLock] = useState(false);
   const [resetting, setResetting] = useState(false);
 
+  // Le store d'auth s'hydrate de façon asynchrone : au premier rendu `user` est
+  // encore null, et useState fige alors les champs sur une chaîne vide. On les
+  // réalimente dès que le profil est disponible (ou qu'on change de compte).
+  useEffect(() => {
+    if (!user) return;
+    setNom(user.nom ?? '');
+    setTelephone(user.telephone ?? '');
+  }, [user?.id]);
+
   useEffect(() => {
     (async () => {
       const prefs = await storage.getItem<{ urgence: boolean; prealerte: boolean; info: boolean }>(NOTIF_PREFS_KEY);
@@ -89,12 +98,12 @@ export default function SettingsScreen() {
 
   function confirmDeleteAccount() {
     RNAlert.alert(
-      'Supprimer le compte',
-      'Cette action supprime définitivement votre compte et les données de vos enfants. Continuer ?',
+      t('settings.deleteTitle'),
+      t('settings.deleteBody'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             await deleteAccount.mutateAsync();
@@ -111,18 +120,18 @@ export default function SettingsScreen() {
     <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{t('tabs.settings')}</Text>
 
-      {saved && <Banner kind="success" message="Préférences enregistrées" />}
+      {saved && <Banner kind="success" message={t('settings.prefsSaved')} />}
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Profil</Text>
-        <TextField label="Nom" value={nom} onChangeText={setNom} />
-        <TextField label="Email" value={user?.email ?? ''} editable={false} />
-        <TextField label="Téléphone" required={false} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" />
+        <Text style={styles.cardTitle}>{t('settings.profile')}</Text>
+        <TextField label={t('common.name')} value={nom} onChangeText={setNom} />
+        <TextField label={t('auth.email')} value={user?.email ?? ''} editable={false} />
+        <TextField label={t('common.phone')} required={false} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" />
         <Button label={t('common.save')} onPress={saveProfile} loading={patchMe.isPending} />
       </Card>
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Langue & Traduction</Text>
+        <Text style={styles.cardTitle}>{t('settings.languageTitle')}</Text>
         <View style={styles.langRow}>
           <Button
             label="Français"
@@ -142,36 +151,36 @@ export default function SettingsScreen() {
         <View style={styles.apiBadgeRow}>
           <Text style={styles.apiBadgeText}>
             {isTranslationApiActive()
-              ? '⚡ Clé API Traduction active (DeepL / Google Translate)'
-              : 'ℹ️ Mode dictionnaire local (Définissez EXPO_PUBLIC_TRANSLATION_API_KEY pour l\'API)'}
+              ? t('settings.translationApiActive')
+              : t('settings.translationApiLocal')}
           </Text>
         </View>
       </Card>
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Notifications</Text>
-        <PermissionToggle label="Urgence" value={notifUrgence} onValueChange={(v) => updateNotifPrefs({ urgence: v })} />
-        <PermissionToggle label="Pré-alerte" value={notifPrealerte} onValueChange={(v) => updateNotifPrefs({ prealerte: v })} />
-        <PermissionToggle label="Informations (zone, batterie)" value={notifInfo} onValueChange={(v) => updateNotifPrefs({ info: v })} />
+        <Text style={styles.cardTitle}>{t('settings.notifications')}</Text>
+        <PermissionToggle label={t('settings.notifUrgence')} value={notifUrgence} onValueChange={(v) => updateNotifPrefs({ urgence: v })} />
+        <PermissionToggle label={t('settings.notifPrealerte')} value={notifPrealerte} onValueChange={(v) => updateNotifPrefs({ prealerte: v })} />
+        <PermissionToggle label={t('settings.notifInfo')} value={notifInfo} onValueChange={(v) => updateNotifPrefs({ info: v })} />
       </Card>
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Sécurité</Text>
+        <Text style={styles.cardTitle}>{t('settings.security')}</Text>
         <PermissionToggle
-          label="Verrouillage biométrique"
-          description="Demander Face ID / empreinte à l'ouverture de l'application."
+          label={t('settings.biometricLock')}
+          description={t('settings.biometricDesc')}
           value={biometricLock}
           onValueChange={toggleBiometric}
         />
       </Card>
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Mode démonstration</Text>
+        <Text style={styles.cardTitle}>{t('settings.demoMode')}</Text>
         <Text style={styles.cardBody}>
-          Réinitialise les données de démo (enfants, alertes, historique) et relance le scénario depuis le début.
+          {t('settings.demoBody')}
         </Text>
         <Button
-          label="Réinitialiser la démo"
+          label={t('settings.resetDemo')}
           variant="secondary"
           icon={<RotateCcw size={16} color={colors.primary} />}
           onPress={handleReset}
@@ -179,38 +188,38 @@ export default function SettingsScreen() {
           style={{ marginBottom: spacing.sm }}
         />
         <Button
-          label="Simuler une coupure réseau (8 s)"
+          label={t('settings.simulateOffline')}
           variant="ghost"
           onPress={() => mockEventBus.simulateDisconnect(8000)}
         />
       </Card>
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>À propos</Text>
+        <Text style={styles.cardTitle}>{t('settings.about')}</Text>
         <View style={styles.aboutRow}>
           <ShieldQuestion size={16} color={colors.muted} />
-          <Text style={styles.aboutText}>Version {Constants.expoConfig?.version ?? '1.0.0'}</Text>
+          <Text style={styles.aboutText}>{t('settings.version', { version: Constants.expoConfig?.version ?? '1.0.0' })}</Text>
         </View>
-        <Text style={styles.aboutLink} onPress={() => RNAlert.alert('Mentions légales', 'SIREN — projet de protection des enfants.')}>
-          Mentions légales
+        <Text
+          style={styles.aboutLink}
+          onPress={() => RNAlert.alert(t('settings.legal'), t('settings.legalBody'))}
+        >
+          {t('settings.legal')}
         </Text>
         <Text
           style={styles.aboutLink}
           onPress={() =>
-            RNAlert.alert(
-              'Politique de confidentialité',
-              "Minimisation des données, consentement explicite à l'inscription, suppression possible à tout moment."
-            )
+            RNAlert.alert(t('settings.privacy'), t('settings.privacyBody'))
           }
         >
-          Politique de confidentialité
+          {t('settings.privacy')}
         </Text>
       </Card>
 
-      <Button label="Se déconnecter" variant="secondary" icon={<LogOut size={16} color={colors.primary} />} onPress={handleLogout} />
+      <Button label={t('settings.logout')} variant="secondary" icon={<LogOut size={16} color={colors.primary} />} onPress={handleLogout} />
       <View style={{ height: spacing.sm }} />
       <Button
-        label="Supprimer mon compte et mes données"
+        label={t('settings.deleteAccount')}
         variant="ghost"
         icon={<Trash2 size={16} color={colors.urgence} />}
         onPress={confirmDeleteAccount}

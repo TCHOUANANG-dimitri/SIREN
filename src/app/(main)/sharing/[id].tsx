@@ -8,8 +8,10 @@ import { colors, fontFamily, spacing, typography } from '@/theme';
 import { useShare, usePatchShare } from '@/api/hooks/useSharing';
 import { ALL_PERMISSIONS, permissionLabels } from '@/features/sharing/permissions';
 import type { Permission } from '@/models/entities';
+import { useTranslation } from 'react-i18next';
 
 export default function SecondaryDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: share } = useShare(id);
   const patchShare = usePatchShare(share?.childId);
@@ -64,7 +66,7 @@ export default function SecondaryDetailScreen() {
         ))}
       </Card>
 
-      {share.status !== 'revoque' && <Button label="Révoquer l'accès" variant="secondary" onPress={confirmRevoke} />}
+      {share.status !== 'revoque' && <Button label={t('sharing.revokeAccess')} variant="secondary" onPress={confirmRevoke} />}
     </ScrollView>
     </SafeAreaView>
   );

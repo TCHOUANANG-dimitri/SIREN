@@ -9,8 +9,10 @@ import { useCommunityReports, useCreateCommunityReport } from '@/api/hooks/useCo
 import { usePosition } from '@/api/hooks/useTracking';
 import { useChildren } from '@/api/hooks/useChildren';
 import { formatRelativeTime } from '@/utils/format';
+import { useTranslation } from 'react-i18next';
 
 export default function CommunityScreen() {
+  const { t } = useTranslation();
   const { data: reports } = useCommunityReports();
   const createReport = useCreateCommunityReport();
   const { data: children } = useChildren();
@@ -36,13 +38,13 @@ export default function CommunityScreen() {
       <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
-      <Text style={styles.title}>Volet communautaire</Text>
+      <Text style={styles.title}>{t('community.title')}</Text>
 
       <View style={styles.padded}>
         <Card style={styles.toggleCard}>
           <PermissionToggle
-            label="Alertes de disparition à proximité"
-            description="Recevoir une notification si une disparition est signalée dans votre secteur."
+            label={t('community.nearbyAlerts')}
+            description={t('community.nearbyAlertsDescription')}
             value={proximityAlerts}
             onValueChange={setProximityAlerts}
           />
@@ -52,7 +54,7 @@ export default function CommunityScreen() {
       {!reports || reports.length === 0 ? (
         <View style={styles.empty}>
           <MessageSquareWarning size={28} color={colors.muted} />
-          <Text style={styles.emptyText}>Aucun signalement récent dans votre secteur.</Text>
+          <Text style={styles.emptyText}>{t('community.noReports')}</Text>
         </View>
       ) : (
         <FlatList
@@ -72,22 +74,22 @@ export default function CommunityScreen() {
 
       {formOpen ? (
         <View style={styles.formPanel}>
-          {createReport.isError && <Banner kind="error" message="Impossible d'envoyer le signalement." />}
+          {createReport.isError && <Banner kind="error" message={t('community.reportFailed')} />}
           <TextField
-            label="Description du signalement"
+            label={t('community.reportLabel')}
             value={description}
             onChangeText={setDescription}
-            placeholder="Comportement suspect observé…"
+            placeholder={t('community.reportPlaceholder')}
             multiline
           />
           <View style={styles.formActions}>
-            <Button label="Annuler" variant="ghost" onPress={() => setFormOpen(false)} />
-            <Button label="Envoyer" onPress={submit} loading={createReport.isPending} disabled={!description.trim()} />
+            <Button label={t('common.cancel')} variant="ghost" onPress={() => setFormOpen(false)} />
+            <Button label={t('common.send')} onPress={submit} loading={createReport.isPending} disabled={!description.trim()} />
           </View>
         </View>
       ) : (
         <View style={styles.footer}>
-          <Button label="Signaler un comportement suspect" onPress={() => setFormOpen(true)} />
+          <Button label={t('community.reportButton')} onPress={() => setFormOpen(true)} />
         </View>
       )}
     </SafeAreaView>

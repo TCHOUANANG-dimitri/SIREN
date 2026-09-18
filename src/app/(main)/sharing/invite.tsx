@@ -9,8 +9,10 @@ import { useCreateShare } from '@/api/hooks/useSharing';
 import { ALL_PERMISSIONS, permissionLabels } from '@/features/sharing/permissions';
 import { ApiError } from '@/api/network';
 import type { Permission } from '@/models/entities';
+import { useTranslation } from 'react-i18next';
 
 export default function InviteSecondaryScreen() {
+  const { t } = useTranslation();
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const createShare = useCreateShare(childId);
   const [identifier, setIdentifier] = useState('');
@@ -35,8 +37,8 @@ export default function InviteSecondaryScreen() {
   if (success) {
     return (
       <View style={styles.successContainer}>
-        <Banner kind="success" message="Invitation envoyée — la personne apparaît en statut « invité »." />
-        <Button label="Retour" onPress={() => router.back()} style={{ marginTop: spacing.xl }} />
+        <Banner kind="success" message={t('sharing.inviteSent')} />
+        <Button label={t('common.back')} onPress={() => router.back()} style={{ marginTop: spacing.xl }} />
       </View>
     );
   }
@@ -48,21 +50,21 @@ export default function InviteSecondaryScreen() {
       <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
-      <Text style={styles.title}>Inviter un secondaire</Text>
-      <Text style={styles.subtitle}>Ajoutez une personne et définissez ses droits initiaux.</Text>
+      <Text style={styles.title}>{t('sharing.inviteTitle')}</Text>
+      <Text style={styles.subtitle}>{t('sharing.inviteSubtitle')}</Text>
 
       {error && <Banner kind="error" message={error} />}
 
       <TextField
-        label="Téléphone ou email"
+        label={t('sharing.contactField')}
         value={identifier}
         onChangeText={setIdentifier}
-        placeholder="rose@example.com"
+        placeholder={t('sharing.contactPlaceholder')}
         autoCapitalize="none"
       />
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Droits accordés</Text>
+        <Text style={styles.cardTitle}>{t('sharing.grantedRights')}</Text>
         {ALL_PERMISSIONS.map((permission) => (
           <PermissionToggle
             key={permission}
@@ -75,7 +77,7 @@ export default function InviteSecondaryScreen() {
       </Card>
 
       <Card style={styles.previewCard}>
-        <Text style={styles.previewTitle}>Aperçu</Text>
+        <Text style={styles.previewTitle}>{t('common.preview')}</Text>
         <Text style={styles.previewText}>
           {permissions.length === 0
             ? "Cette personne ne verra aucune information tant qu'aucun droit n'est accordé."
@@ -83,7 +85,7 @@ export default function InviteSecondaryScreen() {
         </Text>
       </Card>
 
-      <Button label="Envoyer l'invitation" onPress={submit} loading={createShare.isPending} disabled={identifier.trim().length < 3} />
+      <Button label={t('sharing.sendInvite')} onPress={submit} loading={createShare.isPending} disabled={identifier.trim().length < 3} />
     </ScrollView>
     </KeyboardAvoidingView>
     </SafeAreaView>

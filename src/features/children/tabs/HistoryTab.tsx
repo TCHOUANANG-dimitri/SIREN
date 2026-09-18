@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import { MapView, Marker, Polyline } from '@/features/tracking/map';
 import { Play, Square } from 'lucide-react-native';
 import { Skeleton } from '@/components';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { useHistory } from '@/api/hooks/useTracking';
 import { formatClock, formatSpeedKmh } from '@/utils/format';
 import type { Position } from '@/models/entities';
+import { useTranslation } from 'react-i18next';
 
 type Period = 'today' | 'yesterday' | '7days';
 
@@ -25,6 +26,7 @@ function periodRange(period: Period): { from: string; to: string } {
 }
 
 export function HistoryTab({ childId }: { childId: string }) {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState<Period>('today');
   const { from, to } = useMemo(() => periodRange(period), [period]);
   const { data: positions, isLoading } = useHistory(childId, from, to);
@@ -73,7 +75,7 @@ export function HistoryTab({ childId }: { childId: string }) {
         </View>
       ) : !positions || positions.length === 0 ? (
         <View style={styles.padded}>
-          <Text style={styles.emptyText}>Aucun déplacement enregistré sur cette période.</Text>
+          <Text style={styles.emptyText}>{t('childTabs.noHistory')}</Text>
         </View>
       ) : (
         <>
@@ -87,8 +89,8 @@ export function HistoryTab({ childId }: { childId: string }) {
             }}
           >
             <Polyline coordinates={coords} strokeColor={colors.primary} strokeWidth={3} />
-            <Marker coordinate={coords[0]} pinColor={colors.veille} title="Départ" />
-            <Marker coordinate={coords[coords.length - 1]} pinColor={colors.primary} title="Arrivée" />
+            <Marker coordinate={coords[0]} pinColor={colors.veille} title={t('childTabs.departure')} />
+            <Marker coordinate={coords[coords.length - 1]} pinColor={colors.primary} title={t('childTabs.arrival')} />
             {playIndex !== null && positions[playIndex] && (
               <Marker coordinate={{ latitude: positions[playIndex].lat, longitude: positions[playIndex].lon }}>
                 <View style={styles.playMarker} />

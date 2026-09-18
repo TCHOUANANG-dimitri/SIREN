@@ -20,7 +20,7 @@ export function SplashVisual() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../../assets/images/image.png')}
+        source={require('../../../assets/images/siren-logo.png')}
         style={styles.logo}
         resizeMode="contain"
       />
@@ -35,7 +35,9 @@ export function SplashVisual() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  logo: { width: 200, height: 200 },
+  // Ratio 3:2 du logo détouré (1418×945) : un cadre carré laisserait
+  // une bande vide au-dessus et en dessous avec resizeMode="contain".
+  logo: { width: 232, height: 155 },
   dots: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xxxl },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border },
   dotActive: { backgroundColor: colors.primary, width: 20 },

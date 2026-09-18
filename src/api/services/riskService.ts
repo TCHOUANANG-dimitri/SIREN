@@ -2,13 +2,14 @@ import { getDb } from '../mock/db';
 import { ApiError, simulateLatency } from '../network';
 import { assertChildAccess, resolveCurrentUser } from '../mock/session';
 import type { RiskScore } from '@/models/entities';
+import i18n from '@/i18n';
 
 export async function getRisk(token: string | null, childId: string): Promise<RiskScore> {
   await simulateLatency(150, 350);
   const user = resolveCurrentUser(token);
   assertChildAccess(childId, user);
   const risk = getDb().riskScores[childId];
-  if (!risk) throw new ApiError('Score indisponible', 404);
+  if (!risk) throw new ApiError(i18n.t('errors.scoreUnavailable'), 404);
   return risk;
 }
 

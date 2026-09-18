@@ -6,6 +6,7 @@ import { MapPinned, Gauge, Layers } from 'lucide-react-native';
 import { Button } from '@/components';
 import { colors, fontFamily, spacing, typography } from '@/theme';
 import { storage } from '@/utils/storage';
+import { useTranslation } from 'react-i18next';
 
 const ONBOARDING_KEY = 'siren.onboarding.seen';
 
@@ -28,6 +29,7 @@ const slides = [
 ];
 
 export default function OnboardingScreen() {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(0);
   const isLast = index === slides.length - 1;
   const slide = slides[index];
@@ -42,7 +44,7 @@ export default function OnboardingScreen() {
       <View style={styles.topBar}>
         {!isLast && (
           <Text style={styles.skip} onPress={finish}>
-            Passer
+            {t('common.skip')}
           </Text>
         )}
       </View>

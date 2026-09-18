@@ -3,16 +3,18 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Phone, Plus, Trash2, User } from 'lucide-react-native';
-import { Banner, Button, Card, TextField } from '@/components';
+import { Banner, Button, Card, TextField, TimeField } from '@/components';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { MapPointRadiusPicker } from '@/features/tracking/MapPointRadiusPicker';
+import { AddressMapField } from '@/features/tracking/AddressMapField';
 import { useCreatePlace } from '@/api/hooks/usePlaces';
 import { useCreateGeofence } from '@/api/hooks/useGeofences';
 import { usePatchChildContext } from '@/api/hooks/useChildren';
 import { useCreateEmergencyContact } from '@/api/hooks/useEmergencyContacts';
 import { useLocationStore } from '@/stores/locationStore';
+import { useTranslation } from 'react-i18next';
 
-const STEP_LABELS = ['1 Maison', '2 École', '3 Lieux', '4 Périmètre', '5 Sommeil'];
+
 const DAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 type PointRadius = { lat: number; lon: number; radiusM: number };
@@ -20,8 +22,17 @@ type FrequentPlace = { nom: string } & PointRadius;
 type Contact = { nom: string; telephone: string };
 
 export default function ContextWizardScreen() {
+  const { t } = useTranslation();
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const [step, setStep] = useState(0);
+
+  const stepLabels = [
+    t('wizard.steps.home'),
+    t('wizard.steps.school'),
+    t('wizard.steps.places'),
+    t('wizard.steps.perimeter'),
+    t('wizard.steps.sleep'),
+  ];
   const storeLat = useLocationStore((s) => s.latitude);
   const storeLon = useLocationStore((s) => s.longitude);
   const initialCenter = { lat: storeLat, lon: storeLon };
@@ -38,6 +49,9 @@ export default function ContextWizardScreen() {
 
   const [frequentPlaces, setFrequentPlaces] = useState<FrequentPlace[]>([]);
   const [newPlaceName, setNewPlaceName] = useState('');
+  const [newPlaceError, setNewPlaceError] = useState('');
+  const [newPlaceAddress, setNewPlaceAddress] = useState('');
+  const [newPlacePoint, setNewPlacePoint] = useState<PointRadius>({ ...initialCenter, radiusM: 60 });
 
   const [perimeter, setPerimeter] = useState<PointRadius>({ ...initialCenter, radiusM: 1200 });
 
@@ -62,9 +76,21 @@ export default function ContextWizardScreen() {
   }
 
   function addFrequentPlace() {
-    if (!newPlaceName.trim()) return;
-    setFrequentPlaces((places) => [...places, { nom: newPlaceName.trim(), ...center, radiusM: 60 }]);
+    const nom = newPlaceName.trim();
+    if (!nom) {
+      setNewPlaceError(t('wizard.placeNameRequired'));
+      return;
+    }
+    // Un lieu porte un nom libre choisi par le parent (« chez grand-mère ») :
+    // deux entrées homonymes seraient indistinguables dans les alertes.
+    if (frequentPlaces.some((p) => p.nom.toLocaleLowerCase() === nom.toLocaleLowerCase())) {
+      setNewPlaceError(t('wizard.placeNameDuplicate'));
+      return;
+    }
+    setFrequentPlaces((places) => [...places, { nom, ...newPlacePoint }]);
     setNewPlaceName('');
+    setNewPlaceError('');
+    setNewPlaceAddress('');
   }
 
   function addContact() {
@@ -78,10 +104,10 @@ export default function ContextWizardScreen() {
     if (!childId) return;
     setSaving(true);
     try {
-      await createPlace.mutateAsync({ nom: homeAddress || 'Maison', ...home, icon: 'maison' });
+      await createPlace.mutateAsync({ nom: homeAddress || t('wizard.defaultHomeName'), ...home, icon: 'maison' });
       if (schoolAddress.trim()) {
         await createPlace.mutateAsync({
-          nom: schoolAddress || 'École',
+          nom: schoolAddress || t('wizard.defaultSchoolName'),
           ...school,
           icon: 'ecole',
           schedule: [{ jours: schoolDays, heureDebut: schoolStart, heureFin: schoolEnd }],
@@ -91,7 +117,7 @@ export default function ContextWizardScreen() {
         await createPlace.mutateAsync({ nom: place.nom, lat: place.lat, lon: place.lon, radiusM: place.radiusM, icon: 'lieu' });
       }
       await createGeofence.mutateAsync({
-        nom: 'Périmètre autorisé',
+        nom: t('wizard.perimeterTitle'),
         type: 'autorise',
         lat: perimeter.lat,
         lon: perimeter.lon,
@@ -113,18 +139,18 @@ export default function ContextWizardScreen() {
   if (saved) {
     return (
       <View style={styles.successContainer}>
-        <Banner kind="success" message="Protection de base activée — les couches 1 et 2 sont désormais actives." />
+        <Banner kind="success" message={t('wizard.saved')} />
       </View>
     );
   }
 
-  const isLastStep = step === STEP_LABELS.length - 1;
+  const isLastStep = step === stepLabels.length - 1;
 
   return (
     <SafeAreaView style={styles.flex} edges={['top']}>
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.tabsRow}>
-        {STEP_LABELS.map((label, i) => (
+        {stepLabels.map((label, i) => (
           <View key={label} style={[styles.tabChip, i === step && styles.tabChipActive]}>
             <Text style={[styles.tabChipText, i === step && styles.tabChipTextActive]}>{label}</Text>
           </View>
@@ -134,34 +160,36 @@ export default function ContextWizardScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {step === 0 && (
           <View>
-            <Text style={styles.title}>Où est votre domicile ?</Text>
-            <Text style={styles.subtitle}>Sélectionnez l&apos;adresse et le rayon de protection autour de chez vous.</Text>
-            <TextField label="Adresse (facultatif)" value={homeAddress} onChangeText={setHomeAddress} placeholder="12 Rue des Acacias, Yaoundé" />
-            <MapPointRadiusPicker
-              latitude={home.lat}
-              longitude={home.lon}
-              radiusM={home.radiusM}
+            <Text style={styles.title}>{t('wizard.homeTitle')}</Text>
+            <Text style={styles.subtitle}>{t('wizard.homeSubtitle')}</Text>
+            <AddressMapField
+              label={t('wizard.address')}
+              placeholder={t('wizard.homeAddressPlaceholder')}
+              address={homeAddress}
+              onAddressChange={setHomeAddress}
+              point={home}
+              onPointChange={setHome}
               minRadius={50}
               maxRadius={150}
-              onChange={(v) => setHome({ lat: v.lat, lon: v.lon, radiusM: v.radiusM })}
             />
           </View>
         )}
 
         {step === 1 && (
           <View>
-            <Text style={styles.title}>Où est l&apos;école ?</Text>
-            <Text style={styles.subtitle}>Adresse, rayon et horaires de présence attendue.</Text>
-            <TextField label="Adresse (facultatif)" value={schoolAddress} onChangeText={setSchoolAddress} placeholder="École primaire du quartier" />
-            <MapPointRadiusPicker
-              latitude={school.lat}
-              longitude={school.lon}
-              radiusM={school.radiusM}
+            <Text style={styles.title}>{t('wizard.schoolTitle')}</Text>
+            <Text style={styles.subtitle}>{t('wizard.schoolSubtitle')}</Text>
+            <AddressMapField
+              label={t('wizard.address')}
+              placeholder={t('wizard.schoolAddressPlaceholder')}
+              address={schoolAddress}
+              onAddressChange={setSchoolAddress}
+              point={school}
+              onPointChange={setSchool}
               minRadius={50}
               maxRadius={300}
-              onChange={(v) => setSchool({ lat: v.lat, lon: v.lon, radiusM: v.radiusM })}
             />
-            <Text style={styles.fieldLabel}>Jours de présence</Text>
+            <Text style={styles.fieldLabel}>{t('wizard.attendanceDays')}</Text>
             <View style={styles.daysRow}>
               {DAYS.map((d, i) => (
                 <Pressable key={i} onPress={() => toggleDay(i)} style={[styles.dayChip, schoolDays.includes(i) && styles.dayChipActive]}>
@@ -171,10 +199,10 @@ export default function ContextWizardScreen() {
             </View>
             <View style={styles.timeRow}>
               <View style={styles.timeField}>
-                <TextField label="Heure d'arrivée" value={schoolStart} onChangeText={setSchoolStart} placeholder="07:00" />
+                <TimeField label={t('wizard.arrivalTime')} value={schoolStart} onChange={setSchoolStart} />
               </View>
               <View style={styles.timeField}>
-                <TextField label="Heure de sortie" value={schoolEnd} onChangeText={setSchoolEnd} placeholder="15:30" />
+                <TimeField label={t('wizard.departureTime')} value={schoolEnd} onChange={setSchoolEnd} />
               </View>
             </View>
           </View>
@@ -182,29 +210,53 @@ export default function ContextWizardScreen() {
 
         {step === 2 && (
           <View>
-            <Text style={styles.title}>Lieux fréquents</Text>
-            <Text style={styles.subtitle}>Église, marché, grand-mère… Utilisez votre position actuelle pour chaque lieu.</Text>
+            <Text style={styles.title}>{t('wizard.placesTitle')}</Text>
+            <Text style={styles.subtitle}>
+              {t('wizard.placesSubtitle')}
+            </Text>
             {frequentPlaces.map((place, i) => (
               <Card key={`${place.nom}-${i}`} style={styles.placeCard}>
-                <Text style={styles.placeName}>{place.nom}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.placeName}>{place.nom}</Text>
+                  <Text style={styles.placeCoords}>
+                    {place.lat.toFixed(5)}, {place.lon.toFixed(5)} · {place.radiusM} m
+                  </Text>
+                </View>
                 <Pressable onPress={() => setFrequentPlaces((list) => list.filter((_, idx) => idx !== i))} hitSlop={8}>
                   <Trash2 size={18} color={colors.urgence} />
                 </Pressable>
               </Card>
             ))}
-            <View style={styles.addRow}>
-              <View style={{ flex: 1 }}>
-                <TextField label="Nom du lieu" value={newPlaceName} onChangeText={setNewPlaceName} placeholder="Église, marché…" />
-              </View>
-            </View>
-            <Button label="Ajouter ce lieu (position actuelle)" variant="secondary" icon={<Plus size={16} color={colors.primary} />} onPress={addFrequentPlace} />
+            <TextField
+              label={t('wizard.placeName')}
+              value={newPlaceName}
+              onChangeText={(text) => {
+                setNewPlaceName(text);
+                if (text.trim()) setNewPlaceError('');
+              }}
+              placeholder={t('wizard.placeNamePlaceholder')}
+              error={newPlaceError}
+            />
+            {/* Beaucoup de lieux n'ont pas d'adresse exploitable : le parent peut
+                soit en saisir une, soit pointer directement sur la carte. */}
+            <AddressMapField
+              label={t('wizard.addressOrPosition')}
+              placeholder={t('wizard.searchAddress')}
+              address={newPlaceAddress}
+              onAddressChange={setNewPlaceAddress}
+              point={newPlacePoint}
+              onPointChange={setNewPlacePoint}
+              minRadius={30}
+              maxRadius={300}
+            />
+            <Button label={t('wizard.addPlace')} variant="secondary" icon={<Plus size={16} color={colors.primary} />} onPress={addFrequentPlace} />
           </View>
         )}
 
         {step === 3 && (
           <View>
-            <Text style={styles.title}>Périmètre autorisé</Text>
-            <Text style={styles.subtitle}>Zone quartier/ville en dehors de laquelle une sortie sera signalée.</Text>
+            <Text style={styles.title}>{t('wizard.perimeterTitle')}</Text>
+            <Text style={styles.subtitle}>{t('wizard.perimeterSubtitle')}</Text>
             <MapPointRadiusPicker
               latitude={perimeter.lat}
               longitude={perimeter.lon}
@@ -219,18 +271,18 @@ export default function ContextWizardScreen() {
 
         {step === 4 && (
           <View>
-            <Text style={styles.title}>Sommeil &amp; contacts d&apos;urgence</Text>
-            <Text style={styles.subtitle}>Plage horaire habituelle de sommeil et personnes à prévenir.</Text>
+            <Text style={styles.title}>{t('wizard.sleepTitle')}</Text>
+            <Text style={styles.subtitle}>{t('wizard.sleepSubtitle')}</Text>
             <View style={styles.timeRow}>
               <View style={styles.timeField}>
-                <TextField label="Coucher" value={sleepStart} onChangeText={setSleepStart} placeholder="22:00" />
+                <TimeField label={t('wizard.bedtime')} value={sleepStart} onChange={setSleepStart} />
               </View>
               <View style={styles.timeField}>
-                <TextField label="Réveil" value={sleepEnd} onChangeText={setSleepEnd} placeholder="06:00" />
+                <TimeField label={t('wizard.wakeTime')} value={sleepEnd} onChange={setSleepEnd} />
               </View>
             </View>
 
-            <Text style={styles.fieldLabel}>Contacts d&apos;urgence</Text>
+            <Text style={styles.fieldLabel}>{t('wizard.emergencyContacts')}</Text>
             {contacts.map((c, i) => (
               <Card key={`${c.nom}-${i}`} style={styles.placeCard}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
@@ -245,9 +297,9 @@ export default function ContextWizardScreen() {
                 </Pressable>
               </Card>
             ))}
-            <TextField label="Nom du contact" value={contactName} onChangeText={setContactName} placeholder="Papa, Grand-mère…" />
-            <TextField label="Téléphone" value={contactPhone} onChangeText={setContactPhone} placeholder="+237 6 __ __ __ __" keyboardType="phone-pad" />
-            <Button label="Ajouter ce contact" variant="secondary" icon={<Phone size={16} color={colors.primary} />} onPress={addContact} />
+            <TextField label={t('wizard.contactName')} value={contactName} onChangeText={setContactName} placeholder={t('wizard.contactNamePlaceholder')} />
+            <TextField label={t('common.phone')} value={contactPhone} onChangeText={setContactPhone} placeholder={t('wizard.contactPhonePlaceholder')} keyboardType="phone-pad" />
+            <Button label={t('wizard.addContact')} variant="secondary" icon={<Phone size={16} color={colors.primary} />} onPress={addContact} />
           </View>
         )}
       </ScrollView>
@@ -260,7 +312,7 @@ export default function ContextWizardScreen() {
         />
         {step > 0 && (
           <Text style={styles.completeLaterLink} onPress={saveAll}>
-            Compléter plus tard
+            {t('common.completeLater')}
           </Text>
         )}
       </View>
@@ -289,6 +341,7 @@ const styles = StyleSheet.create({
   timeField: { flex: 1 },
   placeCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
   placeName: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
+  placeCoords: { ...typography.caption, color: colors.muted, marginTop: 2 },
   contactPhone: { ...typography.caption, color: colors.muted },
   addRow: { marginBottom: spacing.sm },
   footer: { padding: spacing.lg, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },

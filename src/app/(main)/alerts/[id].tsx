@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import MapView, { Marker } from 'react-native-maps';
+import { MapView, Marker } from '@/features/tracking/map';
 import { ArrowLeft } from 'lucide-react-native';
 import { Banner, Button, Card, Skeleton, StateBadge } from '@/components';
 import { colors, fontFamily, spacing, typography } from '@/theme';
@@ -10,8 +10,10 @@ import { useAllAlerts, usePatchAlert } from '@/api/hooks/useAlerts';
 import { useChildren } from '@/api/hooks/useChildren';
 import { useCurrentAccess } from '@/features/sharing/useCurrentAccess';
 import { formatClock } from '@/utils/format';
+import { useTranslation } from 'react-i18next';
 
 export default function AlertDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: alerts } = useAllAlerts();
   const { data: children } = useChildren();
@@ -28,13 +30,13 @@ export default function AlertDetailScreen() {
   async function acknowledge() {
     if (!alert) return;
     await patchAlert.mutateAsync({ alertId: alert.id, status: 'acquittee' });
-    setFeedback('Alerte acquittée.');
+    setFeedback(t('alerts.acknowledged'));
   }
 
   async function markFalse() {
     if (!alert) return;
     await patchAlert.mutateAsync({ alertId: alert.id, status: 'fausse' });
-    setFeedback('Merci — cette information affine la précision du modèle.');
+    setFeedback(t('alerts.falseReported'));
   }
 
   return (
@@ -68,14 +70,14 @@ export default function AlertDetailScreen() {
       <View style={styles.padded}>
         <Card style={styles.card}>
           <View style={styles.scoreRow}>
-            <Text style={styles.cardTitle}>Score au moment de l&apos;alerte</Text>
+            <Text style={styles.cardTitle}>{t('alerts.scoreAtAlert')}</Text>
             <StateBadge state={alert.level} compact />
           </View>
           <Text style={styles.scoreValue}>{alert.score}</Text>
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Raisons détaillées</Text>
+          <Text style={styles.cardTitle}>{t('alerts.detailedReasons')}</Text>
           {alert.reasons.map((reason) => (
             <Text key={reason} style={styles.reasonItem}>
               • {reason}
@@ -84,21 +86,21 @@ export default function AlertDetailScreen() {
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Statut</Text>
+          <Text style={styles.cardTitle}>{t('common.status')}</Text>
           <Text style={styles.statusValue}>{statusLabel(alert.status)}</Text>
         </Card>
 
         {canManage && alert.status === 'active' && (
           <View style={styles.actions}>
-            <Button label="Acquitter (j'ai vu)" onPress={acknowledge} loading={patchAlert.isPending} />
+            <Button label={t('alerts.acknowledge')} onPress={acknowledge} loading={patchAlert.isPending} />
             {isUrgence && (
               <Button
-                label="Voir l'écran d'urgence"
+                label={t('alerts.seeEmergencyScreen')}
                 variant="emergency"
                 onPress={() => router.push({ pathname: '/(emergency)/urgence', params: { childId: alert.childId } })}
               />
             )}
-            <Button label="Marquer comme fausse alerte" variant="secondary" onPress={markFalse} loading={patchAlert.isPending} />
+            <Button label={t('alerts.markFalse')} variant="secondary" onPress={markFalse} loading={patchAlert.isPending} />
           </View>
         )}
       </View>

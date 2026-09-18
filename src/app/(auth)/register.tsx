@@ -91,7 +91,7 @@ export default function RegisterScreen() {
               onChangeText={field.onChange}
               onBlur={field.onBlur}
               error={errors.nom?.message}
-              placeholder="Marie Ngo"
+              placeholder={t('auth.namePlaceholder')}
             />
           )}
         />
@@ -107,7 +107,7 @@ export default function RegisterScreen() {
               error={errors.email?.message}
               autoCapitalize="none"
               keyboardType="email-address"
-              placeholder="marie@example.com"
+              placeholder={t('auth.emailPlaceholder')}
             />
           )}
         />
@@ -122,7 +122,7 @@ export default function RegisterScreen() {
               onChangeText={field.onChange}
               onBlur={field.onBlur}
               keyboardType="phone-pad"
-              placeholder="+237 6 __ __ __ __"
+              placeholder={t('auth.phonePlaceholder')}
             />
           )}
         />

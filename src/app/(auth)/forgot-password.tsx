@@ -36,9 +36,9 @@ export default function ForgotPasswordScreen() {
         <View style={styles.successIcon}>
           <MailCheck size={40} color={colors.veille} />
         </View>
-        <Text style={styles.successTitle}>Lien envoyé !</Text>
+        <Text style={styles.successTitle}>{t('auth.linkSent')}</Text>
         <Text style={styles.successBody}>
-          Si un compte existe pour cette adresse, vous recevrez un lien de réinitialisation.
+          {t('auth.linkSentBody')}
         </Text>
         <Button label={t('auth.login')} onPress={() => router.replace('/(auth)/login')} />
       </SafeAreaView>
@@ -55,7 +55,7 @@ export default function ForgotPasswordScreen() {
 
       <Text style={styles.title}>{t('auth.forgotTitle')}</Text>
       <Text style={styles.subtitle}>
-        Indiquez votre adresse email, nous vous enverrons un lien pour réinitialiser votre mot de passe.
+        {t('auth.forgotBody')}
       </Text>
 
       <Controller
@@ -70,7 +70,7 @@ export default function ForgotPasswordScreen() {
             error={errors.email?.message}
             autoCapitalize="none"
             keyboardType="email-address"
-            placeholder="marie@example.com"
+            placeholder={t('auth.emailPlaceholder')}
           />
         )}
       />

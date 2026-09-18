@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import type { Alert } from '@/models/entities';
+import i18n from '@/i18n';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -38,8 +39,10 @@ export async function notifyAlert(alert: Alert, childName: string): Promise<void
     const isUrgence = alert.level === 'urgence';
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: isUrgence ? `🚨 Urgence — ${childName}` : `⚠️ Pré-alerte — ${childName}`,
-        body: alert.reasons.join(', ') || 'Comportement inhabituel détecté',
+        title: isUrgence
+          ? i18n.t('notifications.urgenceTitle', { child: childName })
+          : i18n.t('notifications.prealerteTitle', { child: childName }),
+        body: alert.reasons.join(', ') || i18n.t('notifications.defaultBody'),
         data: { childId: alert.childId, alertId: alert.id, level: alert.level },
         sound: true,
         priority: isUrgence ? Notifications.AndroidNotificationPriority.MAX : Notifications.AndroidNotificationPriority.HIGH,

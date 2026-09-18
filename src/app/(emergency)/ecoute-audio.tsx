@@ -8,10 +8,12 @@ import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { useAudioLogs, useRequestAudioActivation } from '@/api/hooks/useAudio';
 import { ApiError } from '@/api/network';
 import { formatClock } from '@/utils/format';
+import { useTranslation } from 'react-i18next';
 
 const SESSION_SECONDS = 30;
 
 export default function AudioListeningScreen() {
+  const { t } = useTranslation();
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const { data: logs } = useAudioLogs(childId);
   const requestActivation = useRequestAudioActivation(childId);
@@ -44,7 +46,7 @@ export default function AudioListeningScreen() {
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
 
-      <Text style={styles.title}>Écoute audio encadrée</Text>
+      <Text style={styles.title}>{t('emergency.audioListening')}</Text>
 
       <View style={styles.warningBox}>
         <ShieldAlert size={18} color={colors.primaryDark} />
@@ -70,14 +72,14 @@ export default function AudioListeningScreen() {
         </Card>
       ) : (
         <View style={styles.requestBlock}>
-          <TextField label="Motif de la demande" value={reason} onChangeText={setReason} placeholder="Confirmer l'urgence en cours" />
-          <Button label="Demander l'écoute" icon={<Ear size={16} color={colors.white} />} onPress={activate} loading={requestActivation.isPending} />
+          <TextField label={t('emergency.requestReason')} value={reason} onChangeText={setReason} placeholder={t('emergency.requestReasonPlaceholder')} />
+          <Button label={t('emergency.requestListening')} icon={<Ear size={16} color={colors.white} />} onPress={activate} loading={requestActivation.isPending} />
         </View>
       )}
 
-      <Text style={styles.journalTitle}>Journal d&apos;activation</Text>
+      <Text style={styles.journalTitle}>{t('emergency.activationLog')}</Text>
       {!logs || logs.length === 0 ? (
-        <Text style={styles.emptyText}>Aucune activation enregistrée.</Text>
+        <Text style={styles.emptyText}>{t('emergency.noActivation')}</Text>
       ) : (
         logs.map((log) => (
           <Card key={log.id} style={styles.journalCard}>

@@ -7,6 +7,7 @@ import { usePlaces, usePatchPlace, useCreatePlace } from '@/api/hooks/usePlaces'
 import { useChildren } from '@/api/hooks/useChildren';
 import { usePosition } from '@/api/hooks/useTracking';
 import type { Place } from '@/models/entities';
+import { useTranslation } from 'react-i18next';
 
 const iconFor = (place: Place) => {
   if (place.icon === 'maison') return Home;
@@ -15,6 +16,7 @@ const iconFor = (place: Place) => {
 };
 
 export function PlacesTab({ childId }: { childId: string }) {
+  const { t } = useTranslation();
   const { data: children } = useChildren();
   const child = children?.find((c) => c.id === childId);
   const { data: places, isLoading } = usePlaces(childId);
@@ -63,7 +65,7 @@ export function PlacesTab({ childId }: { childId: string }) {
 
       {!places || places.length === 0 ? (
         <View style={styles.padded}>
-          <Text style={styles.emptyText}>Aucun lieu pour le moment.</Text>
+          <Text style={styles.emptyText}>{t('childTabs.noPlaces')}</Text>
         </View>
       ) : (
         <FlatList
@@ -83,7 +85,7 @@ export function PlacesTab({ childId }: { childId: string }) {
                       <Text style={styles.name}>{item.nom}</Text>
                       {item.isNew && (
                         <View style={styles.newBadge}>
-                          <Text style={styles.newBadgeText}>Nouveau</Text>
+                          <Text style={styles.newBadgeText}>{t('common.new')}</Text>
                         </View>
                       )}
                     </View>
@@ -102,19 +104,19 @@ export function PlacesTab({ childId }: { childId: string }) {
       )}
 
       <View style={styles.footer}>
-        <Button label="Ajouter un lieu" icon={<Plus size={16} color={colors.white} />} onPress={() => setAddOpen(true)} />
+        <Button label={t('childTabs.addPlace')} icon={<Plus size={16} color={colors.white} />} onPress={() => setAddOpen(true)} />
       </View>
 
       <BottomSheet visible={!!editing} onClose={() => setEditing(null)}>
-        <Text style={styles.sheetTitle}>Renommer le lieu</Text>
-        <TextField label="Nom" value={editName} onChangeText={setEditName} />
-        <Button label="Enregistrer" onPress={saveEdit} loading={patchPlace.isPending} />
+        <Text style={styles.sheetTitle}>{t('childTabs.renamePlace')}</Text>
+        <TextField label={t('common.name')} value={editName} onChangeText={setEditName} />
+        <Button label={t('common.save')} onPress={saveEdit} loading={patchPlace.isPending} />
       </BottomSheet>
 
       <BottomSheet visible={addOpen} onClose={() => setAddOpen(false)}>
-        <Text style={styles.sheetTitle}>Ajouter un lieu</Text>
-        <TextField label="Nom du lieu" value={newName} onChangeText={setNewName} placeholder="Église, marché…" />
-        <Button label="Ajouter" onPress={addPlace} loading={createPlace.isPending} />
+        <Text style={styles.sheetTitle}>{t('childTabs.addPlace')}</Text>
+        <TextField label={t('wizard.placeName')} value={newName} onChangeText={setNewName} placeholder={t('wizard.placeNamePlaceholder')} />
+        <Button label={t('common.add')} onPress={addPlace} loading={createPlace.isPending} />
       </BottomSheet>
     </View>
   );

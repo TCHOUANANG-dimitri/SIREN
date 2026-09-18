@@ -11,6 +11,7 @@ import { useShares } from '@/api/hooks/useSharing';
 import { useUiStore } from '@/stores/uiStore';
 import { permissionLabels } from '@/features/sharing/permissions';
 import type { SecondaryAccess } from '@/models/entities';
+import { useTranslation } from 'react-i18next';
 
 const statusLabel: Record<SecondaryAccess['status'], string> = {
   invite: 'Invité',
@@ -19,6 +20,7 @@ const statusLabel: Record<SecondaryAccess['status'], string> = {
 };
 
 export default function SharingScreen() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const { data: children } = useChildren();
   const selectedChildId = useUiStore((s) => s.selectedChildId);
@@ -37,7 +39,7 @@ export default function SharingScreen() {
         <View style={styles.restricted}>
           <Users size={32} color={colors.muted} />
           <Text style={styles.restrictedText}>
-            La gestion des accès partagés est réservée au parent principal.
+            {t('sharing.primaryOnly')}
           </Text>
         </View>
       </SafeAreaView>
@@ -47,7 +49,7 @@ export default function SharingScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Partage</Text>
+        <Text style={styles.title}>{t('sharing.title')}</Text>
         <Pressable onPress={() => router.push('/(main)/sharing/audit')} hitSlop={8}>
           <FileClock size={22} color={colors.primary} />
         </Pressable>
@@ -69,7 +71,7 @@ export default function SharingScreen() {
 
       {!shares || shares.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>Ajoutez un proche de confiance pour partager la surveillance.</Text>
+          <Text style={styles.emptyText}>{t('sharing.empty')}</Text>
         </View>
       ) : (
         <FlatList

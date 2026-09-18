@@ -3,6 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button } from './Button';
 import { colors, fontFamily, spacing, typography } from '@/theme';
 import { logger } from '@/utils/logger';
+// Composant de classe : pas de hook possible, on lit l'instance i18n directement.
+import i18n from '@/i18n';
 
 interface State {
   error: Error | null;
@@ -23,9 +25,9 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
     if (this.state.error) {
       return (
         <View style={styles.container}>
-          <Text style={styles.title}>Une erreur inattendue est survenue</Text>
+          <Text style={styles.title}>{i18n.t('errors.unexpected')}</Text>
           <Text style={styles.message}>{this.state.error.message}</Text>
-          <Button label="Réessayer" onPress={() => this.setState({ error: null })} />
+          <Button label={i18n.t('common.retry')} onPress={() => this.setState({ error: null })} />
         </View>
       );
     }

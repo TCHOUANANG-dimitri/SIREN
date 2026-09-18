@@ -15,13 +15,15 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Camera as CameraIcon, CheckCircle2, Keyboard, Plus } from 'lucide-react-native';
 import { Banner, Button, Card, ProgressSteps, TextField } from '@/components';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
-import { useCreateChild, useFindDevice } from '@/api/hooks/useChildren';
+import { useChildren, useCreateChild, useFindDevice } from '@/api/hooks/useChildren';
 import { ApiError } from '@/api/network';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 
 type Step = 'profil' | 'appairage' | 'verification';
 
 export default function AddChildScreen() {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>('profil');
   const [prenom, setPrenom] = useState('');
   const [prenomError, setPrenomError] = useState('');
@@ -30,27 +32,42 @@ export default function AddChildScreen() {
   const [deviceIdError, setDeviceIdError] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
   const [scanned, setScanned] = useState(false);
+  const [pairingError, setPairingError] = useState('');
   const [createdChildId, setCreatedChildId] = useState<string | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
 
+  const { data: children } = useChildren();
   const findDevice = useFindDevice();
   const createChild = useCreateChild();
   const stepIndex = { profil: 0, appairage: 1, verification: 2 }[step];
 
   async function pickPhoto() {
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+    // allowsEditing ouvre le recadreur natif ; aspect [1,1] le contraint au
+    // carré, format sous lequel la photo est affichée partout dans l'app.
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
     if (!result.canceled && result.assets[0]) setPhotoUrl(result.assets[0].uri);
   }
 
   async function handleDeviceSubmit(rawId: string) {
     setScanned(true);
+    setPairingError('');
     try {
       await findDevice.mutateAsync(rawId);
       setDeviceIdInput(rawId.toUpperCase());
       const child = await createChild.mutateAsync({ prenom, deviceId: rawId.toUpperCase(), photoUrl });
       setCreatedChildId(child.id);
       setStep('verification');
-    } catch {
+    } catch (error) {
+      // L'erreur était auparavant avalée : en cas de dispositif déjà associé ou
+      // de prénom en doublon, l'écran se réinitialisait sans rien expliquer.
+      setPairingError(
+        error instanceof ApiError ? error.message : t('children.pairingFailed')
+      );
       setScanned(false);
     }
   }
@@ -68,8 +85,8 @@ export default function AddChildScreen() {
 
         {step === 'profil' && (
           <View style={styles.stepBlock}>
-            <Text style={styles.title}>Profil de l&apos;enfant</Text>
-            <Text style={styles.subtitle}>Ces informations aident à identifier votre enfant.</Text>
+            <Text style={styles.title}>{t('children.profileTitle')}</Text>
+            <Text style={styles.subtitle}>{t('children.profileSubtitle')}</Text>
 
             <Pressable style={styles.photoPicker} onPress={pickPhoto}>
               {photoUrl ? (
@@ -83,21 +100,32 @@ export default function AddChildScreen() {
             </Pressable>
 
             <TextField
-              label="Prénom de l'enfant *"
+              label={t('children.firstName')}
               value={prenom}
               onChangeText={(text) => {
                 setPrenom(text);
                 if (text.trim()) setPrenomError('');
               }}
-              placeholder="Léa"
+              placeholder={t('children.firstNamePlaceholder')}
               error={prenomError}
             />
 
             <Button
-              label="Suivant →"
+              label={`${t('common.next')} →`}
               onPress={() => {
-                if (!prenom.trim()) {
-                  setPrenomError("Le prénom de l'enfant est obligatoire.");
+                const saisi = prenom.trim();
+                if (!saisi) {
+                  setPrenomError(t('children.firstNameRequired'));
+                  return;
+                }
+                // Contrôle du doublon dès cette étape : le serveur le refuse
+                // aussi, mais laisser scanner un QR code pour n'apprendre
+                // qu'ensuite que le prénom est pris serait pénible.
+                const existeDeja = (children ?? []).some(
+                  (c) => c.prenom.trim().toLocaleLowerCase() === saisi.toLocaleLowerCase()
+                );
+                if (existeDeja) {
+                  setPrenomError(t('children.duplicateName'));
                   return;
                 }
                 setStep('appairage');
@@ -108,8 +136,10 @@ export default function AddChildScreen() {
 
         {step === 'appairage' && (
           <View style={styles.stepBlock}>
-            <Text style={styles.title}>Appairer le dispositif</Text>
-            <Text style={styles.subtitle}>Scannez le QR code sur le boîtier SIREN.</Text>
+            <Text style={styles.title}>{t('children.pairTitle')}</Text>
+            <Text style={styles.subtitle}>{t('children.pairSubtitle')}</Text>
+
+            {!!pairingError && <Banner kind="error" message={pairingError} />}
 
             {!manualEntry ? (
               <>
@@ -124,8 +154,8 @@ export default function AddChildScreen() {
                   ) : (
                     <View style={styles.scannerFallback}>
                       <CameraIcon size={32} color={colors.white} />
-                      <Text style={styles.scannerFallbackText}>Autorisez la caméra pour scanner le QR code.</Text>
-                      <Button label="Autoriser la caméra" onPress={() => requestPermission()} />
+                      <Text style={styles.scannerFallbackText}>{t('children.cameraPermission')}</Text>
+                      <Button label={t('children.allowCamera')} onPress={() => requestPermission()} />
                     </View>
                   )}
                 </View>
@@ -137,13 +167,13 @@ export default function AddChildScreen() {
             ) : (
               <>
                 <TextField
-                  label="Identifiant du dispositif *"
+                  label={t('children.deviceIdLabel')}
                   value={deviceIdInput}
                   onChangeText={(text) => {
                     setDeviceIdInput(text);
                     if (text.trim()) setDeviceIdError('');
                   }}
-                  placeholder="SIREN-XXXX-XXXX"
+                  placeholder={t('children.deviceIdPlaceholder')}
                   autoCapitalize="characters"
                   error={deviceIdError}
                 />
@@ -186,23 +216,23 @@ export default function AddChildScreen() {
             <View style={styles.successIcon}>
               <CheckCircle2 size={44} color={colors.veille} />
             </View>
-            <Text style={styles.title}>Dispositif associé !</Text>
-            <Text style={styles.subtitle}>Le boîtier SIREN est connecté et prêt.</Text>
+            <Text style={styles.title}>{t('children.paired')}</Text>
+            <Text style={styles.subtitle}>{t('children.pairedBody')}</Text>
 
             <Card style={{ width: '100%', marginBottom: spacing.xl }}>
-              <Text style={styles.cardLabel}>Dispositif</Text>
+              <Text style={styles.cardLabel}>{t('children.device')}</Text>
               <View style={styles.cardRow}>
                 <Text style={styles.cardKey}>ID</Text>
                 <Text style={styles.cardValueMono}>{deviceIdInput}</Text>
               </View>
               <View style={styles.cardRow}>
-                <Text style={styles.cardKey}>Statut</Text>
-                <Text style={styles.cardValueOk}>En ligne · GPS actif</Text>
+                <Text style={styles.cardKey}>{t('common.status')}</Text>
+                <Text style={styles.cardValueOk}>{t('children.online')}</Text>
               </View>
             </Card>
 
             <Button
-              label="Définir la protection →"
+              label={t('children.defineProtection')}
               onPress={() =>
                 router.replace({ pathname: '/(main)/context-wizard', params: { childId: createdChildId ?? '' } })
               }

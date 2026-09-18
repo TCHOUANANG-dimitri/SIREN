@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
-import MapView, { Circle, Marker } from 'react-native-maps';
+import { Circle, MapView, Marker, type MapViewRef } from '@/features/tracking/map';
 import { MapPinOff, Navigation, Search, X } from 'lucide-react-native';
 import { Banner, Button, Card, Skeleton } from '@/components';
 import { colors, fontFamily, radii, shadow, spacing, typography } from '@/theme';
@@ -10,8 +10,10 @@ import { usePlaces } from '@/api/hooks/usePlaces';
 import { useRealtimeChannel } from '@/api/hooks/useRealtimeChannel';
 import { useCurrentAccess } from '@/features/sharing/useCurrentAccess';
 import { formatRelativeTime } from '@/utils/format';
+import { useTranslation } from 'react-i18next';
 
 export function MapTab({ childId }: { childId: string }) {
+  const { t } = useTranslation();
   useRealtimeChannel(childId);
   const { can, isLoading: accessLoading } = useCurrentAccess(childId);
   const hasPrecise = can('view_position_precise');
@@ -23,12 +25,13 @@ export function MapTab({ childId }: { childId: string }) {
   return (
     <View style={styles.center}>
       <MapPinOff size={28} color={colors.muted} />
-      <Text style={styles.deniedText}>Vous n&apos;avez pas les droits pour voir la position de cet enfant.</Text>
+      <Text style={styles.deniedText}>{t('childTabs.noPositionRight')}</Text>
     </View>
   );
 }
 
 function ZoneStateView({ childId }: { childId: string }) {
+  const { t } = useTranslation();
   const { data: zone, isLoading } = useZoneState(childId, true);
   if (isLoading || !zone) {
     return (
@@ -43,17 +46,18 @@ function ZoneStateView({ childId }: { childId: string }) {
         <Text style={styles.zoneTitle}>{zone.inZone ? `Dans la zone ${zone.zoneName}` : 'Hors des zones connues'}</Text>
         <Text style={styles.zoneMeta}>Mis à jour {formatRelativeTime(zone.asOf)}</Text>
       </Card>
-      <Text style={styles.zoneHint}>La position précise n&apos;est pas partagée avec votre accès.</Text>
+      <Text style={styles.zoneHint}>{t('childTabs.noPreciseposition')}</Text>
     </View>
   );
 }
 
 function PreciseMap({ childId }: { childId: string }) {
-  const { data: position, isLoading } = usePosition(childId);
+  const { t } = useTranslation();
+  const { data: position, isLoading, isError, refetch } = usePosition(childId);
   const { data: geofences } = useGeofences(childId);
   const { data: places } = usePlaces(childId);
   const requestFix = useRequestPositionFix(childId);
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<MapViewRef>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -65,10 +69,31 @@ function PreciseMap({ childId }: { childId: string }) {
     }
   }, [position]);
 
-  if (isLoading || !position) {
+  if (isLoading) {
     return (
       <View style={styles.center}>
         <Skeleton width="90%" height={280} radius={16} />
+      </View>
+    );
+  }
+
+  // Sans cet état, une position indisponible laissait le squelette de
+  // chargement à l'écran indéfiniment, sans jamais expliquer pourquoi.
+  if (isError || !position) {
+    return (
+      <View style={styles.center}>
+        <MapPinOff size={28} color={colors.muted} />
+        <Text style={styles.deniedText}>{t('childTabs.noPosition')}</Text>
+        <Button
+          label={t('childTabs.requestPosition')}
+          variant="secondary"
+          icon={<Navigation size={16} color={colors.primary} />}
+          onPress={() => {
+            requestFix.mutate();
+            void refetch();
+          }}
+          loading={requestFix.isPending}
+        />
       </View>
     );
   }
@@ -90,7 +115,7 @@ function PreciseMap({ childId }: { childId: string }) {
         style={styles.map}
         initialRegion={{ latitude: position.lat, longitude: position.lon, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
       >
-        <Marker coordinate={{ latitude: position.lat, longitude: position.lon }} pinColor={colors.primary} title="Position actuelle" />
+        <Marker coordinate={{ latitude: position.lat, longitude: position.lon }} pinColor={colors.primary} title={t('childTabs.currentPosition')} />
         <Circle
           center={{ latitude: position.lat, longitude: position.lon }}
           radius={Math.max(position.accuracyM, 15)}
@@ -134,7 +159,7 @@ function PreciseMap({ childId }: { childId: string }) {
           <Search size={18} color={colors.slate} style={{ marginRight: spacing.xs }} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Rechercher un nom sur la carte…"
+            placeholder={t('childTabs.searchOnMap')}
             placeholderTextColor={colors.muted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -157,7 +182,7 @@ function PreciseMap({ childId }: { childId: string }) {
 
       <View style={styles.overlayBottom}>
         <Button
-          label="Demander la position maintenant"
+          label={t('childTabs.requestPosition')}
           icon={<Navigation size={16} color={colors.white} />}
           onPress={() => requestFix.mutate()}
           loading={requestFix.isPending}

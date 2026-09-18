@@ -6,11 +6,13 @@ import { Button } from '@/components';
 import { colors, fontFamily, spacing, typography } from '@/theme';
 import { storage } from '@/utils/storage';
 import { logger } from '@/utils/logger';
+import { useTranslation } from 'react-i18next';
 
 const BIOMETRIC_KEY = 'siren.prefs.biometricLock';
 
 /** Verrouillage biométrique optionnel à l'ouverture — CDC1 §13.2. Non bloquant si indisponible. */
 export function BiometricGate({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const [required, setRequired] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [checked, setChecked] = useState(false);
@@ -54,9 +56,9 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
   return (
     <View style={styles.container}>
       <Fingerprint size={56} color={colors.primary} />
-      <Text style={styles.title}>Application verrouillée</Text>
-      <Text style={styles.subtitle}>Authentifiez-vous pour continuer.</Text>
-      <Button label="Déverrouiller" onPress={attemptUnlock} />
+      <Text style={styles.title}>{t('auth.locked')}</Text>
+      <Text style={styles.subtitle}>{t('auth.lockedSubtitle')}</Text>
+      <Button label={t('auth.unlock')} onPress={attemptUnlock} />
     </View>
   );
 }

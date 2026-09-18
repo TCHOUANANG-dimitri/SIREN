@@ -42,11 +42,6 @@ export default function LoginScreen() {
     }
   }
 
-  function fillDemo(email: string) {
-    setValue('email', email, { shouldValidate: true });
-    setValue('password', 'Password123!', { shouldValidate: true });
-  }
-
   return (
     <SafeAreaView style={styles.flex} edges={['top']}>
     <KeyboardAvoidingView
@@ -55,7 +50,7 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.logoWrap}>
-          <Image source={require('../../../assets/images/image.png')} style={styles.logo} resizeMode="contain" />
+          <Image source={require('../../../assets/images/siren-logo.png')} style={styles.logo} resizeMode="contain" />
         </View>
         <Text style={styles.title}>{t('auth.welcomeBack')}</Text>
         <Text style={styles.subtitle}>{t('auth.loginSubtitle')}</Text>
@@ -79,7 +74,7 @@ export default function LoginScreen() {
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
-              placeholder="marie@example.com"
+              placeholder={t('auth.emailPlaceholder')}
             />
           )}
         />
@@ -112,17 +107,6 @@ export default function LoginScreen() {
           style={{ marginBottom: spacing.xl }}
         />
 
-        <View style={styles.demoBox}>
-          <Text style={styles.demoTitle}>Démo — comptes pré-configurés</Text>
-          <Text style={styles.demoLine} onPress={() => fillDemo('marie@example.com')}>
-            👩 Marie (principal) — marie@example.com
-          </Text>
-          <Text style={styles.demoLine} onPress={() => fillDemo('rose@example.com')}>
-            👵 Rose (secondaire) — rose@example.com
-          </Text>
-          <Text style={styles.demoHint}>Mot de passe : Password123! (pré-rempli au tap)</Text>
-        </View>
-
         <View style={styles.footerRow}>
           <Text style={styles.footerText}>{t('auth.noAccount')} </Text>
           <Link href="/(auth)/register">
@@ -139,21 +123,11 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.surface },
   content: { flexGrow: 1, padding: spacing.xxl, paddingTop: spacing.xxxl },
   logoWrap: { alignItems: 'center', marginBottom: spacing.xxl },
-  logo: { width: 90, height: 90 },
+  logo: { width: 168, height: 112 },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.muted, marginBottom: spacing.xxl },
   forgotLink: { alignSelf: 'flex-end', marginBottom: spacing.xxl, marginTop: -spacing.xs },
   forgotText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.primary },
-  demoBox: {
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radii.lg,
-    padding: spacing.md,
-    gap: spacing.xs,
-    marginBottom: spacing.xl,
-  },
-  demoTitle: { ...typography.label, fontFamily: fontFamily.semiBold, color: colors.primaryDark, marginBottom: 4 },
-  demoLine: { ...typography.caption, fontFamily: fontFamily.medium, color: colors.slate },
-  demoHint: { ...typography.caption, color: colors.muted, marginTop: 2 },
   footerRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' },
   footerText: { ...typography.body, color: colors.slate },
   footerLink: { ...typography.body, fontFamily: fontFamily.semiBold, color: colors.primary },

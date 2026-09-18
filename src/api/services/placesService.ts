@@ -2,6 +2,7 @@ import { getDb, mutateDb, genId } from '../mock/db';
 import { ApiError, simulateLatency } from '../network';
 import { assertChildAccess, resolveCurrentUser } from '../mock/session';
 import type { Place } from '@/models/entities';
+import i18n from '@/i18n';
 
 export async function listPlaces(token: string | null, childId: string): Promise<Place[]> {
   await simulateLatency();
@@ -34,7 +35,7 @@ export async function patchPlace(
   const user = resolveCurrentUser(token);
   const db = getDb();
   const place = db.places.find((p) => p.id === placeId);
-  if (!place) throw new ApiError('Lieu introuvable', 404);
+  if (!place) throw new ApiError(i18n.t('errors.placeNotFound'), 404);
   assertChildAccess(place.childId, user);
   mutateDb((d) => {
     const target = d.places.find((p) => p.id === placeId);

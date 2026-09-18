@@ -86,7 +86,7 @@ export default function OtpScreen() {
           </Text>
         ) : (
           <Text style={[styles.resendText, styles.resendLink]} onPress={() => setSecondsLeft(RESEND_SECONDS)}>
-            Renvoyer le code
+            {t('auth.resendCode')}
           </Text>
         )}
       </View>

@@ -2,6 +2,7 @@ import { getDb, mutateDb, genId } from '../mock/db';
 import { ApiError, simulateLatency } from '../network';
 import { assertChildAccess, resolveCurrentUser } from '../mock/session';
 import type { Child, DeviceStatus } from '@/models/entities';
+import i18n from '@/i18n';
 
 export async function listChildren(token: string | null): Promise<Child[]> {
   await simulateLatency();
@@ -16,6 +17,9 @@ export async function listChildren(token: string | null): Promise<Child[]> {
   return db.children.filter((c) => childIds.includes(c.id));
 }
 
+/** Point de départ des enfants créés dans l'app (Yaoundé), aligné sur le jeu de démo. */
+const DEFAULT_ORIGIN = { lat: 3.8667, lon: 11.5167 };
+
 export async function createChild(
   token: string | null,
   input: { prenom: string; deviceId: string; photoUrl?: string }
@@ -24,9 +28,20 @@ export async function createChild(
   const user = resolveCurrentUser(token);
   const db = getDb();
   const device = db.devices.find((d) => d.deviceId === input.deviceId);
-  if (!device) throw new ApiError('Dispositif introuvable ou déjà associé', 404);
+  if (!device) throw new ApiError(i18n.t('errors.deviceNotFound'), 404);
   const alreadyLinked = db.children.some((c) => c.deviceId === input.deviceId);
-  if (alreadyLinked) throw new ApiError('Dispositif introuvable ou déjà associé', 409);
+  if (alreadyLinked) throw new ApiError(i18n.t('errors.deviceNotFound'), 409);
+
+  // Unicité du prénom au sein d'un même parent : deux familles distinctes
+  // peuvent légitimement avoir un « Paul », mais un parent qui enregistre deux
+  // « Paul » ne saurait plus les distinguer dans les alertes.
+  const normalized = input.prenom.trim().toLocaleLowerCase();
+  const duplicateName = db.children.some(
+    (c) => c.parentId === user.id && c.prenom.trim().toLocaleLowerCase() === normalized
+  );
+  if (duplicateName) {
+    throw new ApiError(i18n.t('errors.duplicateChildName'), 409);
+  }
 
   const child: Child = {
     id: genId('child'),
@@ -39,7 +54,20 @@ export async function createChild(
   };
   mutateDb((d) => {
     d.children.push(child);
-    d.positions[child.id] = [];
+    // Une position initiale est indispensable : le dispositif est annoncé « en
+    // ligne, GPS actif » dès l'appairage, et getPosition lève une 404 tant que
+    // l'historique est vide — l'onglet Carte restait alors bloqué sur son
+    // squelette de chargement, sans jamais afficher la carte.
+    d.positions[child.id] = [
+      {
+        lat: DEFAULT_ORIGIN.lat,
+        lon: DEFAULT_ORIGIN.lon,
+        speedKmh: 0,
+        timestamp: new Date().toISOString(),
+        accuracyM: 14,
+        fixQuality: 'gps_recent',
+      },
+    ];
     d.riskScores[child.id] = {
       childId: child.id,
       score: 0,
@@ -61,7 +89,7 @@ export async function getChildStatus(token: string | null, childId: string): Pro
   const db = getDb();
   const child = db.children.find((c) => c.id === childId);
   const device = db.devices.find((d) => d.deviceId === child?.deviceId);
-  if (!device) throw new ApiError('Dispositif introuvable', 404);
+  if (!device) throw new ApiError(i18n.t('errors.deviceMissing'), 404);
   return device;
 }
 
@@ -75,7 +103,7 @@ export async function patchChildContext(
   assertChildAccess(childId, user);
   const db = getDb();
   const child = db.children.find((c) => c.id === childId);
-  if (!child) throw new ApiError('Enfant introuvable', 404);
+  if (!child) throw new ApiError(i18n.t('errors.childNotFound'), 404);
   mutateDb((d) => {
     const target = d.children.find((c) => c.id === childId);
     if (target) Object.assign(target, patch);
@@ -110,8 +138,8 @@ export async function findDeviceById(deviceId: string): Promise<DeviceStatus> {
     });
   }
 
-  if (!device) throw new ApiError('Dispositif introuvable ou déjà associé', 404);
+  if (!device) throw new ApiError(i18n.t('errors.deviceNotFound'), 404);
   const alreadyLinked = db.children.some((c) => c.deviceId === device!.deviceId);
-  if (alreadyLinked) throw new ApiError('Dispositif introuvable ou déjà associé', 409);
+  if (alreadyLinked) throw new ApiError(i18n.t('errors.deviceNotFound'), 409);
   return device;
 }

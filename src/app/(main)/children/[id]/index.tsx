@@ -13,10 +13,12 @@ import { HistoryTab } from '@/features/children/tabs/HistoryTab';
 import { PlacesTab } from '@/features/children/tabs/PlacesTab';
 import { RiskTab } from '@/features/children/tabs/RiskTab';
 import { DeviceTab } from '@/features/children/tabs/DeviceTab';
+import { useTranslation } from 'react-i18next';
 
 type TabKey = 'carte' | 'historique' | 'lieux' | 'score' | 'dispositif';
 
 export default function ChildDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [tab, setTab] = useState<TabKey>('carte');
 
@@ -91,7 +93,7 @@ export default function ChildDetailScreen() {
           style={styles.emergencyBar}
           onPress={() => router.push({ pathname: '/(emergency)/urgence', params: { childId: id } })}
         >
-          <Text style={styles.emergencyText}>Voir l&apos;urgence en cours →</Text>
+          <Text style={styles.emergencyText}>{t('children.seeOngoingEmergency')}</Text>
         </Pressable>
       )}
     </SafeAreaView>

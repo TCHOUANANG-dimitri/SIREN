@@ -3,7 +3,7 @@ import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import MapView, { Marker } from 'react-native-maps';
+import { MapView, Marker } from '@/features/tracking/map';
 import { Ear, Phone, PhoneCall, Siren } from 'lucide-react-native';
 import { Banner, Button } from '@/components';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
@@ -15,8 +15,10 @@ import { useRealtimeChannel } from '@/api/hooks/useRealtimeChannel';
 import { useTriggerDisappearance } from '@/api/hooks/useSearchZone';
 import { bearingToCardinal } from '@/utils/geo';
 import { formatRelativeTime, formatSpeedKmh } from '@/utils/format';
+import { useTranslation } from 'react-i18next';
 
 export default function EmergencyScreen() {
+  const { t } = useTranslation();
   const { childId } = useLocalSearchParams<{ childId: string }>();
   useRealtimeChannel(childId);
   const { data: position } = usePosition(childId);
@@ -78,19 +80,19 @@ export default function EmergencyScreen() {
             />
           )}
           <Button
-            label="Appeler les secours (117)"
+            label={t('emergency.callHelp')}
             icon={<PhoneCall size={18} color={colors.white} />}
             variant="emergency"
             onPress={() => Linking.openURL('tel:117')}
           />
           <Button
-            label="Écoute audio encadrée"
+            label={t('emergency.audioListening')}
             icon={<Ear size={18} color={colors.primary} />}
             variant="secondary"
             onPress={() => router.push({ pathname: '/(emergency)/ecoute-audio', params: { childId: childId ?? '' } })}
           />
           <Button
-            label="Confirmer la disparition"
+            label={t('emergency.confirmDisappearance')}
             variant="secondary"
             onPress={confirmDisappearance}
             loading={triggerDisappearance.isPending}

@@ -4,6 +4,7 @@ import { Info } from 'lucide-react-native';
 import { Card, ScoreGauge, Skeleton } from '@/components';
 import { colors, fontFamily, radii, riskColors, spacing, typography } from '@/theme';
 import { useRisk, useRiskHistory } from '@/api/hooks/useRisk';
+import { useTranslation } from 'react-i18next';
 
 const subScoreLabels: Record<string, string> = {
   geo: 'Géographique',
@@ -27,6 +28,7 @@ function Sparkline({ values }: { values: number[] }) {
 }
 
 export function RiskTab({ childId }: { childId: string }) {
+  const { t } = useTranslation();
   const { data: risk, isLoading } = useRisk(childId);
   const { data: history } = useRiskHistory(childId);
 
@@ -47,7 +49,7 @@ export function RiskTab({ childId }: { childId: string }) {
       </View>
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Raisons</Text>
+        <Text style={styles.cardTitle}>{t('childTabs.reasons')}</Text>
         {risk.reasons.map((reason) => (
           <View key={reason} style={styles.reasonRow}>
             <Info size={14} color={colors.muted} />
@@ -57,7 +59,7 @@ export function RiskTab({ childId }: { childId: string }) {
       </Card>
 
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Décomposition par sous-score</Text>
+        <Text style={styles.cardTitle}>{t('childTabs.subScoreBreakdown')}</Text>
         {subScoreEntries.map(([key, value]) => (
           <View key={key} style={styles.subScoreRow}>
             <Text style={styles.subScoreLabel}>{subScoreLabels[key]}</Text>
@@ -75,7 +77,7 @@ export function RiskTab({ childId }: { childId: string }) {
 
       <Card style={styles.card}>
         <View style={styles.confidenceHeader}>
-          <Text style={styles.cardTitle}>Confiance du modèle</Text>
+          <Text style={styles.cardTitle}>{t('childTabs.modelConfidence')}</Text>
           <Text style={styles.confidenceValue}>{Math.round(risk.confidence)}%</Text>
         </View>
         <View style={styles.subScoreTrack}>
@@ -90,7 +92,7 @@ export function RiskTab({ childId }: { childId: string }) {
 
       {history && history.length > 1 && (
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Évolution récente</Text>
+          <Text style={styles.cardTitle}>{t('childTabs.recentTrend')}</Text>
           <Sparkline values={history.map((h) => h.score)} />
         </Card>
       )}

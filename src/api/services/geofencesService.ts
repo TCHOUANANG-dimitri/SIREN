@@ -2,6 +2,7 @@ import { getDb, mutateDb, genId } from '../mock/db';
 import { ApiError, simulateLatency } from '../network';
 import { assertChildAccess, assertPrincipal, resolveCurrentUser } from '../mock/session';
 import type { Geofence } from '@/models/entities';
+import i18n from '@/i18n';
 
 export async function listGeofences(token: string | null, childId: string): Promise<Geofence[]> {
   await simulateLatency();
@@ -35,7 +36,7 @@ export async function patchGeofence(
   const user = resolveCurrentUser(token);
   const db = getDb();
   const geofence = db.geofences.find((g) => g.id === geofenceId);
-  if (!geofence) throw new ApiError('Périmètre introuvable', 404);
+  if (!geofence) throw new ApiError(i18n.t('errors.geofenceNotFound'), 404);
   assertChildAccess(geofence.childId, user);
   assertPrincipal(user);
   mutateDb((d) => {
@@ -50,7 +51,7 @@ export async function deleteGeofence(token: string | null, geofenceId: string): 
   const user = resolveCurrentUser(token);
   const db = getDb();
   const geofence = db.geofences.find((g) => g.id === geofenceId);
-  if (!geofence) throw new ApiError('Périmètre introuvable', 404);
+  if (!geofence) throw new ApiError(i18n.t('errors.geofenceNotFound'), 404);
   assertChildAccess(geofence.childId, user);
   assertPrincipal(user);
   mutateDb((d) => {

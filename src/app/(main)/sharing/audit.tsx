@@ -8,8 +8,10 @@ import { useChildren } from '@/api/hooks/useChildren';
 import { useAccessAudit } from '@/api/hooks/useSharing';
 import { useUiStore } from '@/stores/uiStore';
 import { formatClock, formatRelativeTime } from '@/utils/format';
+import { useTranslation } from 'react-i18next';
 
 export default function AccessAuditScreen() {
+  const { t } = useTranslation();
   const { data: children } = useChildren();
   const selectedChildId = useUiStore((s) => s.selectedChildId);
   const setSelectedChildId = useUiStore((s) => s.setSelectedChildId);
@@ -26,7 +28,7 @@ export default function AccessAuditScreen() {
       <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
-      <Text style={styles.title}>Journal des accès</Text>
+      <Text style={styles.title}>{t('sharing.auditTitle')}</Text>
 
       {children && children.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.switcherRow}>
@@ -44,7 +46,7 @@ export default function AccessAuditScreen() {
 
       {!audit || audit.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>Aucune consultation enregistrée.</Text>
+          <Text style={styles.emptyText}>{t('sharing.auditEmpty')}</Text>
         </View>
       ) : (
         <FlatList

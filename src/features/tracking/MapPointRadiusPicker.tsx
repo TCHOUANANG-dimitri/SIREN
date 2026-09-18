@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import MapView, { Circle } from 'react-native-maps';
+import { Circle, MapView, type MapViewRef } from './map';
 import Slider from '@react-native-community/slider';
 import { MapPin } from 'lucide-react-native';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { useTranslation } from 'react-i18next';
 
 interface MapPointRadiusPickerProps {
   latitude: number;
@@ -12,6 +13,13 @@ interface MapPointRadiusPickerProps {
   minRadius?: number;
   maxRadius?: number;
   height?: number;
+  /**
+   * Recentre la carte quand cette valeur change — utilisé quand la position
+   * provient d'une adresse géocodée plutôt que d'un déplacement manuel.
+   * La carte n'étant pilotée que par `initialRegion`, sans ça elle resterait
+   * figée sur sa position de départ.
+   */
+  focusPoint?: { lat: number; lon: number } | null;
   onChange: (value: { lat: number; lon: number; radiusM: number }) => void;
 }
 
@@ -26,15 +34,35 @@ export function MapPointRadiusPicker({
   minRadius = 50,
   maxRadius = 1500,
   height = 200,
+  focusPoint,
   onChange,
 }: MapPointRadiusPickerProps) {
+  const { t } = useTranslation();
   const [center, setCenter] = useState({ lat: latitude, lon: longitude });
   const [radius, setRadius] = useState(radiusM);
+  const mapRef = useRef<MapViewRef>(null);
+
+  useEffect(() => {
+    if (!focusPoint) return;
+    setCenter({ lat: focusPoint.lat, lon: focusPoint.lon });
+    // La ref est nulle quand la carte est indisponible (aucune clé Google Maps) :
+    // le centre reste alors à jour pour le reste du formulaire, sans animation.
+    mapRef.current?.animateToRegion(
+      {
+        latitude: focusPoint.lat,
+        longitude: focusPoint.lon,
+        latitudeDelta: (radius * 4) / 111000,
+        longitudeDelta: (radius * 4) / 111000,
+      },
+      400
+    );
+  }, [focusPoint?.lat, focusPoint?.lon]);
 
   return (
     <View>
       <View style={[styles.mapWrapper, { height }]}>
         <MapView
+          ref={mapRef}
           style={StyleSheet.absoluteFill}
           initialRegion={{
             latitude,
@@ -63,7 +91,7 @@ export function MapPointRadiusPicker({
 
       <View style={styles.sliderCard}>
         <View style={styles.sliderHeader}>
-          <Text style={styles.sliderLabel}>Rayon de protection</Text>
+          <Text style={styles.sliderLabel}>{t('map.protectionRadius')}</Text>
           <Text style={styles.sliderValue}>{radius} m</Text>
         </View>
         <Slider
