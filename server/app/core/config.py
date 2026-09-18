@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     DATABASE_URL_SYNC: str = "postgresql://siren:siren_password@localhost:5432/siren"
 
     REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_ENABLED: bool = True
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
 

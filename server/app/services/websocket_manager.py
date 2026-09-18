@@ -52,17 +52,20 @@ manager = ConnectionManager()
 
 
 async def publish_position(child_id: str, data: dict):
-    await redis.publish(CHANNEL_POSITION, json.dumps({"child_id": child_id, **data}))
+    if settings.REDIS_ENABLED:
+        await redis.publish(CHANNEL_POSITION, json.dumps({"child_id": child_id, **data}))
     await manager.broadcast_to_child(child_id, "position_update", data)
 
 
 async def publish_risk(child_id: str, data: dict):
-    await redis.publish(CHANNEL_RISK, json.dumps({"child_id": child_id, **data}))
+    if settings.REDIS_ENABLED:
+        await redis.publish(CHANNEL_RISK, json.dumps({"child_id": child_id, **data}))
     await manager.broadcast_to_child(child_id, "risk_update", data)
 
 
 async def publish_alert(child_id: str, data: dict):
-    await redis.publish(CHANNEL_ALERT, json.dumps({"child_id": child_id, **data}))
+    if settings.REDIS_ENABLED:
+        await redis.publish(CHANNEL_ALERT, json.dumps({"child_id": child_id, **data}))
     await manager.broadcast_to_child(child_id, "alert", data)
 
 

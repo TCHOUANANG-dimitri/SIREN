@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
         import sentry_sdk
         sentry_sdk.init(dsn=settings.SENTRY_DSN, environment=settings.ENVIRONMENT)
     task = None
-    if settings.ENVIRONMENT != "development":
+    if settings.ENVIRONMENT != "development" and settings.REDIS_ENABLED:
         import asyncio
         task = asyncio.create_task(redis_listener())
     yield
