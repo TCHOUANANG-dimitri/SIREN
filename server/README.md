@@ -90,6 +90,25 @@ server/
 
 ---
 
+## Sécurité et contrat (à lire avant de modifier une route)
+
+- Toute route liée à un enfant passe par `app/core/authz.get_child_access` (404 pour un tiers,
+  droits du secondaire, `require_principal`). Plafond : 3 proches non révoqués par enfant.
+- Contrat de référence : [`docs/contrats/api-app-serveur-v1.md`](../docs/contrats/api-app-serveur-v1.md)
+  (dates ISO UTC avec fuseau, km/h, mètres, scores 0–100, jours 0 = dimanche, horaires en heure locale).
+- Hors `ENVIRONMENT=development`, le serveur refuse de démarrer avec les secrets d'exemple.
+- Base existante : appliquer `migrations/001_geofence_radius_and_device_defaults.sql`.
+
+## Tests
+
+```bash
+python3.12 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt   # ou le sous-ensemble : fastapi sqlalchemy pydantic pydantic-settings email-validator "python-jose[cryptography]" passlib bcrypt==4.0.1 geoalchemy2 asyncpg redis httpx pytest pytest-asyncio
+python -m pytest
+```
+
+Les tests n'exigent ni PostgreSQL ni Redis. Un `xfail` documente l'écart d'hystérésis (IA-07).
+
 ## API — Tous les endpoints
 
 ### Authentification

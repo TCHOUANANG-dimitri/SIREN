@@ -6,9 +6,9 @@ import { ArrowLeft } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Banner, Button } from '@/components';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
-import { useVerifyOtp } from '@/api/hooks/useAuth';
+import { useResendOtp, useVerifyOtp } from '@/api/hooks/useAuth';
 import { usePendingAuthStore } from '@/stores/pendingAuthStore';
-import { ApiError } from '@/api/network';
+import { toUserMessage } from '@/api/errors';
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -17,6 +17,7 @@ export default function OtpScreen() {
   const { t } = useTranslation();
   const { destination, devHint } = usePendingAuthStore();
   const verifyOtp = useVerifyOtp();
+  const resendOtp = useResendOtp();
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
@@ -33,7 +34,7 @@ export default function OtpScreen() {
     try {
       await verifyOtp.mutateAsync(value);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : t('auth.otpInvalid'));
+      setError(toUserMessage(e, t('auth.otpInvalid')));
       setCode('');
     }
   }
@@ -85,7 +86,13 @@ export default function OtpScreen() {
             {t('auth.resendIn')} <Text style={styles.resendTime}>0:{secondsLeft.toString().padStart(2, '0')}</Text>
           </Text>
         ) : (
-          <Text style={[styles.resendText, styles.resendLink]} onPress={() => setSecondsLeft(RESEND_SECONDS)}>
+          <Text style={[styles.resendText, styles.resendLink]} onPress={() => {
+            setError(null);
+            resendOtp.mutate(undefined, {
+              onSuccess: () => setSecondsLeft(RESEND_SECONDS),
+              onError: (e) => setError(toUserMessage(e)),
+            });
+          }}>
             {t('auth.resendCode')}
           </Text>
         )}
@@ -100,7 +107,7 @@ export default function OtpScreen() {
 
       {devHint && (
         <View style={styles.devHintBox}>
-          <Text style={styles.devHintText}>Démo : code de vérification = {devHint}</Text>
+          <Text style={styles.devHintText}>{t('auth.devHint', { code: devHint })}</Text>
         </View>
       )}
     </SafeAreaView>

@@ -1,6 +1,6 @@
 import uuid, enum
 from datetime import datetime, timezone
-from sqlalchemy import String, Boolean, DateTime, ForeignKey, Enum as SAEnum, ARRAY, Integer, Time
+from sqlalchemy import REAL, String, Boolean, DateTime, ForeignKey, Enum as SAEnum, ARRAY, Integer, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from geoalchemy2 import Geometry
 from app.core.database import Base
@@ -19,6 +19,7 @@ class Geofence(Base):
     nom: Mapped[str] = mapped_column(String(150), nullable=False)
     type: Mapped[GeofenceType] = mapped_column(SAEnum(GeofenceType), default=GeofenceType.INTERDIT)
     geom: Mapped[str] = mapped_column(Geometry("Geometry", srid=4326), nullable=False)
+    radius_m: Mapped[float] = mapped_column(REAL, default=100)
     notify_enter: Mapped[bool] = mapped_column(Boolean, default=True)
     notify_exit: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

@@ -10,29 +10,24 @@ import { useTranslation } from 'react-i18next';
 import { Banner, Button, PasswordStrengthMeter, TextField } from '@/components';
 import { colors, fontFamily, spacing, typography } from '@/theme';
 import { useRegister } from '@/api/hooks/useAuth';
-import { ApiError } from '@/api/network';
+import { toUserMessage } from '@/api/errors';
+import { passwordSchema } from '@/features/auth/passwordPolicy';
 
 const schema = z
   .object({
-    nom: z.string().min(2, 'Nom trop court'),
-    email: z.string().email('Adresse email invalide'),
-    telephone: z.string().optional(),
-    password: z
-      .string()
-      .min(6, '6 caractères minimum')
-      .regex(/[a-z]/, 'Une minuscule requise')
-      .regex(/[A-Z]/, 'Une majuscule requise')
-      .regex(/[0-9]/, 'Un chiffre requis')
-      .regex(/[^A-Za-z0-9]/, 'Un caractère spécial requis'),
+    nom: z.string().trim().min(2, 'validation.nameTooShort'),
+    email: z.string().trim().email('validation.emailInvalid'),
+    telephone: z.string().trim().optional(),
+    password: passwordSchema,
     confirmPassword: z.string(),
     acceptTerms: z.boolean(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Les mots de passe ne correspondent pas',
+    message: 'validation.passwordMismatch',
     path: ['confirmPassword'],
   })
   .refine((data) => data.acceptTerms, {
-    message: "Vous devez accepter les conditions d'utilisation",
+    message: 'validation.termsRequired',
     path: ['acceptTerms'],
   });
 
@@ -56,10 +51,10 @@ export default function RegisterScreen() {
   async function onSubmit(values: FormValues) {
     setServerError(null);
     try {
-      await register.mutateAsync(values);
-      router.push('/(auth)/otp');
+      const result = await register.mutateAsync({ nom: values.nom, email: values.email, telephone: values.telephone || undefined, password: values.password });
+      if (result.otpRequired) router.push('/(auth)/otp');
     } catch (error) {
-      setServerError(error instanceof ApiError ? error.message : t('common.error'));
+      setServerError(toUserMessage(error, t('common.error')));
     }
   }
 
@@ -90,7 +85,7 @@ export default function RegisterScreen() {
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              error={errors.nom?.message}
+              error={errors.nom?.message && t(errors.nom.message)}
               placeholder={t('auth.namePlaceholder')}
             />
           )}
@@ -104,7 +99,7 @@ export default function RegisterScreen() {
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              error={errors.email?.message}
+              error={errors.email?.message && t(errors.email.message)}
               autoCapitalize="none"
               keyboardType="email-address"
               placeholder={t('auth.emailPlaceholder')}
@@ -136,7 +131,7 @@ export default function RegisterScreen() {
                 value={field.value}
                 onChangeText={field.onChange}
                 onBlur={field.onBlur}
-                error={errors.password?.message}
+                error={errors.password?.message && t(errors.password.message)}
                 secureToggle
                 autoCapitalize="none"
               />
@@ -153,7 +148,7 @@ export default function RegisterScreen() {
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              error={errors.confirmPassword?.message}
+              error={errors.confirmPassword?.message && t(errors.confirmPassword.message)}
               secureToggle
               autoCapitalize="none"
             />
@@ -172,7 +167,7 @@ export default function RegisterScreen() {
             </Pressable>
           )}
         />
-        {errors.acceptTerms && <Text style={styles.termsError}>{errors.acceptTerms.message}</Text>}
+        {errors.acceptTerms && <Text style={styles.termsError}>{t(errors.acceptTerms.message ?? '')}</Text>}
 
         <Button
           label={t('auth.createAccountTitle')}

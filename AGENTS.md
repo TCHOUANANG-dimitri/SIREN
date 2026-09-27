@@ -33,10 +33,16 @@ npx expo start              # dev server (Expo Go / simulator)
 | Path | Role |
 |---|---|
 | `src/app/` | Expo Router screens |
-| `src/api/` | Network layer, React Query hooks, mock backend |
-| `src/api/services/` | Backend service functions (mock DB calls) |
-| `src/api/hooks/` | React Query wrappers for services |
-| `src/api/mock/` | In-memory mock DB, scenario engine, seed data |
+| `src/api/index.ts` | `api` — single switch mock/live (the only data entry point for hooks) |
+| `src/api/repositories.ts` | `SirenApi` contract implemented by both backends |
+| `src/api/live/` | HTTP implementation over `server/app/api/v1` |
+| `src/api/http/client.ts` | Axios client: auth header, single-flight refresh, safe retries, error mapping |
+| `src/api/contracts/` | Zod schemas server → app (v1), normalisation, units |
+| `src/api/realtime/` | Realtime channel (WebSocket or mock bus) |
+| `src/api/hooks/` | React Query hooks (call `api.*`) |
+| `src/api/mock/` | Mock backend; reached ONLY via `mock/entry.ts` (stubbed out of live builds by `metro.config.js`) |
+| `server/` | FastAPI backend (see `server/README.md`, tests in `server/tests`) |
+| `docs/` | Contracts, CDC contradictions, traceability, risks, integration guide |
 | `src/stores/` | Zustand stores (auth, location, UI) |
 | `src/features/` | Feature modules (auth, emergency, tracking, etc.) |
 | `src/components/` | Shared UI components |
@@ -48,7 +54,11 @@ npx expo start              # dev server (Expo Go / simulator)
 
 ## Key patterns
 
-- **Mock-first**: `EXPO_PUBLIC_API_MODE=mock` (default). The mock backend seeds data and runs a scenario engine at app startup (`src/app/_layout.tsx` → `initMockBackend()`). No real backend needed for development.
+- **Mock-first**: `EXPO_PUBLIC_API_MODE=mock` (default). The mock backend seeds data and runs a scenario engine at startup, only in mock mode. Never import `src/api/mock/*` from outside `src/api` except through `@/api/mock/entry` guarded by `isMockMode()`.
+- **Live**: `EXPO_PUBLIC_API_MODE=live` + `EXPO_PUBLIC_API_BASE_URL` (HTTPS). Empty `EXPO_PUBLIC_WS_URL` = polling (o2switch shared hosting has no WebSocket). See `docs/INTEGRATION-SERVEUR.md`.
+- **Contracts**: every server response goes through `src/api/contracts`. Missing optional fields become `null` — never invent values in the UI.
+- **Emergency**: `EmergencyGate` watches the risk cache (fed by WS or polling). Nothing in the emergency path may depend on credits or ads.
+- **Business parameters**: `src/config/business.ts` (thresholds, 3-secondary cap, credit costs — several marked « à valider »).
 - **Auth tokens**: stored in `expo-secure-store` (Keychain/Keystore). Never in AsyncStorage.
 - **Server state**: TanStack Query with query keys centralized in `src/api/queryKeys.ts`.
 - **RBAC**: `src/features/sharing/permissions.ts` defines the action-permission matrix for `principal` vs `secondaire` roles. Tests at `src/features/sharing/__tests__/permissions.test.ts`.
@@ -59,6 +69,7 @@ npx expo start              # dev server (Expo Go / simulator)
 
 ## Testing quirks
 
-- Only 2 test files exist; both are pure unit tests with no native module mocks needed.
-- `jest.config.js` uses `jest-expo` preset with a broad `transformIgnorePatterns` allowlist.
-- Run focused tests: `npx jest src/api/mock/__tests__/fusionScore.test.ts`
+- App: Jest unit tests under `src/**/__tests__` (contracts, HTTP client, WebSocket, i18n completeness, freshness, credits…). Native modules (AsyncStorage, NetInfo, SecureStore) are mocked in `jest.setup.js`.
+- `src/i18n/__tests__/completeness.test.ts` fails if a `t('key')` used in code is missing in FR or EN.
+- Server: `cd server && python -m pytest` (Python 3.12, no DB/Redis needed). One `xfail` documents the server hysteresis gap (CDC contradiction C6).
+- Run focused tests: `npx jest src/api/__tests__/httpClient.test.ts`

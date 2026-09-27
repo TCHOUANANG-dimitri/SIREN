@@ -6,14 +6,17 @@ import { colors, fontFamily, spacing, typography } from '@/theme';
 import { useChildStatus } from '@/api/hooks/useChildren';
 import { useRisk } from '@/api/hooks/useRisk';
 import type { Child } from '@/models/entities';
-import { formatRelativeTime } from '@/utils/format';
+import { formatBattery, formatRelativeTime } from '@/utils/format';
+import { LOW_BATTERY_PERCENT } from '@/config/business';
+import { useTranslation } from 'react-i18next';
 
 export function ChildCard({ child }: { child: Child }) {
+  const { t } = useTranslation();
   const { data: status } = useChildStatus(child.id);
   const { data: risk } = useRisk(child.id);
 
   return (
-    <Pressable onPress={() => router.push(`/(main)/children/${child.id}`)} accessibilityLabel={`Voir les détails de ${child.prenom}`}>
+    <Pressable onPress={() => router.push(`/(main)/children/${child.id}`)} accessibilityLabel={t('children.viewDetails', { child: child.prenom })}>
       <Card style={styles.card}>
         <View style={styles.row}>
           {child.photoUrl ? (
@@ -33,17 +36,17 @@ export function ChildCard({ child }: { child: Child }) {
         <View style={styles.metaRow}>
           {status && (
             <View style={styles.metaItem}>
-              <BatteryMedium size={14} color={status.battery < 20 ? colors.urgence : colors.muted} />
-              <Text style={styles.metaText}>{status.battery}%</Text>
+              <BatteryMedium size={14} color={status.battery !== null && status.battery < LOW_BATTERY_PERCENT ? colors.urgence : colors.muted} />
+              <Text style={styles.metaText}>{formatBattery(status.battery)}</Text>
             </View>
           )}
           {status && (
             <View style={styles.metaItem}>
               {status.online ? <Wifi size={14} color={colors.veille} /> : <WifiOff size={14} color={colors.urgence} />}
-              <Text style={styles.metaText}>{status.online ? 'En ligne' : 'Hors ligne'}</Text>
+              <Text style={styles.metaText}>{status.online ? t('children.deviceOnline') : t('children.deviceOffline')}</Text>
             </View>
           )}
-          {risk && <Text style={styles.metaText}>{formatRelativeTime(risk.timestamp)}</Text>}
+          {risk?.timestamp && <Text style={styles.metaText}>{formatRelativeTime(risk.timestamp)}</Text>}
         </View>
 
         {child.modelConfidence < 90 && (

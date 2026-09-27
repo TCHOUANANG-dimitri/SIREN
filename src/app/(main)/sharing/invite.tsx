@@ -5,9 +5,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { Banner, Button, Card, PermissionToggle, TextField } from '@/components';
 import { colors, fontFamily, spacing, typography } from '@/theme';
-import { useCreateShare } from '@/api/hooks/useSharing';
-import { ALL_PERMISSIONS, permissionLabels } from '@/features/sharing/permissions';
-import { ApiError } from '@/api/network';
+import { useCreateShare, useShares } from '@/api/hooks/useSharing';
+import { ALL_PERMISSIONS, permissionLabel } from '@/features/sharing/permissions';
+import { toUserMessage } from '@/api/errors';
+import { SHARING_RULES } from '@/config/business';
 import type { Permission } from '@/models/entities';
 import { useTranslation } from 'react-i18next';
 
@@ -15,6 +16,9 @@ export default function InviteSecondaryScreen() {
   const { t } = useTranslation();
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const createShare = useCreateShare(childId);
+  const { data: shares } = useShares(childId);
+  const activeCount = (shares ?? []).filter((s) => s.status !== 'revoque').length;
+  const limitReached = activeCount >= SHARING_RULES.maxSecondariesPerChild;
   const [identifier, setIdentifier] = useState('');
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +34,7 @@ export default function InviteSecondaryScreen() {
       await createShare.mutateAsync({ userIdentifier: identifier, permissions });
       setSuccess(true);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Une erreur est survenue.');
+      setError(toUserMessage(e));
     }
   }
 
@@ -47,13 +51,18 @@ export default function InviteSecondaryScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView contentContainerStyle={styles.content}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel={t('common.back')}>
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
       <Text style={styles.title}>{t('sharing.inviteTitle')}</Text>
       <Text style={styles.subtitle}>{t('sharing.inviteSubtitle')}</Text>
 
       {error && <Banner kind="error" message={error} />}
+      {limitReached ? (
+        <Banner kind="warning" message={t('errors.secondaryLimit', { max: SHARING_RULES.maxSecondariesPerChild })} />
+      ) : (
+        <Text style={styles.subtitle}>{t('sharing.slotsLeft', { count: SHARING_RULES.maxSecondariesPerChild - activeCount })}</Text>
+      )}
 
       <TextField
         label={t('sharing.contactField')}
@@ -68,8 +77,8 @@ export default function InviteSecondaryScreen() {
         {ALL_PERMISSIONS.map((permission) => (
           <PermissionToggle
             key={permission}
-            label={permissionLabels[permission].label}
-            description={permissionLabels[permission].description}
+            label={permissionLabel(t, permission).label}
+            description={permissionLabel(t, permission).description}
             value={permissions.includes(permission)}
             onValueChange={(value) => toggle(permission, value)}
           />
@@ -80,12 +89,12 @@ export default function InviteSecondaryScreen() {
         <Text style={styles.previewTitle}>{t('common.preview')}</Text>
         <Text style={styles.previewText}>
           {permissions.length === 0
-            ? "Cette personne ne verra aucune information tant qu'aucun droit n'est accordé."
-            : `Cette personne pourra voir : ${permissions.map((p) => permissionLabels[p].label.toLowerCase()).join(', ')}.`}
+            ? t('sharing.previewNone')
+            : t('sharing.previewSome', { rights: permissions.map((p) => permissionLabel(t, p).label.toLowerCase()).join(', ') })}
         </Text>
       </Card>
 
-      <Button label={t('sharing.sendInvite')} onPress={submit} loading={createShare.isPending} disabled={identifier.trim().length < 3} />
+      <Button label={t('sharing.sendInvite')} onPress={submit} loading={createShare.isPending} disabled={identifier.trim().length < 3 || limitReached} />
     </ScrollView>
     </KeyboardAvoidingView>
     </SafeAreaView>

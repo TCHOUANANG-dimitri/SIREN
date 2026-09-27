@@ -9,6 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { colors, radii, spacing } from '@/theme';
 
 interface BottomSheetProps {
@@ -19,6 +20,7 @@ interface BottomSheetProps {
 }
 
 export function BottomSheet({ visible, onClose, children, style }: BottomSheetProps) {
+  const { t } = useTranslation();
   const { height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(screenHeight)).current;
@@ -40,7 +42,7 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.container}>
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fermer" />
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('common.close')} />
         </Animated.View>
         <Animated.View
           style={[

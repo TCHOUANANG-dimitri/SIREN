@@ -61,10 +61,10 @@ export default function GeofenceEditorScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView contentContainerStyle={styles.content}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel={t('common.back')}>
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
-      <Text style={styles.title}>{isNew ? 'Nouveau périmètre' : 'Modifier le périmètre'}</Text>
+      <Text style={styles.title}>{isNew ? t('geofences.newTitle') : t('geofences.editTitle')}</Text>
 
       <TextField label={t('common.name')} value={nom} onChangeText={setNom} placeholder={t('geofences.namePlaceholder')} />
 

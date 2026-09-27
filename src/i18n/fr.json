@@ -24,7 +24,9 @@
     "status": "Statut",
     "all": "Tous",
     "new": "Nouveau",
-    "preview": "Aperçu"
+    "preview": "Aperçu",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe"
   },
   "riskState": {
     "veille": "Veille",
@@ -73,13 +75,15 @@
     "emailPlaceholder": "marie@example.com",
     "namePlaceholder": "Marie Ngo",
     "phonePlaceholder": "+237 6 __ __ __ __",
-    "resendCode": "Renvoyer le code"
+    "resendCode": "Renvoyer le code",
+    "devHint": "Démo : code de vérification = {{code}}"
   },
   "home": {
     "subtitle": "Voici l'état de vos enfants",
     "emptyTitle": "Ajoutez votre premier enfant",
     "emptyBody": "Appairez un dispositif SIREN pour commencer la protection.",
-    "loadError": "Impossible de charger vos enfants. Vérifiez votre connexion."
+    "loadError": "Impossible de charger vos enfants. Vérifiez votre connexion.",
+    "greeting": "Bonjour {{name}}"
   },
   "children": {
     "profileTitle": "Profil de l'enfant",
@@ -100,7 +104,16 @@
     "device": "Dispositif",
     "online": "En ligne · GPS actif",
     "defineProtection": "Définir la protection →",
-    "seeOngoingEmergency": "Voir l'urgence en cours →"
+    "seeOngoingEmergency": "Voir l'urgence en cours →",
+    "deviceOffline": "Hors ligne",
+    "deviceOnline": "En ligne",
+    "viewDetails": "Voir les détails de {{child}}",
+    "searchingDevice": "Recherche du dispositif…",
+    "searchDevice": "Rechercher le dispositif",
+    "deviceIdRequired": "L'identifiant du dispositif est obligatoire.",
+    "deviceIdTooShort": "L'identifiant doit contenir au moins 5 caractères.",
+    "manualEntry": "ou saisir l'identifiant manuellement",
+    "addChild": "Ajouter un enfant"
   },
   "wizard": {
     "homeTitle": "Où est votre domicile ?",
@@ -142,7 +155,9 @@
       "sleep": "5 Sommeil"
     },
     "defaultHomeName": "Maison",
-    "defaultSchoolName": "École"
+    "defaultSchoolName": "École",
+    "saveAndContinue": "Enregistrer et continuer",
+    "next": "Suivant →"
   },
   "childTabs": {
     "noPositionRight": "Vous n'avez pas les droits pour voir la position de cet enfant.",
@@ -170,7 +185,32 @@
     "lastSync": "Dernière synchronisation",
     "settingsSaved": "Réglages enregistrés",
     "forceSync": "Forcer une synchronisation",
-    "noPosition": "Aucune position disponible pour le moment."
+    "noPosition": "Aucune position disponible pour le moment.",
+    "battery": "Batterie",
+    "deviceLoadError": "Impossible de charger les réglages du dispositif.",
+    "energyModeUnknown": "Mode actuel non reconnu : choisissez-en un.",
+    "fixRequested": "Demande envoyée. La position s'affichera dès que le dispositif répondra.",
+    "inForbiddenZone": "Dans une zone interdite : {{zone}}",
+    "inZone": "Dans la zone {{zone}}",
+    "lastSeen": "Dernier contact",
+    "outsideKnownZones": "Hors des zones connues",
+    "principalOnlySettings": "Seul le parent principal peut modifier ces réglages.",
+    "refreshDeviceState": "Actualiser l'état du dispositif",
+    "searchMatch": "Lieu trouvé : {{place}}",
+    "searchNoMatch": "Aucun lieu enregistré ne correspond",
+    "settingsSentToServer": "Réglages enregistrés. Le dispositif les appliquera à sa prochaine connexion.",
+    "syncExplanation": "Les réglages passent par le serveur : le dispositif les récupère lors de sa prochaine connexion.",
+    "updated": "Mis à jour {{when}}",
+    "energy": {
+      "continu": "Continu",
+      "equilibre": "Équilibré",
+      "economie": "Économie"
+    },
+    "energyHint": {
+      "continu": "Suivi le plus fin, autonomie la plus courte",
+      "equilibre": "Recommandé au quotidien",
+      "economie": "Autonomie maximale, positions plus espacées"
+    }
   },
   "alerts": {
     "title": "Alertes",
@@ -190,7 +230,7 @@
     }
   },
   "emergency": {
-    "callHelp": "Appeler les secours (117)",
+    "callHelp": "Appeler les secours ({{number}})",
     "audioListening": "Écoute audio encadrée",
     "confirmDisappearance": "Confirmer la disparition",
     "postTitle": "Mode post-disparition",
@@ -206,7 +246,33 @@
     "noActivation": "Aucune activation enregistrée.",
     "requestReason": "Motif de la demande",
     "requestReasonPlaceholder": "Confirmer l'urgence en cours",
-    "requestListening": "Demander l'écoute"
+    "requestListening": "Demander l'écoute",
+    "audioLegalPending": "Écoute désactivée : le cadre juridique doit d'abord être validé.",
+    "audioPrivacyNotice": "Le son n'est jamais transmis brut. Seules des étiquettes (cri, voix, véhicule…) sont affichées, et chaque activation est journalisée : qui, quand, pourquoi.",
+    "audioSessionActive": "Écoute active — {{seconds}} s",
+    "callContact": "Appeler {{name}}",
+    "callFailed": "Impossible de lancer l'appel depuis ce téléphone.",
+    "confirmDisappearanceTitle": "Confirmer la disparition ?",
+    "confirmDisappearanceBody": "La recherche de {{child}} sera lancée et vos proches autorisés seront mobilisés.",
+    "lastPoint": "Dernière position reçue {{when}}",
+    "leave": "Quitter l'écran d'urgence",
+    "leaveTitle": "Quitter l'écran d'urgence ?",
+    "leaveBody": "L'alerte reste active. Vous pourrez revenir depuis la liste des alertes.",
+    "leaveConfirm": "Quitter",
+    "moving": "En mouvement vers le {{direction}} à {{speed}}",
+    "offline": "Hors ligne : les appels restent possibles, les données ne sont plus à jour.",
+    "signalLost": "Signal perdu {{when}}. Dernier point connu affiché.",
+    "title": "Urgence — {{child}}",
+    "zoneNotReady": "La zone de recherche n'est pas encore calculée. Partagez dès maintenant la fiche et la dernière position.",
+    "zoneConfidenceAged": "Confiance de la zone : {{confidence}} % (calculée {{when}}, elle baisse avec le temps).",
+    "lastPositionAt": "Dernière position : {{time}}",
+    "generatedAt": "Zone générée à {{time}}",
+    "circleTitle": "Cercle de confiance",
+    "circleMobilisable": "Proches mobilisables : {{names}}",
+    "circleEmpty": "Aucun proche n'a le droit « mobilisation ».",
+    "circleServerPending": "La notification automatique des proches par le serveur n'est pas encore disponible : partagez la fiche.",
+    "shareFailed": "Le partage n'a pas pu s'ouvrir.",
+    "backToHome": "Retour à l'accueil"
   },
   "sharing": {
     "title": "Partage",
@@ -221,7 +287,14 @@
     "inviteSent": "Invitation envoyée — la personne apparaît en statut « invité ».",
     "revokeAccess": "Révoquer l'accès",
     "auditTitle": "Journal des accès",
-    "auditEmpty": "Aucune consultation enregistrée."
+    "auditEmpty": "Aucune consultation enregistrée.",
+    "previewNone": "Cette personne ne verra aucune information tant qu'aucun droit n'est accordé.",
+    "previewSome": "Cette personne pourra voir : {{rights}}.",
+    "slotsLeft_one": "Encore {{count}} proche peut être invité.",
+    "slotsLeft_other": "Encore {{count}} proches peuvent être invités.",
+    "noRights": "Aucun droit accordé",
+    "invitePerson": "Inviter une personne",
+    "rightsUpdated": "Droits mis à jour"
   },
   "community": {
     "title": "Volet communautaire",
@@ -231,7 +304,12 @@
     "reportButton": "Signaler un comportement suspect",
     "reportLabel": "Description du signalement",
     "reportPlaceholder": "Comportement suspect observé…",
-    "reportFailed": "Impossible d'envoyer le signalement."
+    "reportFailed": "Impossible d'envoyer le signalement.",
+    "tooShort": "Décrivez la situation en {{min}} caractères au moins.",
+    "locationRequired": "Autorisez la localisation du téléphone pour situer le signalement.",
+    "published": "Signalement publié.",
+    "pendingModeration": "Merci. Votre signalement sera visible après modération.",
+    "proximityLocalOnly": "Préférence enregistrée sur ce téléphone ; l'envoi d'alertes de proximité n'est pas encore disponible."
   },
   "geofences": {
     "title": "Périmètres",
@@ -240,7 +318,10 @@
     "forbidden": "Interdit",
     "namePlaceholder": "Quartier, trajet école…",
     "notifyOnEnter": "Notifier à l'entrée",
-    "notifyOnExit": "Notifier à la sortie"
+    "notifyOnExit": "Notifier à la sortie",
+    "add": "Ajouter un périmètre",
+    "newTitle": "Nouveau périmètre",
+    "editTitle": "Modifier le périmètre"
   },
   "map": {
     "protectionRadius": "Rayon de protection",
@@ -251,7 +332,10 @@
     "selectedPosition": "Position retenue : {{lat}}, {{lon}}",
     "fauconLoading": "Chargement de Faucon…",
     "fauconUnreachable": "Faucon injoignable",
-    "fauconRetryHint": "Vérifiez la connexion réseau, puis réessayez."
+    "fauconRetryHint": "Vérifiez la connexion réseau, puis réessayez.",
+    "sourceFaucon": "GPS réel (Faucon)",
+    "sourceDemo": "Démo SIREN",
+    "sourceSiren": "SIREN"
   },
   "errors": {
     "unexpected": "Une erreur inattendue est survenue",
@@ -267,7 +351,18 @@
     "childNotFound": "Enfant introuvable",
     "geofenceNotFound": "Périmètre introuvable",
     "placeNotFound": "Lieu introuvable",
-    "scoreUnavailable": "Score indisponible"
+    "scoreUnavailable": "Score indisponible",
+    "alreadyInvited": "Cette personne est déjà invitée.",
+    "alreadyInvitedOrLimit": "Cette personne est déjà invitée, ou la limite de proches est atteinte.",
+    "audioConditions": "Écoute réservée à une urgence confirmée ou à une demande explicite motivée.",
+    "inviteeNotFound": "Aucun compte SIREN pour cet email ou ce numéro. La personne doit d'abord créer un compte.",
+    "permissionNotGranted": "Ce droit ne vous a pas été accordé.",
+    "positionUnavailable": "Position indisponible pour le moment.",
+    "principalOnly": "Action réservée au parent principal.",
+    "searchZoneNotReady": "La zone de recherche n'est pas encore calculée.",
+    "secondaryLimit": "Maximum {{max}} proches par enfant. Retirez un accès pour en inviter un autre.",
+    "shareNotFound": "Accès introuvable.",
+    "unexpectedBody": "L'écran a rencontré un problème. Réessayez ; si cela persiste, redémarrez l'application."
   },
   "settings": {
     "profile": "Profil",
@@ -295,11 +390,169 @@
     "privacyBody": "Minimisation des données, consentement explicite à l'inscription, suppression possible à tout moment.",
     "version": "Version {{version}}",
     "translationApiActive": "Clé API de traduction active (DeepL / Google Translate)",
-    "translationApiLocal": "Mode dictionnaire local (définissez EXPO_PUBLIC_TRANSLATION_API_KEY pour l'API)"
+    "translationApiLocal": "Mode dictionnaire local (définissez EXPO_PUBLIC_TRANSLATION_API_KEY pour l'API)",
+    "notifLocalOnly": "Préférences enregistrées sur ce téléphone uniquement (pas encore par enfant ni sur le serveur)."
   },
   "notifications": {
     "urgenceTitle": "Urgence — {{child}}",
     "prealerteTitle": "Pré-alerte — {{child}}",
-    "defaultBody": "Comportement inhabituel détecté"
+    "defaultBody": "Comportement inhabituel détecté",
+    "channelUrgence": "Urgences",
+    "channelPrealerte": "Pré-alertes",
+    "channelInformation": "Informations (zone, batterie, dispositif)"
+  },
+  "apiErrors": {
+    "network": "Pas de connexion. Vérifiez le réseau puis réessayez.",
+    "timeout": "Le serveur met trop de temps à répondre. Réessayez.",
+    "unauthorized": "Vous devez vous reconnecter.",
+    "session_expired": "Votre session a expiré. Veuillez vous reconnecter.",
+    "forbidden": "Vous n'avez pas le droit d'effectuer cette action.",
+    "not_found": "Élément introuvable. Il a peut-être été supprimé.",
+    "conflict": "Cette action entre en conflit avec des données existantes.",
+    "validation": "Certaines informations sont invalides. Vérifiez le formulaire.",
+    "rate_limited": "Trop de tentatives. Patientez un instant.",
+    "server": "Le service est momentanément indisponible. Réessayez plus tard.",
+    "contract": "Réponse inattendue du serveur. Mettez l'application à jour ou réessayez.",
+    "not_available": "Cette fonction n'est pas encore disponible.",
+    "config": "L'application est mal configurée.",
+    "unknown": "Une erreur est survenue. Réessayez."
+  },
+  "config": {
+    "title": "Configuration de l'application incomplète",
+    "body": "Cette version ne peut pas démarrer : les réglages ci-dessous doivent être corrigés avant de générer l'application."
+  },
+  "offline": {
+    "banner": "Données hors-ligne",
+    "bannerWithTime": "Données hors-ligne — mise à jour à {{time}}",
+    "reconnecting": "Reconnexion en cours…"
+  },
+  "time": {
+    "unknown": "inconnu",
+    "justNow": "à l'instant",
+    "secondsAgo": "il y a {{count}} s",
+    "minutesAgo": "il y a {{count}} min",
+    "hoursAgo": "il y a {{count}} h",
+    "daysAgo": "il y a {{count}} j"
+  },
+  "tracking": {
+    "recent": "Position GPS récente — {{when}}",
+    "estimated": "Position estimée — {{when}}",
+    "lost": "Signal GPS perdu — dernier point {{when}}",
+    "deviceOffline": "Dispositif hors ligne — dernier point {{when}}",
+    "batteryLine": "batterie {{battery}}"
+  },
+  "validation": {
+    "emailInvalid": "Adresse email invalide",
+    "nameTooShort": "Nom trop court",
+    "passwordLength": "10 caractères minimum",
+    "passwordTooLong": "128 caractères maximum",
+    "passwordLower": "Une minuscule requise",
+    "passwordUpper": "Une majuscule requise",
+    "passwordDigit": "Un chiffre requis",
+    "passwordSymbol": "Un symbole requis",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "passwordRequired": "Le mot de passe est requis",
+    "termsRequired": "Vous devez accepter les conditions d'utilisation"
+  },
+  "passwordStrength": {
+    "veryWeak": "Très faible",
+    "weak": "Faible",
+    "medium": "Moyen",
+    "good": "Bon",
+    "excellent": "Excellent"
+  },
+  "permissions": {
+    "position_precise": {
+      "label": "Position précise en temps réel",
+      "description": "Voir la localisation exacte sur la carte."
+    },
+    "etat_zone": {
+      "label": "État de zone",
+      "description": "Savoir si l'enfant est dans ou hors d'une zone connue, sans la carte précise."
+    },
+    "alertes_prealerte": {
+      "label": "Alertes de pré-alerte",
+      "description": "Être notifié en cas de comportement inhabituel."
+    },
+    "alertes_urgence": {
+      "label": "Alertes d'urgence",
+      "description": "Être notifié en cas d'urgence confirmée."
+    },
+    "historique": {
+      "label": "Historique des trajets",
+      "description": "Consulter les déplacements passés."
+    },
+    "mobilisation": {
+      "label": "Mobilisation en cas de disparition",
+      "description": "Être sollicité pour aider aux recherches."
+    }
+  },
+  "history": {
+    "play": "Lire le trajet",
+    "period": {
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
+      "7days": "7 jours",
+      "custom": "Plage…"
+    }
+  },
+  "onboarding": {
+    "learn": {
+      "title": "SIREN apprend les habitudes de votre enfant.",
+      "body": "En quelques semaines, l'IA identifie les routines pour repérer rapidement ce qui sort de l'ordinaire."
+    },
+    "alert": {
+      "title": "Vous êtes alerté dès qu'il sort de sa routine.",
+      "body": "Un score de risque clair et des raisons explicites, pour réagir vite et sans panique."
+    },
+    "layers": {
+      "title": "Protégé dès le premier jour, plus fin chaque semaine.",
+      "body": "Règles déclarées, détecteurs universels et apprentissage personnalisé se combinent en confiance croissante."
+    },
+    "start": "Commencer"
+  },
+  "risk": {
+    "subScore": {
+      "geo": "Géographique",
+      "mouvement": "Mouvement",
+      "universel": "Détecteurs universels",
+      "declaratif": "Règles déclarées"
+    },
+    "confidenceLearning": "La couche personnalisée est encore en apprentissage — la confiance progresse avec l'usage quotidien.",
+    "confidenceMature": "La routine de cet enfant est bien connue du modèle.",
+    "noReason": "Aucun signal particulier.",
+    "computedAt": "Calculé {{when}}",
+    "reason": {
+      "concordance": {
+        "label": "{{count}} signaux concordants",
+        "detail": "Plusieurs détecteurs indépendants signalent une anomalie en même temps, ce qui renforce le score."
+      },
+      "nuit": {
+        "label": "Contexte : nuit",
+        "detail": "Un déplacement entre 22 h et 6 h est considéré comme plus inhabituel."
+      },
+      "hors_perimetre": {
+        "label": "Contexte : hors périmètre",
+        "detail": "L'enfant est dans une zone interdite ou absent d'un lieu prévu à cette heure."
+      }
+    }
+  },
+  "missingSheet": {
+    "header": "⚠️ ENFANT DISPARU — {{child}}",
+    "lastSeen": "Dernière position connue : {{when}}",
+    "lastPosition": "Coordonnées : {{lat}}, {{lon}}",
+    "priorityZones": "Zones de recherche prioritaires :",
+    "contact": "Contact parent : {{name}} — {{phone}}",
+    "footer": "Message préparé avec SIREN. Merci de contacter la police (117) si vous avez une information."
+  },
+  "cardinal": {
+    "n": "Nord",
+    "ne": "Nord-Est",
+    "e": "Est",
+    "se": "Sud-Est",
+    "s": "Sud",
+    "sw": "Sud-Ouest",
+    "w": "Ouest",
+    "nw": "Nord-Ouest"
   }
 }

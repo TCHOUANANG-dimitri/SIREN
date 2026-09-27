@@ -6,9 +6,13 @@ import { ArrowLeft, Ear, ShieldAlert } from 'lucide-react-native';
 import { Banner, Button, Card, TextField } from '@/components';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 import { useAudioLogs, useRequestAudioActivation } from '@/api/hooks/useAudio';
-import { ApiError } from '@/api/network';
+import { toUserMessage } from '@/api/errors';
 import { formatClock } from '@/utils/format';
 import { useTranslation } from 'react-i18next';
+import { featureFlags } from '@/config/env';
+
+/** Motif obligatoire : le journal doit dire pourquoi l'écoute a été demandée (CDC App §4.4). */
+const MIN_REASON_LENGTH = 10;
 
 const SESSION_SECONDS = 30;
 
@@ -31,10 +35,10 @@ export default function AudioListeningScreen() {
   async function activate() {
     setRefusedMessage(null);
     try {
-      await requestActivation.mutateAsync({ reason: reason || 'Demande explicite du parent', explicitRequest: true });
+      await requestActivation.mutateAsync({ reason: reason.trim(), explicitRequest: true });
       setSecondsLeft(SESSION_SECONDS);
     } catch (error) {
-      setRefusedMessage(error instanceof ApiError ? error.message : 'Écoute non disponible.');
+      setRefusedMessage(toUserMessage(error, t('errors.audioConditions')));
     }
   }
 
@@ -42,7 +46,7 @@ export default function AudioListeningScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel={t('common.back')}>
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
 
@@ -50,11 +54,10 @@ export default function AudioListeningScreen() {
 
       <View style={styles.warningBox}>
         <ShieldAlert size={18} color={colors.primaryDark} />
-        <Text style={styles.warningText}>
-          Le son ambiant n&apos;est jamais transmis brut. Seules des étiquettes classées sur l&apos;appareil sont
-          affichées (cri, voix, véhicule…), et toute activation est journalisée.
-        </Text>
+        <Text style={styles.warningText}>{t('emergency.audioPrivacyNotice')}</Text>
       </View>
+
+      {!featureFlags.audio && <Banner kind="warning" message={t('emergency.audioLegalPending')} />}
 
       {refusedMessage && <Banner kind="error" message={refusedMessage} />}
 
@@ -62,7 +65,7 @@ export default function AudioListeningScreen() {
         <Card style={styles.activeCard}>
           <View style={styles.activeHeader}>
             <Ear size={18} color={colors.primary} />
-            <Text style={styles.activeTitle}>Session active — {secondsLeft}s</Text>
+            <Text style={styles.activeTitle}>{t('emergency.audioSessionActive', { seconds: secondsLeft })}</Text>
           </View>
           {activeLog.labels.map((label) => (
             <View key={label} style={styles.labelPill}>
@@ -73,7 +76,7 @@ export default function AudioListeningScreen() {
       ) : (
         <View style={styles.requestBlock}>
           <TextField label={t('emergency.requestReason')} value={reason} onChangeText={setReason} placeholder={t('emergency.requestReasonPlaceholder')} />
-          <Button label={t('emergency.requestListening')} icon={<Ear size={16} color={colors.white} />} onPress={activate} loading={requestActivation.isPending} />
+          <Button label={t('emergency.requestListening')} icon={<Ear size={16} color={colors.white} />} onPress={activate} loading={requestActivation.isPending} disabled={!featureFlags.audio || reason.trim().length < MIN_REASON_LENGTH} />
         </View>
       )}
 

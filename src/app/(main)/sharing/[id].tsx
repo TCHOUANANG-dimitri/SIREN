@@ -6,7 +6,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import { Banner, Button, Card, PermissionToggle, Skeleton } from '@/components';
 import { colors, fontFamily, spacing, typography } from '@/theme';
 import { useShare, usePatchShare } from '@/api/hooks/useSharing';
-import { ALL_PERMISSIONS, permissionLabels } from '@/features/sharing/permissions';
+import { ALL_PERMISSIONS, permissionLabel } from '@/features/sharing/permissions';
 import type { Permission } from '@/models/entities';
 import { useTranslation } from 'react-i18next';
 
@@ -22,7 +22,7 @@ export default function SecondaryDetailScreen() {
   async function togglePermission(permission: Permission, value: boolean) {
     const next = value ? [...share!.permissions, permission] : share!.permissions.filter((p) => p !== permission);
     await patchShare.mutateAsync({ shareId: share!.id, patch: { permissions: next } });
-    setFeedback('Droits mis à jour');
+    setFeedback(t('sharing.rightsUpdated'));
     setTimeout(() => setFeedback(null), 1800);
   }
 
@@ -43,7 +43,7 @@ export default function SecondaryDetailScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
     <ScrollView contentContainerStyle={styles.content}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel={t('common.back')}>
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
       <Text style={styles.title}>{share.nom}</Text>
@@ -57,8 +57,8 @@ export default function SecondaryDetailScreen() {
         {ALL_PERMISSIONS.map((permission) => (
           <PermissionToggle
             key={permission}
-            label={permissionLabels[permission].label}
-            description={permissionLabels[permission].description}
+            label={permissionLabel(t, permission).label}
+            description={permissionLabel(t, permission).description}
             value={share.permissions.includes(permission)}
             onValueChange={(value) => togglePermission(permission, value)}
             disabled={share.status === 'revoque'}

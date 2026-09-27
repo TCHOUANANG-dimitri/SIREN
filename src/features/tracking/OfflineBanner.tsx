@@ -1,38 +1,60 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { mockEventBus, type BusEvent } from '@/api/mock/mockEventBus';
+import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useUiStore } from '@/stores/uiStore';
 import { colors, fontFamily, typography } from '@/theme';
+import { formatClock } from '@/utils/format';
+import { trackEvent } from '@/utils/logger';
+
+/** Horodatage de la dernière donnée reçue avec succès (toutes requêtes confondues). */
+function useLastSyncAt(): number | null {
+  const queryClient = useQueryClient();
+  const [lastSync, setLastSync] = useState<number | null>(null);
+  useEffect(() => {
+    const compute = () => {
+      const max = queryClient
+        .getQueryCache()
+        .getAll()
+        .reduce((acc, q) => Math.max(acc, q.state.dataUpdatedAt), 0);
+      setLastSync(max > 0 ? max : null);
+    };
+    compute();
+    return queryClient.getQueryCache().subscribe(compute);
+  }, [queryClient]);
+  return lastSync;
+}
 
 /**
- * Bandeau hors-ligne — CDC1 §12. Reflète le canal temps réel simulé (mockEventBus) : il n'y a
- * pas de vraie connexion réseau à surveiller ici, seulement le cycle de vie du canal démo.
+ * Bandeau hors-ligne — CDC App §6 : « Données hors-ligne, MAJ à HH:MM ».
+ * S'appuie sur la connectivité réelle du téléphone et sur l'état du canal temps réel.
  */
 export function OfflineBanner() {
+  const { t } = useTranslation();
+  const deviceOnline = useUiStore((s) => s.deviceOnline);
   const status = useUiStore((s) => s.connectionStatus);
-  const setStatus = useUiStore((s) => s.setConnectionStatus);
+  const lastSync = useLastSyncAt();
 
   useEffect(() => {
-    const unsubscribe = mockEventBus.subscribe((event: BusEvent) => {
-      if (event.type === 'connection') setStatus(event.status);
-    });
-    return unsubscribe;
-  }, [setStatus]);
+    if (!deviceOnline) trackEvent('app_offline');
+  }, [deviceOnline]);
 
-  if (status === 'connected') return null;
+  if (deviceOnline && status === 'connected') return null;
+
+  const message = !deviceOnline || status === 'disconnected'
+    ? lastSync
+      ? t('offline.bannerWithTime', { time: formatClock(new Date(lastSync).toISOString()) })
+      : t('offline.banner')
+    : t('offline.reconnecting');
 
   return (
-    <View style={styles.banner}>
-      <Text style={styles.text}>
-        {status === 'reconnecting'
-          ? 'Reconnexion en cours…'
-          : `Données hors-ligne, dernière mise à jour à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
-      </Text>
+    <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="polite">
+      <Text style={styles.text}>{message}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  banner: { backgroundColor: colors.prealerte, paddingVertical: 6, alignItems: 'center' },
-  text: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.white },
+  banner: { backgroundColor: colors.prealerte, paddingVertical: 6, paddingHorizontal: 12, alignItems: 'center' },
+  text: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.white, textAlign: 'center' },
 });

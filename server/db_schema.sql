@@ -78,8 +78,8 @@ CREATE TABLE devices (
     last_seen       TIMESTAMPTZ,
     battery         SMALLINT CHECK (battery >= 0 AND battery <= 100),
     online          BOOLEAN NOT NULL DEFAULT FALSE,
-    energy_mode     VARCHAR(20) NOT NULL DEFAULT 'normal',
-    sensitivity     VARCHAR(20) NOT NULL DEFAULT 'normal',
+    energy_mode     VARCHAR(20) NOT NULL DEFAULT 'equilibre',
+    sensitivity     VARCHAR(20) NOT NULL DEFAULT '50',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_devices_online ON devices(online) WHERE online = TRUE;
@@ -180,6 +180,7 @@ CREATE TABLE geofences (
     nom             VARCHAR(150) NOT NULL,
     type            geofence_type NOT NULL DEFAULT 'interdit',
     geom            GEOMETRY(Geometry, 4326) NOT NULL,
+    radius_m        REAL NOT NULL DEFAULT 100 CHECK (radius_m >= 10 AND radius_m <= 50000),
     notify_enter    BOOLEAN NOT NULL DEFAULT TRUE,
     notify_exit     BOOLEAN NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),

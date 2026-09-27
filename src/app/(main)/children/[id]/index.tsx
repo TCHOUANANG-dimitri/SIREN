@@ -49,7 +49,7 @@ export default function ChildDetailScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={8} accessibilityLabel="Retour">
+        <Pressable onPress={() => router.back()} hitSlop={8} accessibilityLabel={t('common.back')}>
           <ArrowLeft size={22} color={colors.ink} />
         </Pressable>
         <View style={styles.headerInfo}>

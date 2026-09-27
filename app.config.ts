@@ -1,4 +1,9 @@
+import fs from 'fs';
 import type { ExpoConfig } from 'expo/config';
+
+// Fichier Firebase (FCM, push Android) : fourni hors Git, chemin via variable d'environnement.
+const googleServicesFile = process.env.GOOGLE_SERVICES_JSON ?? './google-services.json';
+const hasGoogleServices = fs.existsSync(googleServicesFile);
 
 const config: ExpoConfig = {
   name: 'SIREN',
@@ -31,9 +36,12 @@ const config: ExpoConfig = {
     },
     predictiveBackGestureEnabled: false,
     permissions: ['CAMERA', 'USE_BIOMETRIC', 'USE_FINGERPRINT'],
-    // react-native-maps exige la meta-data com.google.android.geo.API_KEY dans le
-    // manifeste : sans elle, les 6 écrans carte ne s'affichent pas en build autonome.
-    // Renseigner EXPO_PUBLIC_MAPS_API_KEY avant le prebuild pour l'injecter.
+    // Push Android (FCM) : sans google-services.json, l'app fonctionne mais ne reçoit
+    // pas de push serveur (les alertes restent visibles à l'ouverture de l'app).
+    ...(hasGoogleServices ? { googleServicesFile } : {}),
+    // Les cartes utilisent MapLibre + tuiles OpenStreetMap (aucune clé requise).
+    // La clé Google n'est injectée que si elle est fournie, pour un éventuel retour
+    // au SDK Google Maps ; elle n'est pas nécessaire au fonctionnement actuel.
     ...(process.env.EXPO_PUBLIC_MAPS_API_KEY
       ? { config: { googleMaps: { apiKey: process.env.EXPO_PUBLIC_MAPS_API_KEY } } }
       : {}),
@@ -46,6 +54,12 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-secure-store',
     'expo-localization',
+    [
+      'expo-notifications',
+      {
+        color: '#D32F2E',
+      },
+    ],
     '@react-native-community/datetimepicker',
     '@maplibre/maplibre-react-native',
     [
@@ -92,6 +106,11 @@ const config: ExpoConfig = {
           minSdkVersion: 30,
           compileSdkVersion: 36,
           targetSdkVersion: 36,
+          // Allègement de l'APK : téléphones ARM uniquement (x86/x86_64 = émulateurs),
+          // R8 (code) et suppression des ressources inutilisées.
+          buildArchs: ['arm64-v8a', 'armeabi-v7a'],
+          enableMinifyInReleaseBuilds: true,
+          enableShrinkResourcesInReleaseBuilds: true,
           // Pas de ndkVersion forcée : on laisse Expo 54 / RN 0.81 choisir la sienne
           // (27.1.12297006), la seule installée et la seule validée pour cette version.
         },
@@ -101,10 +120,19 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
   },
+  // Valeurs lues au démarrage et validées par src/config/env.ts (jamais de crash si absentes).
   extra: {
+    appEnv: process.env.EXPO_PUBLIC_APP_ENV ?? 'development',
     apiMode: process.env.EXPO_PUBLIC_API_MODE ?? 'mock',
     apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8000',
-    wsUrl: process.env.EXPO_PUBLIC_WS_URL ?? 'ws://localhost:8000/ws',
+    // Vide = pas de WebSocket (o2switch mutualisé) : l'app passe en polling REST.
+    wsUrl: process.env.EXPO_PUBLIC_WS_URL ?? 'ws://localhost:8000/api/v1/ws',
+    sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',
+    featureWebsocket: process.env.EXPO_PUBLIC_FEATURE_WEBSOCKET,
+    featureCredits: process.env.EXPO_PUBLIC_FEATURE_CREDITS,
+    featureAds: process.env.EXPO_PUBLIC_FEATURE_ADS,
+    featureAudio: process.env.EXPO_PUBLIC_FEATURE_AUDIO,
+    featureFaucon: process.env.EXPO_PUBLIC_FEATURE_FAUCON,
     mapsApiKey: process.env.EXPO_PUBLIC_MAPS_API_KEY ?? '',
     // Tuiles vectorielles OpenStreetMap servies par OpenFreeMap : ni clé ni
     // quota, et remplaçable par une instance auto-hébergée le jour venu.

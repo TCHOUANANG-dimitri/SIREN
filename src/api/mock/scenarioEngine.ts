@@ -302,7 +302,13 @@ function tickChild(rt: ChildRuntime) {
     state: to,
     confidence,
     reasons: buildReasons({ sUniversel, sDeclaratif, sGeo, sMouvement, contexteNuit, horsPerimetre }),
-    subScores: { geo: fusion.sGeoEff, mouvement: sMouvement, universel: sUniversel, declaratif: sDeclaratif },
+    // Contrat app : sous-scores en 0..100, comme le score global et le serveur.
+    subScores: {
+      geo: Math.round(fusion.sGeoEff * 100),
+      mouvement: Math.round(sMouvement * 100),
+      universel: Math.round(sUniversel * 100),
+      declaratif: Math.round(sDeclaratif * 100),
+    },
     timestamp: nowIso(),
   };
   pushRisk(rt.childId, risk);

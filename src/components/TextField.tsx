@@ -8,6 +8,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
 
 interface TextFieldProps extends Omit<TextInputProps, 'style'> {
@@ -22,6 +23,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   { label, error, hint, secureToggle, required, secureTextEntry, ...inputProps },
   ref
 ) {
+  const { t } = useTranslation();
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(!!secureTextEntry);
 
@@ -31,7 +33,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     <View style={styles.wrapper}>
       <Text style={styles.label}>
         {label}
-        {required === false && <Text style={styles.optional}> (optionnel)</Text>}
+        {required === false && <Text style={styles.optional}> {t('common.optional')}</Text>}
       </Text>
       <View style={[styles.inputRow, { borderColor, borderWidth: focused || error ? 1.5 : 1 }]}>
         <TextInput
@@ -54,7 +56,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           <Pressable
             onPress={() => setHidden((v) => !v)}
             accessibilityRole="button"
-            accessibilityLabel={hidden ? 'Afficher le mot de passe' : 'Masquer le mot de passe'}
+            accessibilityLabel={hidden ? t('common.showPassword') : t('common.hidePassword')}
             hitSlop={8}
           >
             {hidden ? (

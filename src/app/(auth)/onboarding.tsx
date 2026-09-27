@@ -11,22 +11,10 @@ import { useTranslation } from 'react-i18next';
 const ONBOARDING_KEY = 'siren.onboarding.seen';
 
 const slides = [
-  {
-    title: 'SIREN apprend les habitudes de votre enfant.',
-    body: "En quelques semaines, l'IA identifie les routines pour détecter toute anomalie instantanément.",
-    Icon: MapPinned,
-  },
-  {
-    title: 'Vous êtes alerté dès qu’il sort de sa routine.',
-    body: 'Un score de risque clair et des raisons explicites, pour réagir vite et sans panique.',
-    Icon: Gauge,
-  },
-  {
-    title: 'Protégé dès le premier jour, plus fin chaque semaine.',
-    body: "Règles déclarées, détecteurs universels et apprentissage personnalisé se combinent en confiance croissante.",
-    Icon: Layers,
-  },
-];
+  { key: 'learn', Icon: MapPinned },
+  { key: 'alert', Icon: Gauge },
+  { key: 'layers', Icon: Layers },
+] as const;
 
 export default function OnboardingScreen() {
   const { t } = useTranslation();
@@ -50,7 +38,7 @@ export default function OnboardingScreen() {
       </View>
       <View style={styles.dots}>
         {slides.map((s, i) => (
-          <View key={s.title} style={[styles.dot, i === index && styles.dotActive]} />
+          <View key={s.key} style={[styles.dot, i === index && styles.dotActive]} />
         ))}
       </View>
       <View style={styles.illustration}>
@@ -59,12 +47,12 @@ export default function OnboardingScreen() {
         </View>
       </View>
       <View style={styles.textBlock}>
-        <Text style={styles.title}>{slide.title}</Text>
-        <Text style={styles.body}>{slide.body}</Text>
+        <Text style={styles.title}>{t(`onboarding.${slide.key}.title`)}</Text>
+        <Text style={styles.body}>{t(`onboarding.${slide.key}.body`)}</Text>
       </View>
       <View style={styles.footer}>
         <Button
-          label={isLast ? 'Commencer' : 'Suivant →'}
+          label={isLast ? t('onboarding.start') : t('wizard.next')}
           onPress={isLast ? finish : () => setIndex((i) => i + 1)}
         />
       </View>

@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { Banner, Button, TextField } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { colors, fontFamily, spacing, typography } from '@/theme';
 import { useLogin } from '@/api/hooks/useAuth';
-import { ApiError } from '@/api/network';
+import { toUserMessage } from '@/api/errors';
 
 const schema = z.object({
-  email: z.string().email('Adresse email invalide'),
-  password: z.string().min(1, 'Le mot de passe est requis'),
+  email: z.string().trim().email('validation.emailInvalid'),
+  password: z.string().min(1, 'validation.passwordRequired'),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -26,7 +26,6 @@ export default function LoginScreen() {
     control,
     handleSubmit,
     formState: { errors, isValid },
-    setValue,
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     mode: 'onChange',
@@ -36,9 +35,10 @@ export default function LoginScreen() {
   async function onSubmit(values: FormValues) {
     setServerError(null);
     try {
-      await login.mutateAsync(values);
+      const result = await login.mutateAsync(values);
+      if (result.twofaRequired) router.push('/(auth)/otp');
     } catch (error) {
-      setServerError(error instanceof ApiError ? error.message : t('auth.invalidCredentials'));
+      setServerError(toUserMessage(error, t('auth.invalidCredentials')));
     }
   }
 
@@ -70,7 +70,7 @@ export default function LoginScreen() {
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              error={errors.email?.message}
+              error={errors.email?.message && t(errors.email.message)}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
@@ -87,7 +87,7 @@ export default function LoginScreen() {
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              error={errors.password?.message}
+              error={errors.password?.message && t(errors.password.message)}
               secureToggle
               autoCapitalize="none"
               autoComplete="password"

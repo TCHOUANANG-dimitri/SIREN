@@ -54,29 +54,7 @@ export const ALL_PERMISSIONS: Permission[] = [
   'mobilisation',
 ];
 
-export const permissionLabels: Record<Permission, { label: string; description: string }> = {
-  position_precise: {
-    label: 'Position précise en temps réel',
-    description: 'Voir la localisation exacte sur la carte.',
-  },
-  etat_zone: {
-    label: 'État de zone',
-    description: 'Savoir si l’enfant est dans ou hors d’une zone connue, sans la carte précise.',
-  },
-  alertes_prealerte: {
-    label: 'Alertes de pré-alerte',
-    description: 'Être notifié en cas de comportement inhabituel.',
-  },
-  alertes_urgence: {
-    label: 'Alertes d’urgence',
-    description: 'Être notifié en cas d’urgence confirmée.',
-  },
-  historique: {
-    label: 'Historique des trajets',
-    description: 'Consulter les déplacements passés.',
-  },
-  mobilisation: {
-    label: 'Mobilisation en cas de disparition',
-    description: 'Être sollicité pour aider aux recherches.',
-  },
-};
+/** Libellés traduits d'un droit (clés i18n `permissions.<droit>.label|description`). */
+export function permissionLabel(t: (key: string) => string, permission: Permission) {
+  return { label: t(`permissions.${permission}.label`), description: t(`permissions.${permission}.description`) };
+}

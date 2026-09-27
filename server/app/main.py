@@ -10,6 +10,12 @@ from app.core.config import settings
 from app.api.v1.router import api_router
 from app.services.websocket_manager import redis_listener
 
+# Exécuté à l'import (y compris sous Passenger, qui ne déclenche pas le lifespan) :
+# un serveur de staging/production ne démarre jamais avec les secrets d'exemple.
+_unsafe = settings.unsafe_production_settings()
+if _unsafe:
+    raise RuntimeError("Configuration dangereuse : " + " ; ".join(_unsafe))
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,7 +23,9 @@ async def lifespan(app: FastAPI):
         import sentry_sdk
         sentry_sdk.init(dsn=settings.SENTRY_DSN, environment=settings.ENVIRONMENT)
     task = None
-    if settings.ENVIRONMENT != "development" and settings.REDIS_ENABLED:
+    # Le relais Redis est indispensable dès que Redis est actif : sans lui, plus rien
+    # n'atteindrait les sockets (publication exclusivement via Redis).
+    if settings.REDIS_ENABLED:
         import asyncio
         task = asyncio.create_task(redis_listener())
     yield

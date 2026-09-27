@@ -1,17 +1,14 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Polyline } from 'react-native-svg';
 import { Info } from 'lucide-react-native';
 import { Card, ScoreGauge, Skeleton } from '@/components';
 import { colors, fontFamily, radii, riskColors, spacing, typography } from '@/theme';
 import { useRisk, useRiskHistory } from '@/api/hooks/useRisk';
 import { useTranslation } from 'react-i18next';
+import { explainReason } from '@/features/risk/reasons';
+import { formatRelativeTime } from '@/utils/format';
 
-const subScoreLabels: Record<string, string> = {
-  geo: 'Géographique',
-  mouvement: 'Mouvement',
-  universel: 'Détecteurs universels',
-  declaratif: 'Règles déclarées',
-};
 
 function Sparkline({ values }: { values: number[] }) {
   if (values.length < 2) return null;
@@ -24,6 +21,31 @@ function Sparkline({ values }: { values: number[] }) {
     <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
       <Polyline points={points} fill="none" stroke={colors.primary} strokeWidth={2} />
     </Svg>
+  );
+}
+
+/**
+ * Une raison vient TOUJOURS du serveur / IA ; l'app ne fabrique pas d'explication.
+ * Si le code est connu (ex. « contexte:nuit »), un texte d'aide est proposé au tap.
+ */
+function ReasonRow({ reason }: { reason: string }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const explanation = explainReason(t, reason);
+  return (
+    <Pressable
+      style={styles.reasonRow}
+      onPress={() => setOpen((o) => !o)}
+      disabled={!explanation}
+      accessibilityRole={explanation ? 'button' : 'text'}
+      accessibilityState={explanation ? { expanded: open } : undefined}
+    >
+      <Info size={14} color={colors.muted} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.reasonText}>{explanation?.label ?? reason}</Text>
+        {open && explanation && <Text style={styles.confidenceHint}>{explanation.detail}</Text>}
+      </View>
+    </Pressable>
   );
 }
 
@@ -50,24 +72,23 @@ export function RiskTab({ childId }: { childId: string }) {
 
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>{t('childTabs.reasons')}</Text>
+        {risk.reasons.length === 0 && <Text style={styles.reasonText}>{t('risk.noReason')}</Text>}
         {risk.reasons.map((reason) => (
-          <View key={reason} style={styles.reasonRow}>
-            <Info size={14} color={colors.muted} />
-            <Text style={styles.reasonText}>{reason}</Text>
-          </View>
+          <ReasonRow key={reason} reason={reason} />
         ))}
+        {risk.timestamp && <Text style={styles.confidenceHint}>{t('risk.computedAt', { when: formatRelativeTime(risk.timestamp) })}</Text>}
       </Card>
 
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>{t('childTabs.subScoreBreakdown')}</Text>
         {subScoreEntries.map(([key, value]) => (
           <View key={key} style={styles.subScoreRow}>
-            <Text style={styles.subScoreLabel}>{subScoreLabels[key]}</Text>
+            <Text style={styles.subScoreLabel}>{t(`risk.subScore.${key}`)}</Text>
             <View style={styles.subScoreTrack}>
               <View
                 style={[
                   styles.subScoreFill,
-                  { width: `${Math.round(value * 100)}%`, backgroundColor: riskColors[risk.state].fg },
+                  { width: `${Math.max(0, Math.min(100, value))}%`, backgroundColor: riskColors[risk.state].fg },
                 ]}
               />
             </View>
@@ -84,9 +105,7 @@ export function RiskTab({ childId }: { childId: string }) {
           <View style={[styles.subScoreFill, { width: `${risk.confidence}%`, backgroundColor: colors.primary }]} />
         </View>
         <Text style={styles.confidenceHint}>
-          {risk.confidence < 70
-            ? "La couche personnalisée est encore en apprentissage — la confiance progresse avec l'usage quotidien."
-            : 'La routine de cet enfant est bien connue du modèle.'}
+          {risk.confidence < 70 ? t('risk.confidenceLearning') : t('risk.confidenceMature')}
         </Text>
       </Card>
 

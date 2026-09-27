@@ -25,7 +25,7 @@ export default function AccessAuditScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel={t('common.back')}>
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
       <Text style={styles.title}>{t('sharing.auditTitle')}</Text>

@@ -56,3 +56,7 @@ server/*.pyc
 server/.env
 server/firebase-credentials.json
 server/data/osm/
+
+# Firebase (push)
+google-services.json
+GoogleService-Info.plist

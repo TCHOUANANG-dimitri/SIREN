@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { MapPin, Search } from 'lucide-react-native';
 import { TextField } from '@/components';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
-import { searchAddress, reverseGeocode, type GeoResult } from '@/api/services/geocodingService';
+import { searchAddress, reverseGeocode, type GeoResult } from '@/services/geocodingService';
 import { logger } from '@/utils/logger';
 import { MapPointRadiusPicker } from './MapPointRadiusPicker';
 import { useTranslation } from 'react-i18next';

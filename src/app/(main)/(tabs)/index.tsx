@@ -30,7 +30,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Bonjour {user?.nom?.split(' ')[0] ?? ''}</Text>
+          <Text style={styles.greeting}>{t('home.greeting', { name: user?.nom?.split(' ')[0] ?? '' })}</Text>
           <Text style={styles.subGreeting}>{t('home.subtitle')}</Text>
         </View>
         <Pressable onPress={() => router.push('/(main)/(tabs)/settings')} hitSlop={8} style={styles.settingsIcon}>
@@ -63,7 +63,7 @@ export default function HomeScreen() {
         />
       )}
 
-      <Pressable style={styles.fab} onPress={() => router.push('/(main)/add-child')} accessibilityLabel="Ajouter un enfant">
+      <Pressable style={styles.fab} onPress={() => router.push('/(main)/add-child')} accessibilityLabel={t('children.addChild')}>
         <Plus size={26} color={colors.white} />
       </Pressable>
     </SafeAreaView>

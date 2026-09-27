@@ -1,22 +1,21 @@
 import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
-import * as usersService from '../services/usersService';
+import { api } from '..';
 import type { User } from '@/models/entities';
+import { signOut } from '@/features/auth/signOut';
 
 export function usePatchMe() {
-  const token = useAuthStore((s) => s.accessToken);
   const updateUser = useAuthStore((s) => s.updateUser);
   return useMutation({
-    mutationFn: (patch: Partial<User>) => usersService.patchMe(token, patch),
+    mutationFn: (patch: Partial<Pick<User, 'nom' | 'telephone' | 'langue'>>) => api.users.patchMe(patch),
     onSuccess: (user) => updateUser(user),
   });
 }
 
+/** Suppression du compte : effacement serveur puis purge locale complète (CDC App §4.6, §8). */
 export function useDeleteAccount() {
-  const token = useAuthStore((s) => s.accessToken);
-  const logout = useAuthStore((s) => s.logout);
   return useMutation({
-    mutationFn: () => usersService.deleteMyAccount(token),
-    onSuccess: () => logout(),
+    mutationFn: () => api.users.deleteMe(),
+    onSuccess: () => signOut({ revokeOnServer: false }),
   });
 }
