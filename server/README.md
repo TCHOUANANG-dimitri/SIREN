@@ -7,7 +7,7 @@
 | Langage | Python 3.12 |
 | Framework API | FastAPI |
 | Serveur ASGI | Uvicorn + Gunicorn |
-| Base de données | PostgreSQL 18 / PostGIS |
+| Base de données | PostgreSQL 15+ / PostGIS (image `postgis/postgis:15-3.4`) |
 | Cache & file | Redis |
 | Tâches asynchrones | Celery (worker + beat) |
 | Temps réel | WebSocket + Redis pub/sub |
@@ -25,10 +25,18 @@
 ```bash
 cd server
 cp .env.example .env
-# Éditer .env
+# Éditer .env :
+#  - Docker : remplacer localhost par db (DATABASE_URL, DATABASE_URL_SYNC)
+#    et redis (REDIS_URL, CELERY_BROKER_URL, CELERY_RESULT_BACKEND),
+#    puis ajuster DOMAIN et les secrets.
+#  - Manuel : conserver localhost.
 
-# Option A — Docker
-docker compose up -d
+# Option A — Docker (production : code embarqué dans l'image)
+docker compose up -d --build
+curl http://localhost:8000/health
+
+# Option A' — Docker (développement : code source monté, reload automatique)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # Option B — Manuel
 python3.12 -m venv venv && source venv/bin/activate
@@ -37,6 +45,31 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 API : `http://localhost:8000` | Swagger : `http://localhost:8000/docs`
+
+### Conteneurs (docker compose)
+
+| Service | Rôle |
+|---|---|
+| `migration` | `alembic upgrade head` — une passe unique qui verrouille le démarrage de `api` |
+| `api` | FastAPI (gunicorn + uvicorn), `/health` surveillé par healthcheck |
+| `worker` | Celery (files `celery`, `ml`, `maintenance`) |
+| `beat` | Planificateur Celery, planning dans le volume `beat_data` |
+| `db` | PostgreSQL 15 + PostGIS, schéma appliqué au 1er démarrage via `db_schema.sql` |
+| `redis` | Broker/result backend (persistance AOF) |
+| `proxy` | Caddy : TLS auto, `/api/*`, `/health` et Swagger -> `api:8000` |
+
+```bash
+docker compose ps                  # état + healthchecks
+docker compose logs -f api         # journaux (rotation 10 Mo x 3)
+docker compose down                # arrêt, les volumes (données) persistent
+docker compose down -v             # purge complète (db, redis, osm, caddy, beat)
+
+SIREN_API_PORT=8001 docker compose up -d   # port 8000 déjà pris ailleurs
+```
+
+Seuls `api` (8000, surchargeable avec `SIREN_API_PORT`) et `proxy` (80/443)
+sont accessibles depuis l'extérieur ; `db` (5432) et `redis` (6379) ne sont
+publiés que sur `127.0.0.1`.
 
 ---
 
@@ -81,9 +114,13 @@ server/
 │       ├── celery_app.py                # Configuration Celery
 │       └── retrain.py                   # Réentraînement nocturne
 ├── db_schema.sql                        # Schéma complet (19 tables, 6 vues, 6 triggers)
-├── docker-compose.yml                   # api, worker, beat, db, redis, proxy
+├── Dockerfile                           # Image API (python:3.12-slim, utilisateur non-root)
+├── Dockerfile.worker                    # Image worker/beat Celery
+├── .dockerignore                        # .env et artefacts exclus de l'image
+├── docker-compose.yml                   # prod : api, worker, beat, db, redis, proxy
+├── docker-compose.dev.yml               # dev : code monté, reload automatique
 ├── Caddyfile                            # Reverse proxy TLS
-├── requirements.txt                     # 28 dépendances
+├── requirements.txt                     # Dépendances Python (pinnées)
 ├── HOSTING_O2SWITCH.md                  # Guide hébergement o2switch
 └── README.md                            # Ce fichier
 ```

@@ -1,0 +1,41 @@
+# Git and editor metadata
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Python caches and virtualenvs
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local environment and secrets
+.env
+.env.*
+*.pem
+*.key
+*.crt
+firebase-credentials.json
+
+# OS and logs
+.DS_Store
+*.log
+logs/
+
+# App data that should be generated or mounted externally
+.data/
+data/
+cache/
+
+# Node / frontend artifacts (not used in backend image)
+node_modules/
+
+# Build artifacts
+build/
+dist/
+coverage/

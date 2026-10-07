@@ -7,7 +7,7 @@ l'application est le poste de commande du parent (carte, alertes, urgence, parta
 | Dossier | Contenu |
 |---|---|
 | `src/` | Application Expo (React Native, TypeScript, Expo Router) |
-| `server/` | API FastAPI + PostgreSQL/PostGIS (voir `server/README.md`, déploiement o2switch) |
+| `server/` | API FastAPI + PostgreSQL/PostGIS — conteneurisée : `cd server && docker compose up -d --build` (voir `server/README.md`) |
 | `docs/` | Contrats d'interface, contradictions entre CDC, traçabilité, risques, rapport |
 
 ## Démarrer

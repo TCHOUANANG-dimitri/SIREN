@@ -19,8 +19,9 @@ npx expo start              # dev server (Expo Go / simulator)
 | `npm run ios` | `expo run:ios` |
 | `npm run build:apk:debug` | Native Gradle APK |
 | `npm run build:apk:eas` | EAS preview APK |
+| `cd server && docker compose up -d --build` | Backend conteneurisé (API, Celery, PostGIS, Redis, Caddy) — voir `server/README.md` |
 
-**Order**: `lint → typecheck → test` before committing.
+**Order**: `lint → typecheck → test` before committing. Backend : tests dans `server/`, stack Docker dans `server/` (`docker compose up -d` ; surcouche dev `-f docker-compose.dev.yml`).
 
 ## Architecture
 
