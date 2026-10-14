@@ -6,19 +6,22 @@ from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.crud.geofence import crud_geofence
 from app.crud.child import crud_child
+from app.rules.declarative import MAX_GEOFENCES_PER_CHILD
 
 router = APIRouter()
 
 
 def _geofence_dict(f, lat, lon):
+    radius = getattr(f, "radius_m", 100) or 100
+    gtype = f.type.value if hasattr(f.type, "value") else str(f.type)
     return {
         "id": f.id,
         "childId": f.child_id,
         "nom": f.nom,
-        "type": f.type,
+        "type": gtype,
         "lat": lat,
         "lon": lon,
-        "radiusM": 100,
+        "radiusM": float(radius),
         "notifyOnEnter": f.notify_enter,
         "notifyOnExit": f.notify_exit,
     }
@@ -55,15 +58,29 @@ async def create_geofence(child_id: str, req: dict, current_user: User = Depends
     if not child:
         raise HTTPException(status_code=404, detail="Enfant introuvable")
 
+    existing = await crud_geofence.list_by_child(db, child_id)
+    if len(existing) >= MAX_GEOFENCES_PER_CHILD:
+        raise HTTPException(status_code=400, detail=f"Limite de {MAX_GEOFENCES_PER_CHILD} périmètres par enfant atteinte")
+
+    gtype = req.get("type", "interdit")
+    if gtype not in ("autorise", "interdit"):
+        raise HTTPException(status_code=400, detail="type doit être 'autorise' ou 'interdit'")
+
     lat = req.get("lat", 0)
     lon = req.get("lon", 0)
-    radius = req.get("radiusM", 100)
+    try:
+        radius = float(req.get("radiusM", req.get("radius_m", 100)))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="radiusM invalide")
+    if radius < 10:
+        raise HTTPException(status_code=400, detail="radiusM minimum 10 m")
 
     fence = await crud_geofence.create(db, {
         "child_id": child_id,
         "nom": req.get("nom"),
-        "type": req.get("type", "interdit"),
+        "type": gtype,
         "geom": WKTElement(f"POINT({lon} {lat})", srid=4326),
+        "radius_m": radius,
         "notify_enter": req.get("notifyOnEnter", req.get("notify_enter", True)),
         "notify_exit": req.get("notifyOnExit", req.get("notify_exit", True)),
     })
@@ -80,9 +97,17 @@ async def patch_geofence(geofence_id: str, req: dict, current_user: User = Depen
     if "nom" in req:
         update["nom"] = req["nom"]
     if "type" in req:
+        if req["type"] not in ("autorise", "interdit"):
+            raise HTTPException(status_code=400, detail="type doit être 'autorise' ou 'interdit'")
         update["type"] = req["type"]
     if "radiusM" in req:
-        update["radius_m"] = req["radiusM"]
+        try:
+            radius = float(req["radiusM"])
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="radiusM invalide")
+        if radius < 10:
+            raise HTTPException(status_code=400, detail="radiusM minimum 10 m")
+        update["radius_m"] = radius
     if "notifyOnEnter" in req:
         update["notify_enter"] = req["notifyOnEnter"]
     if "notifyOnExit" in req:

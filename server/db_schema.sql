@@ -180,6 +180,7 @@ CREATE TABLE geofences (
     nom             VARCHAR(150) NOT NULL,
     type            geofence_type NOT NULL DEFAULT 'interdit',
     geom            GEOMETRY(Geometry, 4326) NOT NULL,
+    radius_m        REAL NOT NULL DEFAULT 100,
     notify_enter    BOOLEAN NOT NULL DEFAULT TRUE,
     notify_exit     BOOLEAN NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -187,6 +188,8 @@ CREATE TABLE geofences (
 );
 CREATE INDEX idx_geofences_child ON geofences(child_id);
 CREATE INDEX idx_geofences_geom ON geofences USING GIST (geom);
+-- Migration bases existantes (sans radius_m) :
+ALTER TABLE geofences ADD COLUMN IF NOT EXISTS radius_m REAL NOT NULL DEFAULT 100;
 
 -- =============================================================================
 -- TABLE : geofence_schedules (optionnel — plages horaires par geofence)

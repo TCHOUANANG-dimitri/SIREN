@@ -49,8 +49,9 @@ def compute_fusion(
     contexte_nuit: bool = False,
     hors_perimetre: bool = False,
     previous_state: Optional[str] = None,
+    detail_reasons: Optional[List[str]] = None,
 ) -> FusionResult:
-    reasons = []
+    reasons = list(detail_reasons or [])
 
     # Sous-score géographique atténué par la confiance du modèle
     s_geo_eff = sub.geo * model_confidence
