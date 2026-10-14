@@ -1,6 +1,11 @@
 /**
  * Modèle de données côté application — CDC_1_Application_Mobile.docx §5.
- * Reflète le contrat de réponse de l'API serveur (Partie 2). Les identifiants sont des UUID (chaînes).
+ *
+ * Ce sont les types consommés par l'UI. Ils ne sont jamais lus directement
+ * depuis le réseau : les réponses serveur passent par les schémas de
+ * `src/api/contracts` (validation + normalisation) avant d'arriver ici.
+ * Un champ que la source peut ne pas fournir est typé `| null` : l'UI doit
+ * afficher « inconnu » plutôt qu'une valeur fabriquée.
  */
 
 export type Role = 'principal' | 'secondaire';
@@ -14,6 +19,7 @@ export interface User {
   telephone?: string;
   role: Role;
   langue: 'fr' | 'en';
+  twofaEnabled?: boolean;
   createdAt: string;
 }
 
@@ -28,26 +34,29 @@ export interface Child {
   sleepSchedule?: Schedule; // couche 1 déclarative — plage horaire de sommeil
 }
 
+export type EnergyMode = 'continu' | 'equilibre' | 'economie';
+
 export interface DeviceStatus {
   deviceId: string;
-  battery: number;
+  battery: number | null; // % 0..100
   online: boolean;
-  lastSeen: string;
+  lastSeen: string | null; // ISO 8601 UTC
   fixQuality: FixQuality;
   configVersion: number;
-  firmwareVersion: string;
-  energyMode: 'continu' | 'equilibre' | 'economie';
-  sensitivity: number; // 0..100, prudent -> tolérant
+  firmwareVersion: string | null;
+  energyMode: EnergyMode | null; // null = valeur serveur non reconnue
+  sensitivity: number | null; // 0..100, prudent -> tolérant
 }
 
 export interface Position {
-  lat: number;
+  lat: number; // WGS84, degrés décimaux
   lon: number;
-  speedKmh: number;
-  timestamp: string;
-  accuracyM: number;
+  speedKmh: number | null;
+  timestamp: string; // ISO 8601 UTC — horodatage du dispositif, jamais celui du téléphone
+  accuracyM: number | null; // rayon d'incertitude en mètres
   fixQuality: FixQuality;
-  heading?: number; // degrés, 0 = nord — utile pour la heatmap post-disparition
+  heading?: number | null; // degrés, 0 = nord — utile pour la heatmap post-disparition
+  battery?: number | null;
 }
 
 export interface Schedule {
@@ -83,6 +92,7 @@ export interface Geofence {
   notifyOnExit: boolean;
 }
 
+/** Sous-scores 0..100 (même échelle que le score global). */
 export interface RiskSubScores {
   geo: number;
   mouvement: number;
@@ -97,7 +107,7 @@ export interface RiskScore {
   confidence: number; // 0..100, maturité de la couche 3
   reasons: string[]; // ex: ['route inconnue', 'vitesse vehicule']
   subScores: RiskSubScores;
-  timestamp: string;
+  timestamp: string | null; // null = aucun score calculé à ce jour
 }
 
 export interface Alert {
@@ -109,8 +119,11 @@ export interface Alert {
   lat?: number;
   lon?: number;
   createdAt: string;
-  status: 'active' | 'acquittee' | 'fausse' | 'resolue';
+  status: AlertStatus;
+  resolvedAt?: string | null;
 }
+
+export type AlertStatus = 'active' | 'acquittee' | 'fausse' | 'resolue';
 
 export type Permission =
   | 'position_precise'
@@ -184,4 +197,21 @@ export interface AudioActivationLog {
   reason: string;
   startedAt: string;
   labels: string[]; // étiquettes classées sur l'appareil — jamais l'audio brut
+}
+
+/**
+ * Vue « état de zone » pour un secondaire sans droit `position_precise` :
+ * aucune coordonnée n'y figure (minimisation — CDC App §4.5).
+ */
+export interface ZoneState {
+  inZone: boolean; // l'enfant est dans un lieu ou périmètre connu
+  zoneName: string | null;
+  inForbiddenZone: boolean;
+  asOf: string | null; // horodatage du dernier point utilisé
+}
+
+export interface AuthSession {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
 }

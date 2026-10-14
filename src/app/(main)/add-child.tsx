@@ -161,7 +161,7 @@ export default function AddChildScreen() {
                 </View>
                 <Pressable onPress={() => setManualEntry(true)} style={styles.manualLink}>
                   <Keyboard size={14} color={colors.primary} />
-                  <Text style={styles.manualLinkText}>ou saisir l&apos;identifiant manuellement</Text>
+                  <Text style={styles.manualLinkText}>{t('children.manualEntry')}</Text>
                 </Pressable>
               </>
             ) : (
@@ -186,20 +186,20 @@ export default function AddChildScreen() {
                           ? findDevice.error.message
                           : createChild.error instanceof ApiError
                             ? createChild.error.message
-                            : 'Dispositif introuvable ou déjà associé'
+                            : t('errors.deviceNotFound')
                       }
                     />
                   </View>
                 )}
                 <Button
-                  label={findDevice.isPending || createChild.isPending ? 'Recherche du dispositif…' : 'Rechercher le dispositif'}
+                  label={findDevice.isPending || createChild.isPending ? t('children.searchingDevice') : t('children.searchDevice')}
                   onPress={() => {
                     if (!deviceIdInput.trim()) {
-                      setDeviceIdError("L'identifiant du dispositif est obligatoire.");
+                      setDeviceIdError(t('children.deviceIdRequired'));
                       return;
                     }
                     if (deviceIdInput.trim().length < 5) {
-                      setDeviceIdError("L'identifiant doit contenir au moins 5 caractères.");
+                      setDeviceIdError(t('children.deviceIdTooShort'));
                       return;
                     }
                     handleDeviceSubmit(deviceIdInput);

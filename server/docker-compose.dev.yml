@@ -1,0 +1,17 @@
+# SIREN — Surcouches de développement (code source monté, reload automatique)
+# Usage :
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# En production, utiliser uniquement docker-compose.yml (code embarqué dans l'image).
+services:
+  api:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./:/app
+
+  worker:
+    volumes:
+      - ./:/app
+
+  beat:
+    volumes:
+      - ./:/app

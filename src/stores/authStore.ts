@@ -18,6 +18,8 @@ interface AuthState {
   isHydrated: boolean;
   isBiometricLocked: boolean;
   setSession: (params: { user: User; accessToken: string; refreshToken: string }) => Promise<void>;
+  /** Rotation des jetons après rafraîchissement (le refresh token peut rester inchangé). */
+  setTokens: (params: { accessToken: string; refreshToken?: string }) => Promise<void>;
   hydrate: () => Promise<void>;
   logout: () => Promise<void>;
   setBiometricLocked: (locked: boolean) => void;
@@ -40,22 +42,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user, accessToken, refreshToken });
   },
 
+  async setTokens({ accessToken, refreshToken }) {
+    await secureStorage.setItem(SECURE_KEYS.accessToken, accessToken);
+    if (refreshToken) await secureStorage.setItem(SECURE_KEYS.refreshToken, refreshToken);
+    set(refreshToken ? { accessToken, refreshToken } : { accessToken });
+  },
+
   async hydrate() {
-    const [accessToken, refreshToken, user] = await Promise.all([
-      secureStorage.getItem(SECURE_KEYS.accessToken),
-      secureStorage.getItem(SECURE_KEYS.refreshToken),
-      storage.getItem<User>(USER_KEY),
-    ]);
-    set({ user, accessToken, refreshToken, isHydrated: true });
+    try {
+      const [accessToken, refreshToken, user] = await Promise.all([
+        secureStorage.getItem(SECURE_KEYS.accessToken),
+        secureStorage.getItem(SECURE_KEYS.refreshToken),
+        storage.getItem<User>(USER_KEY),
+      ]);
+      // Une session sans profil (ou l'inverse) est incohérente : on repart déconnecté.
+      if (accessToken && user) set({ user, accessToken, refreshToken, isHydrated: true });
+      else set({ user: null, accessToken: null, refreshToken: null, isHydrated: true });
+    } catch {
+      // Keystore illisible (restauration de sauvegarde, changement d'appareil) : session perdue, pas de crash.
+      set({ user: null, accessToken: null, refreshToken: null, isHydrated: true });
+    }
   },
 
   async logout() {
-    await Promise.all([
+    // L'état mémoire est vidé d'abord : même si le stockage échoue, l'UI est déconnectée.
+    set({ user: null, accessToken: null, refreshToken: null });
+    await Promise.allSettled([
       secureStorage.removeItem(SECURE_KEYS.accessToken),
       secureStorage.removeItem(SECURE_KEYS.refreshToken),
       storage.removeItem(USER_KEY),
     ]);
-    set({ user: null, accessToken: null, refreshToken: null });
   },
 
   setBiometricLocked(locked) {

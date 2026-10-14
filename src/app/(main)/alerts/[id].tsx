@@ -43,7 +43,7 @@ export default function AlertDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <View style={[styles.headerBanner, { backgroundColor: isUrgence ? colors.urgence : colors.prealerte }]}>
-        <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
+        <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel={t('common.back')}>
           <ArrowLeft size={20} color={colors.white} />
         </Pressable>
         <Text style={styles.headerTitle}>{isUrgence ? 'Urgence' : 'Pré-alerte'}</Text>
@@ -87,7 +87,7 @@ export default function AlertDetailScreen() {
 
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>{t('common.status')}</Text>
-          <Text style={styles.statusValue}>{statusLabel(alert.status)}</Text>
+          <Text style={styles.statusValue}>{statusLabel(t, alert.status)}</Text>
         </Card>
 
         {canManage && alert.status === 'active' && (
@@ -109,8 +109,8 @@ export default function AlertDetailScreen() {
   );
 }
 
-function statusLabel(status: string) {
-  return { active: 'Active', acquittee: 'Acquittée', fausse: 'Fausse alerte', resolue: 'Résolue' }[status] ?? status;
+function statusLabel(t: (key: string) => string, status: string) {
+  return ['active', 'acquittee', 'fausse', 'resolue'].includes(status) ? t(`alerts.status.${status}`) : status;
 }
 
 const styles = StyleSheet.create({

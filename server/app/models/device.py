@@ -14,6 +14,6 @@ class Device(Base):
     last_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     battery: Mapped[int] = mapped_column(SmallInteger, nullable=True)
     online: Mapped[bool] = mapped_column(Boolean, default=False)
-    energy_mode: Mapped[str] = mapped_column(String(20), default="normal")
-    sensitivity: Mapped[str] = mapped_column(String(20), default="normal")
+    energy_mode: Mapped[str] = mapped_column(String(20), default="equilibre")
+    sensitivity: Mapped[str] = mapped_column(String(20), default="50")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

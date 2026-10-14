@@ -26,7 +26,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
       return (
         <View style={styles.container}>
           <Text style={styles.title}>{i18n.t('errors.unexpected')}</Text>
-          <Text style={styles.message}>{this.state.error.message}</Text>
+          <Text style={styles.message}>{i18n.t('errors.unexpectedBody')}</Text>
           <Button label={i18n.t('common.retry')} onPress={() => this.setState({ error: null })} />
         </View>
       );

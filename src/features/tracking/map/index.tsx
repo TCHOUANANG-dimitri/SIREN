@@ -212,3 +212,60 @@ export function Polyline({
 const styles = StyleSheet.create({
   marker: { alignItems: 'center', justifyContent: 'center' },
 });
+
+export interface HeatmapPoint {
+  latitude: number;
+  longitude: number;
+  /** Poids 0..1 (probabilité relative de présence) fourni par le module IA. */
+  weight: number;
+}
+
+/** Construit la collection GeoJSON du calque de densité (poids borné à 0..1). */
+export function heatmapFeatures(points: HeatmapPoint[]) {
+  return {
+    type: 'FeatureCollection' as const,
+    features: points
+      .filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude) && p.weight > 0)
+      .map((p) => ({
+        type: 'Feature' as const,
+        properties: { weight: Math.min(1, Math.max(0, p.weight)) },
+        geometry: { type: 'Point' as const, coordinates: [p.longitude, p.latitude] },
+      })),
+  };
+}
+
+/**
+ * Carte de chaleur (zone de recherche post-disparition — CDC IA-06) : calque
+ * natif `heatmap` de MapLibre, pondéré par la probabilité de chaque cellule.
+ */
+export function Heatmap({ points, opacity = 0.85 }: { points: HeatmapPoint[]; opacity?: number }) {
+  const shape = useMemo(() => heatmapFeatures(points), [points]);
+  const id = useMemo(() => `heat-${Math.random().toString(36).slice(2)}`, []);
+  return (
+    <GeoJSONSource id={id} data={shape}>
+      <Layer
+        id={`${id}-layer`}
+        type="heatmap"
+        paint={{
+          'heatmap-weight': ['get', 'weight'],
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 10, 18, 15, 45],
+          'heatmap-intensity': 1,
+          'heatmap-opacity': opacity,
+          'heatmap-color': [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0,
+            'rgba(211,47,46,0)',
+            0.3,
+            'rgba(245,166,35,0.55)',
+            0.7,
+            'rgba(211,47,46,0.75)',
+            1,
+            'rgba(122,16,16,0.9)',
+          ],
+        }}
+      />
+    </GeoJSONSource>
+  );
+}

@@ -1,54 +1,55 @@
 """
-Endpoints device settings - manquant côté backend.
+Réglages du dispositif (CDC App §4.2) : l'app écrit, le serveur incrémente la
+version de configuration, le dispositif la récupère à sa prochaine connexion
+(GET /device/v1/pack ; la version courante est aussi renvoyée dans l'ack de télémétrie).
 """
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.authz import get_child_access
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.models.user import User
-from app.models.device import Device
-from app.crud.child import crud_child
 from app.crud.device import crud_device
+from app.models.user import User
 
 router = APIRouter()
 
 
-@router.get("/{child_id}/device/settings")
-async def get_device_settings(child_id: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    child = await crud_child.get(db, child_id)
-    if not child:
-        raise HTTPException(status_code=404, detail="Enfant introuvable")
+class DeviceSettingsPatch(BaseModel):
+    energyMode: str | None = Field(None, pattern="^(continu|equilibre|economie)$")
+    sensitivity: int | None = Field(None, ge=0, le=100)
 
-    device = await crud_device.get_by_id(db, child.device_id) if child.device_id else None
+
+def _settings_dict(device):
+    return {"energyMode": device.energy_mode, "sensitivity": device.sensitivity, "configVersion": device.config_version}
+
+
+async def _device_for(db, current_user, child_id):
+    access = await get_child_access(db, current_user, child_id)
+    device = await crud_device.get_by_id(db, access.child.device_id) if access.child.device_id else None
     if not device:
         raise HTTPException(status_code=404, detail="Aucun dispositif associé")
+    return access, device
 
-    return {
-        "energyMode": device.energy_mode,
-        "sensitivity": device.sensitivity,
-        "configVersion": device.config_version,
-    }
+
+@router.get("/{child_id}/device/settings")
+async def get_device_settings(child_id: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    _, device = await _device_for(db, current_user, child_id)
+    return _settings_dict(device)
 
 
 @router.patch("/{child_id}/device/settings")
-async def patch_device_settings(child_id: str, req: dict, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    child = await crud_child.get(db, child_id)
-    if not child:
-        raise HTTPException(status_code=404, detail="Enfant introuvable")
-
-    device = await crud_device.get_by_id(db, child.device_id) if child.device_id else None
-    if not device:
-        raise HTTPException(status_code=404, detail="Aucun dispositif associé")
-
+async def patch_device_settings(child_id: str, req: DeviceSettingsPatch, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    access, device = await _device_for(db, current_user, child_id)
+    access.require_principal()
     update = {}
-    if "energyMode" in req:
-        update["energy_mode"] = req["energyMode"]
-    if "sensitivity" in req:
-        update["sensitivity"] = req["sensitivity"]
-
-    updated = await crud_device.update(db, device, update)
-    return {
-        "energyMode": updated.energy_mode,
-        "sensitivity": updated.sensitivity,
-        "configVersion": updated.config_version,
-    }
+    if req.energyMode is not None and req.energyMode != device.energy_mode:
+        update["energy_mode"] = req.energyMode
+    if req.sensitivity is not None and str(req.sensitivity) != device.sensitivity:
+        update["sensitivity"] = str(req.sensitivity)
+    if update:
+        # Nouvelle version seulement si quelque chose change : un double envoi est sans effet.
+        update["config_version"] = device.config_version + 1
+        device = await crud_device.update(db, device, update)
+    return _settings_dict(device)

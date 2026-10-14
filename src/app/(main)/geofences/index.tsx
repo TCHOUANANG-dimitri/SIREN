@@ -1,3 +1,4 @@
+import { formatDistanceM } from '@/utils/format';
 import { useEffect } from 'react';
 import { Alert as RNAlert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,7 +34,7 @@ export default function GeofencesListScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel="Retour">
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel={t('common.back')}>
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
       <Text style={styles.title}>{t('geofences.title')}</Text>
@@ -75,7 +76,7 @@ export default function GeofencesListScreen() {
                 <View style={styles.cardInfo}>
                   <Text style={styles.cardName}>{item.nom}</Text>
                   <Text style={styles.cardMeta}>
-                    {item.type === 'autorise' ? 'Zone autorisée' : 'Zone interdite'} · {item.radiusM} m
+                    {item.type === 'autorise' ? t('geofences.allowed') : t('geofences.forbidden')} · {formatDistanceM(item.radiusM)}
                     {item.notifyOnEnter || item.notifyOnExit ? ' · Notifications actives' : ''}
                   </Text>
                 </View>
@@ -88,7 +89,7 @@ export default function GeofencesListScreen() {
       <Pressable
         style={styles.fab}
         onPress={() => router.push({ pathname: '/(main)/geofences/[id]', params: { id: 'new', childId: activeChild?.id ?? '' } })}
-        accessibilityLabel="Ajouter un périmètre"
+        accessibilityLabel={t('geofences.add')}
       >
         <Plus size={26} color={colors.white} />
       </Pressable>

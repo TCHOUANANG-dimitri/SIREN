@@ -306,7 +306,7 @@ export default function ContextWizardScreen() {
 
       <View style={styles.footer}>
         <Button
-          label={isLastStep ? 'Enregistrer et continuer' : 'Suivant →'}
+          label={isLastStep ? t('wizard.saveAndContinue') : t('wizard.next')}
           onPress={isLastStep ? saveAll : () => setStep((s) => s + 1)}
           loading={saving}
         />

@@ -10,11 +10,13 @@ api_router = APIRouter(prefix="/api/v1")
 
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentification"])
 api_router.include_router(users.router, prefix="/users", tags=["Utilisateurs"])
+# Ordre significatif : les routes à segment littéral (/children/alerts, …) doivent
+# être enregistrées AVANT GET /children/{child_id}, sinon elles sont capturées par elle.
+api_router.include_router(alerts.router, prefix="/children", tags=["Alertes"])
 api_router.include_router(children.router, prefix="/children", tags=["Enfants"])
 api_router.include_router(places.router, prefix="/children", tags=["Lieux"])
 api_router.include_router(geofences.router, prefix="/children", tags=["Périmètres"])
 api_router.include_router(risk.router, prefix="/children", tags=["Risque"])
-api_router.include_router(alerts.router, prefix="/children", tags=["Alertes"])
 api_router.include_router(sharing.router, prefix="/children", tags=["Partage"])
 api_router.include_router(community.router, prefix="/community", tags=["Communauté"])
 api_router.include_router(search_zone.router, prefix="/children", tags=["Zone de recherche"])

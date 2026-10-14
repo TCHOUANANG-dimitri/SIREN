@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MapView, Marker, Polyline } from '@/features/tracking/map';
 import { Play, Square } from 'lucide-react-native';
 import { Skeleton } from '@/components';
@@ -8,27 +8,30 @@ import { useHistory } from '@/api/hooks/useTracking';
 import { formatClock, formatSpeedKmh } from '@/utils/format';
 import type { Position } from '@/models/entities';
 import { useTranslation } from 'react-i18next';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { historyRange, type HistoryPeriod } from '@/features/tracking/historyRange';
 
-type Period = 'today' | 'yesterday' | '7days';
-
-function periodRange(period: Period): { from: string; to: string } {
-  const now = new Date();
-  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
-  if (period === 'today') return { from: startOfDay(now), to: now.toISOString() };
-  if (period === 'yesterday') {
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    return { from: startOfDay(yesterday), to: startOfDay(now) };
-  }
-  const weekAgo = new Date(now);
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  return { from: weekAgo.toISOString(), to: now.toISOString() };
-}
+const PERIODS: HistoryPeriod[] = ['today', 'yesterday', '7days', 'custom'];
 
 export function HistoryTab({ childId }: { childId: string }) {
   const { t } = useTranslation();
-  const [period, setPeriod] = useState<Period>('today');
-  const { from, to } = useMemo(() => periodRange(period), [period]);
+  const [period, setPeriod] = useState<HistoryPeriod>('today');
+  const [custom, setCustom] = useState<{ from: Date; to: Date }>(() => ({ from: new Date(), to: new Date() }));
+  const [picking, setPicking] = useState<'from' | 'to' | null>(null);
+  // Recalculé quand la période change, et à chaque changement de jour pour « aujourd'hui ».
+  const dayKey = new Date().toDateString();
+  const { from, to } = useMemo(() => historyRange(period, new Date(dayKey), custom), [period, custom, dayKey]);
+
+  function onPicked(event: DateTimePickerEvent, date?: Date) {
+    const step = picking;
+    if (Platform.OS === 'android') setPicking(null);
+    if (event.type !== 'set' || !date || !step) return;
+    setCustom((c) => ({ ...c, [step]: date }));
+    setPeriod('custom');
+    // Enchaîne sur la date de fin après la date de début.
+    if (step === 'from') setPicking('to');
+    else setPicking(null);
+  }
   const { data: positions, isLoading } = useHistory(childId, from, to);
   const [playIndex, setPlayIndex] = useState<number | null>(null);
 
@@ -47,10 +50,18 @@ export function HistoryTab({ childId }: { childId: string }) {
   return (
     <View style={styles.flex}>
       <View style={styles.periodRow}>
-        {(['today', 'yesterday', '7days'] as Period[]).map((p) => (
-          <Pressable key={p} onPress={() => setPeriod(p)} style={[styles.chip, period === p && styles.chipActive]}>
+        {PERIODS.map((p) => (
+          <Pressable
+            key={p}
+            onPress={() => (p === 'custom' ? setPicking('from') : setPeriod(p))}
+            style={[styles.chip, period === p && styles.chipActive]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: period === p }}
+          >
             <Text style={[styles.chipText, period === p && styles.chipTextActive]}>
-              {p === 'today' ? "Aujourd'hui" : p === 'yesterday' ? 'Hier' : '7 jours'}
+              {p === 'custom' && period === 'custom'
+                ? `${custom.from.toLocaleDateString()} → ${custom.to.toLocaleDateString()}`
+                : t(`history.period.${p}`)}
             </Text>
           </Pressable>
         ))}
@@ -58,7 +69,7 @@ export function HistoryTab({ childId }: { childId: string }) {
           <Pressable
             onPress={() => setPlayIndex(playIndex === null ? 0 : null)}
             style={styles.playButton}
-            accessibilityLabel="Lire le trajet"
+            accessibilityLabel={t('history.play')}
           >
             {playIndex === null ? (
               <Play size={16} color={colors.primary} />
@@ -68,6 +79,15 @@ export function HistoryTab({ childId }: { childId: string }) {
           </Pressable>
         )}
       </View>
+
+      {picking && (
+        <DateTimePicker
+          value={custom[picking]}
+          mode="date"
+          maximumDate={new Date()}
+          onChange={onPicked}
+        />
+      )}
 
       {isLoading ? (
         <View style={styles.padded}>

@@ -1,0 +1,41 @@
+import { getDb, mutateDb } from '../db';
+import { ApiError } from '../../errors';
+import { simulateLatency } from '../helpers';
+import { assertChildAccess, assertPrincipal, resolveCurrentUser } from '../session';
+import type { DeviceStatus } from '@/models/entities';
+import i18n from '@/i18n';
+
+export async function getDeviceSettings(token: string | null, childId: string): Promise<DeviceStatus> {
+  await simulateLatency();
+  const user = resolveCurrentUser(token);
+  assertChildAccess(childId, user);
+  const db = getDb();
+  const child = db.children.find((c) => c.id === childId);
+  const device = db.devices.find((d) => d.deviceId === child?.deviceId);
+  if (!device) throw new ApiError(i18n.t('errors.deviceMissing'), 404);
+  return device;
+}
+
+export async function patchDeviceSettings(
+  token: string | null,
+  childId: string,
+  patch: Partial<Pick<DeviceStatus, 'energyMode' | 'sensitivity'>>
+): Promise<DeviceStatus> {
+  await simulateLatency(400, 900);
+  const user = resolveCurrentUser(token);
+  assertChildAccess(childId, user);
+  assertPrincipal(user); // "Régler le dispositif" réservé au principal — CDC §7.2
+  const db = getDb();
+  const child = db.children.find((c) => c.id === childId);
+  const device = db.devices.find((d) => d.deviceId === child?.deviceId);
+  if (!device) throw new ApiError(i18n.t('errors.deviceMissing'), 404);
+  mutateDb((d) => {
+    const target = d.devices.find((dev) => dev.deviceId === device.deviceId);
+    if (target) {
+      Object.assign(target, patch);
+      target.configVersion += 1;
+      target.lastSeen = new Date().toISOString();
+    }
+  });
+  return { ...device, ...patch };
+}

@@ -1,23 +1,16 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { passwordScore } from '@/features/auth/passwordPolicy';
 
-function scorePassword(password: string): number {
-  let score = 0;
-  if (password.length >= 6) score += 1;
-  if (/[a-z]/.test(password)) score += 1;
-  if (/[A-Z]/.test(password)) score += 1;
-  if (/[0-9]/.test(password)) score += 1;
-  if (/[^A-Za-z0-9]/.test(password)) score += 1;
-  return score;
-}
-
-const labels = ['Trop faible', 'Très faible', 'Faible', 'Moyen', 'Bon', 'Excellent'];
+const labelKeys = ['veryWeak', 'veryWeak', 'weak', 'medium', 'good', 'excellent'];
 const colorsByScore = [colors.urgence, colors.urgence, colors.urgence, colors.prealerte, colors.veille, colors.veille];
 
 export function PasswordStrengthMeter({ password }: { password: string }) {
+  const { t } = useTranslation();
   if (!password) return null;
-  const score = scorePassword(password);
+  const score = passwordScore(password);
 
   return (
     <View style={styles.wrapper}>
@@ -29,7 +22,7 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
           />
         ))}
       </View>
-      <Text style={[styles.label, { color: colorsByScore[score] }]}>{labels[score]}</Text>
+      <Text style={[styles.label, { color: colorsByScore[score] }]}>{t(`passwordStrength.${labelKeys[score]}`)}</Text>
     </View>
   );
 }

@@ -7,14 +7,15 @@ import { colors, fontFamily, radii, shadow, spacing, typography } from '@/theme'
 import { usePosition, useRequestPositionFix, useZoneState } from '@/api/hooks/useTracking';
 import { useGeofences } from '@/api/hooks/useGeofences';
 import { usePlaces } from '@/api/hooks/usePlaces';
-import { useRealtimeChannel } from '@/api/hooks/useRealtimeChannel';
 import { useCurrentAccess } from '@/features/sharing/useCurrentAccess';
-import { formatRelativeTime } from '@/utils/format';
+import { useChildStatus } from '@/api/hooks/useChildren';
+import { toUserMessage } from '@/api/errors';
+import { positionFreshness } from '@/features/tracking/freshness';
+import { formatBattery, formatRelativeTime } from '@/utils/format';
 import { useTranslation } from 'react-i18next';
 
 export function MapTab({ childId }: { childId: string }) {
   const { t } = useTranslation();
-  useRealtimeChannel(childId);
   const { can, isLoading: accessLoading } = useCurrentAccess(childId);
   const hasPrecise = can('view_position_precise');
   const hasZoneOnly = !hasPrecise && can('view_zone_state');
@@ -43,8 +44,14 @@ function ZoneStateView({ childId }: { childId: string }) {
   return (
     <View style={styles.zoneContainer}>
       <Card style={styles.zoneCard}>
-        <Text style={styles.zoneTitle}>{zone.inZone ? `Dans la zone ${zone.zoneName}` : 'Hors des zones connues'}</Text>
-        <Text style={styles.zoneMeta}>Mis à jour {formatRelativeTime(zone.asOf)}</Text>
+        <Text style={styles.zoneTitle}>
+          {zone.inForbiddenZone
+            ? t('childTabs.inForbiddenZone', { zone: zone.zoneName ?? '' })
+            : zone.inZone && zone.zoneName
+              ? t('childTabs.inZone', { zone: zone.zoneName })
+              : t('childTabs.outsideKnownZones')}
+        </Text>
+        <Text style={styles.zoneMeta}>{t('childTabs.updated', { when: formatRelativeTime(zone.asOf) })}</Text>
       </Card>
       <Text style={styles.zoneHint}>{t('childTabs.noPreciseposition')}</Text>
     </View>
@@ -57,8 +64,20 @@ function PreciseMap({ childId }: { childId: string }) {
   const { data: geofences } = useGeofences(childId);
   const { data: places } = usePlaces(childId);
   const requestFix = useRequestPositionFix(childId);
+  const { data: device } = useChildStatus(childId);
   const mapRef = useRef<MapViewRef>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [fixMessage, setFixMessage] = useState<{ kind: 'info' | 'error'; text: string } | null>(null);
+
+  async function askForFix() {
+    setFixMessage(null);
+    try {
+      await requestFix.mutateAsync();
+      setFixMessage({ kind: 'info', text: t('childTabs.fixRequested') });
+    } catch (error) {
+      setFixMessage({ kind: 'error', text: toUserMessage(error) });
+    }
+  }
 
   useEffect(() => {
     if (position) {
@@ -89,21 +108,27 @@ function PreciseMap({ childId }: { childId: string }) {
           variant="secondary"
           icon={<Navigation size={16} color={colors.primary} />}
           onPress={() => {
-            requestFix.mutate();
+            void askForFix();
             void refetch();
           }}
           loading={requestFix.isPending}
         />
+        {fixMessage && <Banner kind={fixMessage.kind} message={fixMessage.text} />}
       </View>
     );
   }
 
+  const { freshness } = positionFreshness(position, device);
+  const when = formatRelativeTime(position.timestamp);
   const reliability =
-    position.fixQuality === 'gps_recent'
-      ? { kind: 'success' as const, message: `Position GPS récente — ${formatRelativeTime(position.timestamp)}` }
-      : position.fixQuality === 'estimee'
-        ? { kind: 'warning' as const, message: 'Position estimée' }
-        : { kind: 'error' as const, message: `Signal perdu depuis ${formatRelativeTime(position.timestamp)}` };
+    freshness === 'recent'
+      ? { kind: 'success' as const, message: t('tracking.recent', { when }) }
+      : freshness === 'estimated'
+        ? { kind: 'warning' as const, message: t('tracking.estimated', { when }) }
+        : freshness === 'device_offline'
+          ? { kind: 'error' as const, message: t('tracking.deviceOffline', { when }) }
+          : { kind: 'error' as const, message: t('tracking.lost', { when }) };
+  const batteryLine = t('tracking.batteryLine', { battery: formatBattery(device?.battery ?? position.battery) });
 
   const activeSearch = searchQuery.trim();
   const matchedPlace = places?.find((p) => p.nom.toLowerCase().includes(activeSearch.toLowerCase()));
@@ -116,12 +141,14 @@ function PreciseMap({ childId }: { childId: string }) {
         initialRegion={{ latitude: position.lat, longitude: position.lon, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
       >
         <Marker coordinate={{ latitude: position.lat, longitude: position.lon }} pinColor={colors.primary} title={t('childTabs.currentPosition')} />
-        <Circle
-          center={{ latitude: position.lat, longitude: position.lon }}
-          radius={Math.max(position.accuracyM, 15)}
-          strokeColor={colors.primary}
-          fillColor="rgba(211,47,46,0.12)"
-        />
+        {position.accuracyM !== null && (
+          <Circle
+            center={{ latitude: position.lat, longitude: position.lon }}
+            radius={Math.max(position.accuracyM, 15)}
+            strokeColor={colors.primary}
+            fillColor="rgba(211,47,46,0.12)"
+          />
+        )}
         {geofences?.map((g) => (
           <Circle
             key={g.id}
@@ -141,15 +168,11 @@ function PreciseMap({ childId }: { childId: string }) {
           />
         ))}
 
-        {activeSearch !== '' && (
+        {activeSearch !== '' && matchedPlace && (
           <Marker
-            coordinate={{
-              latitude: matchedPlace ? matchedPlace.lat : position.lat + 0.001,
-              longitude: matchedPlace ? matchedPlace.lon : position.lon + 0.001,
-            }}
+            coordinate={{ latitude: matchedPlace.lat, longitude: matchedPlace.lon }}
             pinColor="#2196F3"
-            title={activeSearch}
-            description={`Recherche : "${activeSearch}"`}
+            title={matchedPlace.nom}
           />
         )}
       </MapView>
@@ -173,18 +196,21 @@ function PreciseMap({ childId }: { childId: string }) {
 
         {activeSearch !== '' && (
           <View style={styles.searchBadge}>
-            <Text style={styles.searchBadgeText}>Nom affiché sur la carte : {activeSearch}</Text>
+            <Text style={styles.searchBadgeText}>
+              {matchedPlace ? t('childTabs.searchMatch', { place: matchedPlace.nom }) : t('childTabs.searchNoMatch')}
+            </Text>
           </View>
         )}
 
-        <Banner kind={reliability.kind} message={reliability.message} />
+        <Banner kind={reliability.kind} message={`${reliability.message} · ${batteryLine}`} />
+        {fixMessage && <Banner kind={fixMessage.kind} message={fixMessage.text} />}
       </View>
 
       <View style={styles.overlayBottom}>
         <Button
           label={t('childTabs.requestPosition')}
           icon={<Navigation size={16} color={colors.white} />}
-          onPress={() => requestFix.mutate()}
+          onPress={() => void askForFix()}
           loading={requestFix.isPending}
         />
       </View>

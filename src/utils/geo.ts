@@ -1,3 +1,5 @@
+import i18n from '@/i18n';
+
 const EARTH_RADIUS_M = 6371000;
 
 function toRad(deg: number) {
@@ -68,9 +70,10 @@ export function isNight(date: Date = new Date()): boolean {
   return hour >= 22 || hour < 6;
 }
 
-const CARDINALS = ['Nord', 'Nord-Est', 'Est', 'Sud-Est', 'Sud', 'Sud-Ouest', 'Ouest', 'Nord-Ouest'];
+const CARDINALS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
 
+/** Direction cardinale traduite (8 secteurs de 45°). */
 export function bearingToCardinal(bearingDeg: number): string {
   const index = Math.round(bearingDeg / 45) % 8;
-  return CARDINALS[(index + 8) % 8];
+  return i18n.t(`cardinal.${CARDINALS[(index + 8) % 8]}`);
 }

@@ -8,6 +8,8 @@ import { MapTab } from '@/features/children/tabs/MapTab';
 import { FauconWebView } from '@/features/tracking/FauconWebView';
 import { Banner } from '@/components';
 import { useTranslation } from 'react-i18next';
+import { featureFlags } from '@/config/env';
+import { isMockMode } from '@/api/network';
 
 /**
  * Deux sources de position cohabitent le temps de la transition :
@@ -17,14 +19,14 @@ import { useTranslation } from 'react-i18next';
  */
 type Source = 'faucon' | 'demo';
 
-const SOURCES: { key: Source; label: string }[] = [
-  { key: 'faucon', label: 'GPS réel' },
-  { key: 'demo', label: 'Démo SIREN' },
+const SOURCES: { key: Source; labelKey: string }[] = [
+  { key: 'faucon', labelKey: 'map.sourceFaucon' },
+  { key: 'demo', labelKey: isMockMode() ? 'map.sourceDemo' : 'map.sourceSiren' },
 ];
 
 export default function MapScreen() {
   const { t } = useTranslation();
-  const [source, setSource] = useState<Source>('faucon');
+  const [source, setSource] = useState<Source>(featureFlags.faucon ? 'faucon' : 'demo');
   const { data: children } = useChildren();
   const selectedChildId = useUiStore((s) => s.selectedChildId);
   const setSelectedChildId = useUiStore((s) => s.setSelectedChildId);
@@ -40,20 +42,20 @@ export default function MapScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.sourceRow}>
-        {SOURCES.map(({ key, label }) => (
+        {featureFlags.faucon && SOURCES.map(({ key, labelKey }) => (
           <Pressable
             key={key}
             onPress={() => setSource(key)}
             style={[styles.sourceChip, key === source && styles.sourceChipActive]}
           >
             <Text style={[styles.sourceText, key === source && styles.sourceTextActive]}>
-              {label}
+              {t(labelKey)}
             </Text>
           </Pressable>
         ))}
       </View>
 
-      {source === 'faucon' ? (
+      {featureFlags.faucon && source === 'faucon' ? (
         <FauconWebView />
       ) : (
         <>

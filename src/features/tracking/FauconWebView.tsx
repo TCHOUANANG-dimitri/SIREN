@@ -34,7 +34,7 @@ export function FauconWebView() {
       <WebView
         key={reloadKey}
         ref={webviewRef}
-        source={{ uri: env.fauconUrl }}
+        source={{ uri: env.fauconUrl ?? 'about:blank' }}
         onLoadEnd={() => setStatus((s) => (s === 'error' ? s : 'ready'))}
         onError={(e) => {
           logger.error(e.nativeEvent.description, { stage: 'faucon-webview' });

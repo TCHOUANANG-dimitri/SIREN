@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useChildren } from '@/api/hooks/useChildren';
 import { useShares } from '@/api/hooks/useSharing';
 import { useUiStore } from '@/stores/uiStore';
-import { permissionLabels } from '@/features/sharing/permissions';
+import { permissionLabel } from '@/features/sharing/permissions';
 import type { SecondaryAccess } from '@/models/entities';
 import { useTranslation } from 'react-i18next';
 
@@ -89,8 +89,8 @@ export default function SharingScreen() {
                 </View>
                 <Text style={styles.rightsSummary} numberOfLines={1}>
                   {item.permissions.length === 0
-                    ? 'Aucun droit accordé'
-                    : item.permissions.map((p) => permissionLabels[p].label).join(', ')}
+                    ? t('sharing.noRights')
+                    : item.permissions.map((p) => permissionLabel(t, p).label).join(', ')}
                 </Text>
               </Card>
             </Pressable>
@@ -101,7 +101,7 @@ export default function SharingScreen() {
       <Pressable
         style={styles.fab}
         onPress={() => router.push({ pathname: '/(main)/sharing/invite', params: { childId: activeChild?.id ?? '' } })}
-        accessibilityLabel="Inviter une personne"
+        accessibilityLabel={t('sharing.invitePerson')}
       >
         <Plus size={26} color={colors.white} />
       </Pressable>

@@ -9,8 +9,9 @@ import { Banner, Button, Card, PermissionToggle, TextField } from '@/components'
 import { colors, fontFamily, spacing, typography } from '@/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { usePatchMe, useDeleteAccount } from '@/api/hooks/useUsers';
-import { resetMockBackend } from '@/api/mock/bootstrap';
-import { mockEventBus } from '@/api/mock/mockEventBus';
+import { useLogout } from '@/api/hooks/useAuth';
+import { isMockMode } from '@/api/network';
+import { toUserMessage } from '@/api/errors';
 import { isTranslationApiActive } from '@/services/translationService';
 import { storage } from '@/utils/storage';
 
@@ -20,7 +21,7 @@ const BIOMETRIC_KEY = 'siren.prefs.biometricLock';
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const logout = useLogout();
   const queryClient = useQueryClient();
   const patchMe = usePatchMe();
   const deleteAccount = useDeleteAccount();
@@ -33,15 +34,18 @@ export default function SettingsScreen() {
   const [notifInfo, setNotifInfo] = useState(true);
   const [biometricLock, setBiometricLock] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Le store d'auth s'hydrate de façon asynchrone : au premier rendu `user` est
   // encore null, et useState fige alors les champs sur une chaîne vide. On les
   // réalimente dès que le profil est disponible (ou qu'on change de compte).
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) return;
-    setNom(user.nom ?? '');
-    setTelephone(user.telephone ?? '');
-  }, [user?.id]);
+    const current = useAuthStore.getState().user;
+    if (!current) return;
+    setNom(current.nom ?? '');
+    setTelephone(current.telephone ?? '');
+  }, [userId]);
 
   useEffect(() => {
     (async () => {
@@ -57,14 +61,20 @@ export default function SettingsScreen() {
   }, []);
 
   async function saveProfile() {
-    await patchMe.mutateAsync({ nom, telephone });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1800);
+    setError(null);
+    try {
+      await patchMe.mutateAsync({ nom, telephone });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1800);
+    } catch (e) {
+      setError(toUserMessage(e));
+    }
   }
 
   async function changeLanguage(lang: 'fr' | 'en') {
+    // La bascule locale est immédiate ; l'enregistrement serveur est un plus, pas un prérequis.
     await i18n.changeLanguage(lang);
-    await patchMe.mutateAsync({ langue: lang });
+    patchMe.mutate({ langue: lang });
   }
 
   async function updateNotifPrefs(next: Partial<{ urgence: boolean; prealerte: boolean; info: boolean }>) {
@@ -86,14 +96,17 @@ export default function SettingsScreen() {
 
   async function handleReset() {
     setResetting(true);
-    await resetMockBackend();
-    queryClient.clear();
-    setResetting(false);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      await require('@/api/mock/entry').resetMockBackend();
+      queryClient.clear();
+    } finally {
+      setResetting(false);
+    }
   }
 
-  async function handleLogout() {
-    queryClient.clear();
-    await logout();
+  function handleLogout() {
+    logout.mutate();
   }
 
   function confirmDeleteAccount() {
@@ -106,8 +119,12 @@ export default function SettingsScreen() {
           text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
-            await deleteAccount.mutateAsync();
-            queryClient.clear();
+            setError(null);
+            try {
+              await deleteAccount.mutateAsync();
+            } catch (e) {
+              setError(toUserMessage(e));
+            }
           },
         },
       ]
@@ -121,6 +138,7 @@ export default function SettingsScreen() {
       <Text style={styles.title}>{t('tabs.settings')}</Text>
 
       {saved && <Banner kind="success" message={t('settings.prefsSaved')} />}
+      {error && <Banner kind="error" message={error} />}
 
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>{t('settings.profile')}</Text>
@@ -159,6 +177,7 @@ export default function SettingsScreen() {
 
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>{t('settings.notifications')}</Text>
+        <Text style={styles.cardBody}>{t('settings.notifLocalOnly')}</Text>
         <PermissionToggle label={t('settings.notifUrgence')} value={notifUrgence} onValueChange={(v) => updateNotifPrefs({ urgence: v })} />
         <PermissionToggle label={t('settings.notifPrealerte')} value={notifPrealerte} onValueChange={(v) => updateNotifPrefs({ prealerte: v })} />
         <PermissionToggle label={t('settings.notifInfo')} value={notifInfo} onValueChange={(v) => updateNotifPrefs({ info: v })} />
@@ -174,6 +193,7 @@ export default function SettingsScreen() {
         />
       </Card>
 
+      {isMockMode() && (
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>{t('settings.demoMode')}</Text>
         <Text style={styles.cardBody}>
@@ -190,9 +210,11 @@ export default function SettingsScreen() {
         <Button
           label={t('settings.simulateOffline')}
           variant="ghost"
-          onPress={() => mockEventBus.simulateDisconnect(8000)}
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          onPress={() => require('@/api/mock/entry').simulateMockDisconnect(8000)}
         />
       </Card>
+      )}
 
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>{t('settings.about')}</Text>
@@ -216,7 +238,7 @@ export default function SettingsScreen() {
         </Text>
       </Card>
 
-      <Button label={t('settings.logout')} variant="secondary" icon={<LogOut size={16} color={colors.primary} />} onPress={handleLogout} />
+      <Button label={t('settings.logout')} variant="secondary" icon={<LogOut size={16} color={colors.primary} />} onPress={handleLogout} loading={logout.isPending} />
       <View style={{ height: spacing.sm }} />
       <Button
         label={t('settings.deleteAccount')}

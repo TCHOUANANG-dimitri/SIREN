@@ -6,6 +6,8 @@ interface LocationState {
   latitude: number;
   longitude: number;
   permissionGranted: boolean | null; // null = not yet requested
+  /** Vrai seulement si latitude/longitude viennent d'un vrai fix (et non du repli Yaoundé). */
+  hasFix: boolean;
   initialized: boolean;
   /** Request foreground permission, then get current coords. Call once at app start. */
   initialize: () => Promise<void>;
@@ -16,6 +18,7 @@ const FALLBACK = { latitude: 3.848, longitude: 11.5021 }; // Yaoundé
 export const useLocationStore = create<LocationState>((set, get) => ({
   ...FALLBACK,
   permissionGranted: null,
+  hasFix: false,
   initialized: false,
 
   initialize: async () => {
@@ -32,6 +35,7 @@ export const useLocationStore = create<LocationState>((set, get) => ({
         set({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
+          hasFix: true,
         });
       }
     } catch (error) {
