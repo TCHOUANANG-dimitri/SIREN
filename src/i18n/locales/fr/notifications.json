@@ -1,0 +1,25 @@
+{
+  "notifications": {
+    "channelUrgence": "Urgences",
+    "channelPrealerte": "Pré-alertes",
+    "channelInformation": "Informations (zone, batterie, dispositif)",
+    "push": {
+      "urgence": {
+        "title": "Urgence — {{child}}",
+        "body": "Situation anormale détectée. Ouvrez SIREN immédiatement."
+      },
+      "prealerte": {
+        "title": "Pré-alerte — {{child}}",
+        "body": "Comportement inhabituel détecté. Vérifiez la situation."
+      },
+      "low_battery": {
+        "title": "Batterie faible — {{child}}",
+        "body": "Le dispositif de {{child}} doit être rechargé bientôt."
+      },
+      "share_invite": {
+        "title": "Nouvel accès partagé",
+        "body": "{{inviter}} partage avec vous le suivi de {{child}}. Ouvrez SIREN pour répondre."
+      }
+    }
+  }
+}

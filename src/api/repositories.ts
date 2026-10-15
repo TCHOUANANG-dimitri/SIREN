@@ -29,28 +29,55 @@ import type {
  * rafraîchir de façon transparente.
  */
 
-export interface LoginResult extends AuthSession {
-  /** Le serveur exige un second facteur avant d'ouvrir la session. */
-  twofaRequired: boolean;
-}
-
-export interface OtpRequestResult {
-  /**
-   * Faux si le serveur déclare l'étape OTP non requise (aucun fournisseur
-   * SMS/email configuré) : l'app ouvre alors la session directement.
-   */
-  required: boolean;
-  /** Code affiché en démo uniquement (mock) ; toujours absent en live. */
+/** Code à usage unique en attente de saisie (vérification email, 2FA, mot de passe oublié). */
+export interface OtpChallenge {
+  /** Jeton opaque du serveur ; null en compatibilité v1 (code fixe de développement). */
+  challengeToken: string | null;
+  /** Durée de validité annoncée par le serveur, en secondes (null si inconnue). */
+  expiresIn: number | null;
+  /** Code affiché en démo / développement uniquement ; toujours absent en production. */
   devHint?: string;
 }
 
+/**
+ * Connexion : soit la session est ouverte, soit le serveur exige un second
+ * facteur — et dans ce cas AUCUN jeton de session n'est encore délivré.
+ */
+export type LoginResult =
+  | ({ twofaRequired: false } & AuthSession)
+  | ({ twofaRequired: true } & OtpChallenge);
+
+export interface OtpRequestResult extends Partial<OtpChallenge> {
+  /**
+   * Faux si le serveur déclare l'étape OTP non requise (aucun canal configuré,
+   * OTP_MODE=disabled) : l'app ouvre alors la session directement.
+   */
+  required: boolean;
+}
+
+export interface RegisterInput {
+  nom: string;
+  email: string;
+  telephone?: string;
+  password: string;
+  langue: 'fr' | 'en';
+  acceptedTermsVersion: string;
+  acceptedPrivacyVersion: string;
+}
+
 export interface AuthRepository {
-  register(input: { nom: string; email: string; telephone?: string; password: string }): Promise<AuthSession>;
+  register(input: RegisterInput): Promise<AuthSession>;
   login(input: { email: string; password: string }): Promise<LoginResult>;
   refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken?: string }>;
-  requestOtp(input: { destination: string }): Promise<OtpRequestResult>;
-  verifyOtp(input: { code: string; accessToken: string }): Promise<void>;
-  forgotPassword(email: string): Promise<void>;
+  /** Code de confirmation de l'email après inscription (session encore en attente). */
+  requestOtp(input: { accessToken: string }): Promise<OtpRequestResult>;
+  verifyOtp(input: { code: string; accessToken: string; challengeToken: string | null }): Promise<void>;
+  /** Second facteur de connexion : renvoie la session une fois le code validé. */
+  verifySecondFactor(input: { challengeToken: string; code: string }): Promise<AuthSession>;
+  resendSecondFactor(challengeToken: string): Promise<OtpChallenge>;
+  /** Même réponse que le compte existe ou non (pas d'énumération des comptes). */
+  forgotPassword(email: string): Promise<OtpChallenge>;
+  resetPassword(input: { challengeToken: string; code: string; newPassword: string }): Promise<void>;
   logout(refreshToken: string): Promise<void>;
 }
 
@@ -58,6 +85,9 @@ export interface UsersRepository {
   patchMe(patch: Partial<Pick<User, 'nom' | 'telephone' | 'langue'>>): Promise<User>;
   deleteMe(): Promise<void>;
   registerPushToken(input: { token: string; platform: 'fcm' | 'apns' }): Promise<void>;
+  /** Les autres sessions sont révoquées ; renvoie les nouveaux jetons de cette session. */
+  changePassword(input: { currentPassword: string; newPassword: string }): Promise<{ accessToken: string; refreshToken?: string }>;
+  setTwoFactor(input: { enabled: boolean; password: string }): Promise<User>;
 }
 
 export interface DeviceLookup {
@@ -112,7 +142,8 @@ export interface AlertsRepository {
 
 export interface SharingRepository {
   list(childId: string): Promise<SecondaryAccess[]>;
-  create(childId: string, input: { userIdentifier: string; permissions: Permission[] }): Promise<SecondaryAccess>;
+  /** `notified` : le serveur a réellement envoyé un email à la personne invitée (jamais supposé). */
+  create(childId: string, input: { userIdentifier: string; permissions: Permission[] }): Promise<{ share: SecondaryAccess; notified: boolean }>;
   get(shareId: string): Promise<SecondaryAccess>;
   patch(shareId: string, patch: { permissions?: Permission[]; status?: SecondaryAccess['status'] }): Promise<SecondaryAccess>;
   myPermissions(childId: string): Promise<Permission[]>;

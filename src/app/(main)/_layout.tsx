@@ -11,7 +11,7 @@ import { api } from '@/api';
 import { syncPushToken } from '@/utils/notifications';
 import { logger } from '@/utils/logger';
 import { useAuthStore } from '@/stores/authStore';
-import i18n from '@/i18n';
+import { reconcileAccountLanguage } from '@/i18n/language';
 
 /** Services actifs pendant toute la session : temps réel, push, liens de notification. */
 function SessionServices() {
@@ -23,10 +23,13 @@ function SessionServices() {
   useRiskWatch(childIds);
   useNotificationDeepLink();
 
-  // La langue choisie est un réglage de compte : elle suit le parent d'un téléphone à l'autre.
+  // Langue : choix fait sur ce téléphone > langue du compte > langue du téléphone.
+  // Le serveur doit connaître la langue effective (push et emails sont rédigés par lui).
   const langue = useAuthStore((s) => s.user?.langue);
   useEffect(() => {
-    if (langue && i18n.language !== langue) void i18n.changeLanguage(langue);
+    reconcileAccountLanguage(langue)
+      .then((toSync) => (toSync ? api.users.patchMe({ langue: toSync }) : undefined))
+      .catch((error) => logger.warn('Langue non synchronisée avec le compte', { errorCode: String(error) }));
   }, [langue]);
 
   useEffect(() => {

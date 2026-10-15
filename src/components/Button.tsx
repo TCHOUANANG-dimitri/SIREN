@@ -2,13 +2,12 @@ import React from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  StyleSheet,
   Text,
   View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { colors, fontFamily, radii, spacing, touchTarget, typography } from '@/theme';
+import { fontFamily, radii, spacing, touchTarget, typography, makeStyles } from '@/theme';
 
 type Variant = 'primary' | 'secondary' | 'emergency' | 'ghost';
 
@@ -37,6 +36,8 @@ export function Button({
   accessibilityHint,
   testID,
 }: ButtonProps) {
+  const styles = useStyles();
+  const variantStyles = useVariantStyles();
   const isDisabled = disabled || loading;
 
   return (
@@ -49,23 +50,23 @@ export function Button({
       accessibilityHint={accessibilityHint}
       style={({ pressed }) => [
         styles.base,
-        variantStyles[variant].base,
+        variantStyles[`${variant}Base`],
         fullWidth && styles.fullWidth,
         variant === 'emergency' && styles.emergencySize,
-        pressed && !isDisabled && variantStyles[variant].pressed,
+        pressed && !isDisabled && variantStyles[`${variant}Pressed`],
         isDisabled && styles.disabled,
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variantStyles[variant].text.color as string} />
+        <ActivityIndicator color={variantStyles[`${variant}Text`].color} />
       ) : (
         <View style={styles.content}>
           {icon}
           <Text
             style={[
               styles.label,
-              variantStyles[variant].text,
+              variantStyles[`${variant}Text`],
               variant === 'emergency' && styles.emergencyLabel,
             ]}
           >
@@ -77,7 +78,7 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   base: {
     minHeight: touchTarget.min,
     borderRadius: radii.md,
@@ -92,30 +93,19 @@ const styles = StyleSheet.create({
   label: { ...typography.button, fontFamily: fontFamily.semiBold },
   emergencyLabel: { fontSize: 18 },
   disabled: { opacity: 0.5 },
-});
+}));
 
-const variantStyles: Record<
-  Variant,
-  { base: StyleProp<ViewStyle>; pressed: StyleProp<ViewStyle>; text: { color: string } }
-> = {
-  primary: {
-    base: { backgroundColor: colors.primary },
-    pressed: { backgroundColor: colors.primaryDark },
-    text: { color: colors.white },
-  },
-  emergency: {
-    base: { backgroundColor: colors.urgence },
-    pressed: { backgroundColor: colors.primaryDark },
-    text: { color: colors.white },
-  },
-  secondary: {
-    base: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.primary },
-    pressed: { backgroundColor: colors.surfaceAlt },
-    text: { color: colors.primary },
-  },
-  ghost: {
-    base: { backgroundColor: 'transparent' },
-    pressed: { backgroundColor: colors.surfaceAlt },
-    text: { color: colors.muted },
-  },
-};
+const useVariantStyles = makeStyles((colors) => ({
+  primaryBase: { backgroundColor: colors.primary },
+  primaryPressed: { backgroundColor: colors.primaryDark },
+  primaryText: { color: colors.onPrimary },
+  emergencyBase: { backgroundColor: colors.urgenceFill },
+  emergencyPressed: { backgroundColor: colors.primaryDark },
+  emergencyText: { color: colors.onPrimary },
+  secondaryBase: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.primary },
+  secondaryPressed: { backgroundColor: colors.surfaceAlt },
+  secondaryText: { color: colors.accent },
+  ghostBase: { backgroundColor: 'transparent' },
+  ghostPressed: { backgroundColor: colors.surfaceAlt },
+  ghostText: { color: colors.muted },
+}));

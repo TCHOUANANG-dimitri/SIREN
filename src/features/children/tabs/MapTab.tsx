@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
+import { Text, TextInput, View, Pressable } from 'react-native';
 import { Circle, MapView, Marker, type MapViewRef } from '@/features/tracking/map';
 import { MapPinOff, Navigation, Search, X } from 'lucide-react-native';
 import { Banner, Button, Card, Skeleton } from '@/components';
-import { colors, fontFamily, radii, shadow, spacing, typography } from '@/theme';
+import { fontFamily, radii, shadow, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { usePosition, useRequestPositionFix, useZoneState } from '@/api/hooks/useTracking';
 import { useGeofences } from '@/api/hooks/useGeofences';
 import { usePlaces } from '@/api/hooks/usePlaces';
@@ -15,6 +15,8 @@ import { formatBattery, formatRelativeTime } from '@/utils/format';
 import { useTranslation } from 'react-i18next';
 
 export function MapTab({ childId }: { childId: string }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { can, isLoading: accessLoading } = useCurrentAccess(childId);
   const hasPrecise = can('view_position_precise');
@@ -32,6 +34,7 @@ export function MapTab({ childId }: { childId: string }) {
 }
 
 function ZoneStateView({ childId }: { childId: string }) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const { data: zone, isLoading } = useZoneState(childId, true);
   if (isLoading || !zone) {
@@ -59,6 +62,8 @@ function ZoneStateView({ childId }: { childId: string }) {
 }
 
 function PreciseMap({ childId }: { childId: string }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { data: position, isLoading, isError, refetch } = usePosition(childId);
   const { data: geofences } = useGeofences(childId);
@@ -106,7 +111,7 @@ function PreciseMap({ childId }: { childId: string }) {
         <Button
           label={t('childTabs.requestPosition')}
           variant="secondary"
-          icon={<Navigation size={16} color={colors.primary} />}
+          icon={<Navigation size={16} color={colors.accent} />}
           onPress={() => {
             void askForFix();
             void refetch();
@@ -209,7 +214,7 @@ function PreciseMap({ childId }: { childId: string }) {
       <View style={styles.overlayBottom}>
         <Button
           label={t('childTabs.requestPosition')}
-          icon={<Navigation size={16} color={colors.white} />}
+          icon={<Navigation size={16} color={colors.onPrimary} />}
           onPress={() => void askForFix()}
           loading={requestFix.isPending}
         />
@@ -218,7 +223,7 @@ function PreciseMap({ childId }: { childId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   deniedText: { ...typography.body, color: colors.muted, textAlign: 'center' },
@@ -227,7 +232,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -241,11 +246,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     alignSelf: 'flex-start',
   },
-  searchBadgeText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.white },
+  searchBadgeText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.onPrimary },
   overlayBottom: { position: 'absolute', bottom: spacing.md, left: spacing.md, right: spacing.md },
   zoneContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
   zoneCard: { width: '100%', alignItems: 'center' },
   zoneTitle: { ...typography.title2, fontFamily: fontFamily.semiBold, color: colors.ink, textAlign: 'center' },
   zoneMeta: { ...typography.caption, color: colors.muted, marginTop: 4 },
   zoneHint: { ...typography.caption, color: colors.muted, textAlign: 'center' },
-});
+}));

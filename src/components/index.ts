@@ -14,3 +14,4 @@ export * from './SegmentedTabs';
 export * from './PasswordStrengthMeter';
 export * from './ScreenPlaceholder';
 export * from './ErrorBoundary';
+export * from './SettingsList';

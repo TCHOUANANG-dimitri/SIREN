@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { Button, PermissionToggle, Skeleton, TextField } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { MapPointRadiusPicker } from '@/features/tracking/MapPointRadiusPicker';
 import { useGeofences, useCreateGeofence, usePatchGeofence } from '@/api/hooks/useGeofences';
 import { usePosition } from '@/api/hooks/useTracking';
@@ -12,6 +12,8 @@ import type { Geofence } from '@/models/entities';
 import { useTranslation } from 'react-i18next';
 
 export default function GeofenceEditorScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { id, childId } = useLocalSearchParams<{ id: string; childId: string }>();
   const isNew = id === 'new';
@@ -103,15 +105,15 @@ export default function GeofenceEditorScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: spacing.xl, paddingBottom: spacing.xxxl },
   backButton: { marginBottom: spacing.lg },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.lg },
   typeRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   typeChip: { flex: 1, paddingVertical: spacing.sm, borderRadius: radii.md, backgroundColor: colors.surfaceChip, alignItems: 'center' },
-  typeChipAutorise: { backgroundColor: colors.veille },
-  typeChipInterdit: { backgroundColor: colors.urgence },
+  typeChipAutorise: { backgroundColor: colors.veilleFill },
+  typeChipInterdit: { backgroundColor: colors.urgenceFill },
   typeChipText: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.muted },
-  typeChipTextActive: { color: colors.white },
-});
+  typeChipTextActive: { color: colors.onPrimary },
+}));

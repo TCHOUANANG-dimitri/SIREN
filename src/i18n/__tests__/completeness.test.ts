@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import fr from '../fr.json';
-import en from '../en.json';
+import { en, fr } from '../resources';
 
 /** Garantit FR + EN complets (CDC App §8) : toute clé utilisée existe dans les deux langues. */
 function flatten(obj: Record<string, unknown>, prefix = ''): Set<string> {

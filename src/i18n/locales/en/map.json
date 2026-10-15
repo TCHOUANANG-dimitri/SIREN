@@ -1,0 +1,46 @@
+{
+  "map": {
+    "protectionRadius": "Protection radius",
+    "noChild": "Add a child to see their location on the map.",
+    "searchingAddresses": "Searching addresses…",
+    "resolvingAddress": "Looking up the matching address…",
+    "addressHint": "Enter an address, or move the map to fill it in automatically.",
+    "selectedPosition": "Selected location: {{lat}}, {{lon}}",
+    "fauconLoading": "Loading Faucon…",
+    "fauconUnreachable": "Faucon unreachable",
+    "fauconRetryHint": "Check your network connection, then try again.",
+    "sourceFaucon": "Live GPS (Faucon)",
+    "sourceDemo": "SIREN demo",
+    "sourceSiren": "SIREN"
+  },
+  "tracking": {
+    "recent": "Recent GPS location — {{when}}",
+    "estimated": "Estimated location — {{when}}",
+    "lost": "GPS signal lost — last point {{when}}",
+    "deviceOffline": "Device offline — last point {{when}}",
+    "batteryLine": "battery {{battery}}"
+  },
+  "history": {
+    "play": "Play the trip",
+    "period": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "7days": "7 days",
+      "custom": "Range…"
+    }
+  },
+  "geofences": {
+    "title": "Zones",
+    "empty": "No zones yet. Draw an allowed area.",
+    "allowed": "Allowed",
+    "forbidden": "Forbidden",
+    "namePlaceholder": "Neighbourhood, school route…",
+    "notifyOnEnter": "Notify on entry",
+    "notifyOnExit": "Notify on exit",
+    "add": "Add a zone",
+    "newTitle": "New zone",
+    "editTitle": "Edit zone",
+    "deleteTitle": "Delete this zone?",
+    "deleteConfirm": "\"{{name}}\" will be deleted. Alerts linked to this zone will stop."
+  }
+}

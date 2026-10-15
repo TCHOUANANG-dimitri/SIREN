@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { colors, radii, spacing } from '@/theme';
+import { Animated, View, type StyleProp, type ViewStyle } from 'react-native';
+import { radii, spacing, makeStyles } from '@/theme';
 
 interface SkeletonProps {
   width?: number | `${number}%`;
@@ -10,6 +10,7 @@ interface SkeletonProps {
 }
 
 export function Skeleton({ width = '100%', height = 16, radius = radii.sm, style }: SkeletonProps) {
+  const styles = useStyles();
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export function Skeleton({ width = '100%', height = 16, radius = radii.sm, style
 }
 
 export function SkeletonCard() {
+  const styles = useStyles();
   return (
     <View style={styles.card}>
       <Skeleton width={48} height={48} radius={24} />
@@ -46,14 +48,14 @@ export function SkeletonCard() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   block: { backgroundColor: colors.border },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     borderRadius: radii.lg,
     padding: spacing.lg,
   },
-});
+}));

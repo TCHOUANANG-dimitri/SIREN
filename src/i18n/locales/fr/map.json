@@ -1,0 +1,46 @@
+{
+  "map": {
+    "protectionRadius": "Rayon de protection",
+    "noChild": "Ajoutez un enfant pour voir sa position sur la carte.",
+    "searchingAddresses": "Recherche d'adresses…",
+    "resolvingAddress": "Recherche de l'adresse correspondante…",
+    "addressHint": "Saisissez une adresse, ou déplacez la carte pour la remplir automatiquement.",
+    "selectedPosition": "Position retenue : {{lat}}, {{lon}}",
+    "fauconLoading": "Chargement de Faucon…",
+    "fauconUnreachable": "Faucon injoignable",
+    "fauconRetryHint": "Vérifiez la connexion réseau, puis réessayez.",
+    "sourceFaucon": "GPS réel (Faucon)",
+    "sourceDemo": "Démo SIREN",
+    "sourceSiren": "SIREN"
+  },
+  "tracking": {
+    "recent": "Position GPS récente — {{when}}",
+    "estimated": "Position estimée — {{when}}",
+    "lost": "Signal GPS perdu — dernier point {{when}}",
+    "deviceOffline": "Dispositif hors ligne — dernier point {{when}}",
+    "batteryLine": "batterie {{battery}}"
+  },
+  "history": {
+    "play": "Lire le trajet",
+    "period": {
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
+      "7days": "7 jours",
+      "custom": "Plage…"
+    }
+  },
+  "geofences": {
+    "title": "Périmètres",
+    "empty": "Aucun périmètre. Dessinez une zone autorisée.",
+    "allowed": "Autorisé",
+    "forbidden": "Interdit",
+    "namePlaceholder": "Quartier, trajet école…",
+    "notifyOnEnter": "Notifier à l'entrée",
+    "notifyOnExit": "Notifier à la sortie",
+    "add": "Ajouter un périmètre",
+    "newTitle": "Nouveau périmètre",
+    "editTitle": "Modifier le périmètre",
+    "deleteTitle": "Supprimer le périmètre ?",
+    "deleteConfirm": "« {{name}} » sera supprimé. Les alertes liées à ce périmètre s'arrêteront."
+  }
+}

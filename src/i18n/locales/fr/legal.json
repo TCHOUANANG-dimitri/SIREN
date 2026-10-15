@@ -1,0 +1,16 @@
+{
+  "legal": {
+    "title": "Documents juridiques",
+    "listSubtitle": "Mentions légales, confidentialité, conditions et règles d'utilisation.",
+    "docs": {
+      "legal-notice": "Mentions légales",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d'utilisation"
+    },
+    "meta": "Version {{version}} · publiée le {{published}} · en vigueur le {{effective}}",
+    "versionShort": "En vigueur le {{date}}.",
+    "draftBanner": "Version provisoire : ce document n'a pas encore été validé juridiquement et peut évoluer.",
+    "draftFooter": "Ces documents sont des versions provisoires en cours de validation juridique.",
+    "notFound": "Ce document n'existe pas ou n'est plus disponible."
+  }
+}

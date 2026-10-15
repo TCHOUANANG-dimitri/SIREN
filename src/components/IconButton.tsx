@@ -1,6 +1,6 @@
 import React from 'react';
-import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
-import { radii, touchTarget } from '@/theme';
+import { Pressable, type StyleProp, type ViewStyle } from 'react-native';
+import { radii, touchTarget, makeStyles } from '@/theme';
 
 interface IconButtonProps {
   children: React.ReactNode;
@@ -10,6 +10,7 @@ interface IconButtonProps {
 }
 
 export function IconButton({ children, onPress, accessibilityLabel, style }: IconButtonProps) {
+  const styles = useStyles();
   return (
     <Pressable
       onPress={onPress}
@@ -23,7 +24,7 @@ export function IconButton({ children, onPress, accessibilityLabel, style }: Ico
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   base: {
     minWidth: touchTarget.min,
     minHeight: touchTarget.min,
@@ -32,4 +33,4 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
   },
   pressed: { opacity: 0.6 },
-});
+}));

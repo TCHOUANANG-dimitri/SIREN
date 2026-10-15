@@ -1,0 +1,90 @@
+{
+  "common": {
+    "next": "Next",
+    "back": "Back",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveAndContinue": "Save and continue",
+    "completeLater": "Complete later",
+    "retry": "Try again",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "seeAll": "See all",
+    "optional": "optional",
+    "skip": "Skip",
+    "send": "Send",
+    "rename": "Rename",
+    "name": "Name",
+    "phone": "Phone",
+    "status": "Status",
+    "all": "All",
+    "new": "New",
+    "preview": "Preview",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "fieldValue": "{{label}}: {{value}}",
+    "notSet": "not set"
+  },
+  "tabs": {
+    "home": "Home",
+    "map": "Map",
+    "alerts": "Alerts",
+    "sharing": "Sharing",
+    "settings": "Settings"
+  },
+  "time": {
+    "unknown": "unknown",
+    "justNow": "just now",
+    "secondsAgo": "{{count}} s ago",
+    "minutesAgo": "{{count}} min ago",
+    "hoursAgo": "{{count}} h ago",
+    "daysAgo": "{{count}} d ago"
+  },
+  "cardinal": {
+    "n": "north",
+    "ne": "north-east",
+    "e": "east",
+    "se": "south-east",
+    "s": "south",
+    "sw": "south-west",
+    "w": "west",
+    "nw": "north-west"
+  },
+  "offline": {
+    "banner": "Showing offline data",
+    "bannerWithTime": "Showing offline data — last updated at {{time}}",
+    "reconnecting": "Reconnecting…"
+  },
+  "config": {
+    "title": "App configuration incomplete",
+    "body": "This build cannot start: the settings below must be fixed before building the app."
+  },
+  "validation": {
+    "emailInvalid": "Invalid email address",
+    "nameTooShort": "Name too short",
+    "passwordLength": "At least 10 characters",
+    "passwordTooLong": "128 characters maximum",
+    "passwordLower": "One lowercase letter required",
+    "passwordUpper": "One uppercase letter required",
+    "passwordDigit": "One digit required",
+    "passwordSymbol": "One symbol required",
+    "passwordMismatch": "Passwords do not match",
+    "passwordRequired": "Password is required",
+    "termsRequired": "You must accept the terms of use",
+    "codeFormat": "The code has 6 digits.",
+    "required": "This field is required.",
+    "passwordUnchanged": "Choose a password different from your current one."
+  },
+  "passwordStrength": {
+    "veryWeak": "Very weak",
+    "weak": "Weak",
+    "medium": "Fair",
+    "good": "Good",
+    "excellent": "Excellent"
+  }
+}

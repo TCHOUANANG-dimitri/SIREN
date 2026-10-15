@@ -47,11 +47,31 @@ CREATE TABLE users (
     langue          VARCHAR(5) NOT NULL DEFAULT 'fr',
     twofa_enabled   BOOLEAN NOT NULL DEFAULT FALSE,
     twofa_secret    VARCHAR(64),
+    email_verified_at TIMESTAMPTZ,
+    terms_version   VARCHAR(20),
+    privacy_version VARCHAR(20),
+    legal_accepted_at TIMESTAMPTZ,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at      TIMESTAMPTZ
 );
 CREATE INDEX idx_users_email ON users(email) WHERE deleted_at IS NULL;
+
+-- =============================================================================
+-- TABLE : otp_challenges (codes à usage unique envoyés par email, hachés)
+-- =============================================================================
+CREATE TABLE otp_challenges (
+    id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    purpose      VARCHAR(20) NOT NULL CHECK (purpose IN ('signup_verify', 'login_2fa', 'password_reset')),
+    token_hash   VARCHAR(64) NOT NULL UNIQUE,
+    code_hash    VARCHAR(64) NOT NULL,
+    attempts     INTEGER NOT NULL DEFAULT 0,
+    expires_at   TIMESTAMPTZ NOT NULL,
+    consumed_at  TIMESTAMPTZ,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_otp_challenges_user_purpose ON otp_challenges(user_id, purpose, created_at DESC);
 
 -- =============================================================================
 -- TABLE : refresh_tokens

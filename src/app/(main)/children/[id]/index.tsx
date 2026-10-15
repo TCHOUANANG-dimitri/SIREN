@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, BatteryMedium, Wifi, WifiOff } from 'lucide-react-native';
 import { SegmentedTabs, StateBadge } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useChildren, useChildStatus } from '@/api/hooks/useChildren';
 import { useRisk } from '@/api/hooks/useRisk';
 import { useCurrentAccess } from '@/features/sharing/useCurrentAccess';
@@ -18,6 +18,8 @@ import { useTranslation } from 'react-i18next';
 type TabKey = 'carte' | 'historique' | 'lieux' | 'score' | 'dispositif';
 
 export default function ChildDetailScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [tab, setTab] = useState<TabKey>('carte');
@@ -30,13 +32,13 @@ export default function ChildDetailScreen() {
 
   const availableTabs = (
     [
-      { key: 'carte' as const, label: 'Carte', visible: can('view_position_precise') || can('view_zone_state') },
-      { key: 'historique' as const, label: 'Historique', visible: can('view_history') },
-      { key: 'lieux' as const, label: 'Lieux', visible: true },
-      { key: 'score' as const, label: 'Score', visible: true },
-      { key: 'dispositif' as const, label: 'Dispositif', visible: can('configure_device') },
+      { key: 'carte' as const, label: t('childTabs.tab.map'), visible: can('view_position_precise') || can('view_zone_state') },
+      { key: 'historique' as const, label: t('childTabs.tab.history'), visible: can('view_history') },
+      { key: 'lieux' as const, label: t('childTabs.tab.places'), visible: true },
+      { key: 'score' as const, label: t('childTabs.tab.score'), visible: true },
+      { key: 'dispositif' as const, label: t('childTabs.tab.device'), visible: can('configure_device') },
     ] satisfies { key: TabKey; label: string; visible: boolean }[]
-  ).filter((t) => t.visible);
+  ).filter((entry) => entry.visible);
 
   useEffect(() => {
     if (availableTabs.length > 0 && !availableTabs.some((t) => t.key === tab)) {
@@ -100,7 +102,7 @@ export default function ChildDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerInfo: { flex: 1 },
@@ -110,9 +112,9 @@ const styles = StyleSheet.create({
   metaText: { ...typography.caption, color: colors.muted },
   tabContent: { flex: 1 },
   emergencyBar: {
-    backgroundColor: colors.urgence,
+    backgroundColor: colors.urgenceFill,
     paddingVertical: spacing.md,
     alignItems: 'center',
   },
-  emergencyText: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.white },
-});
+  emergencyText: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.onPrimary },
+}));

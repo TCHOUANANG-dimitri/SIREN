@@ -6,6 +6,8 @@ import { parseNotificationData, type NotificationTarget } from '@/utils/notifica
 function openTarget(target: NotificationTarget) {
   if (target.level === 'urgence') {
     router.push({ pathname: '/(emergency)/urgence', params: { childId: target.childId } });
+  } else if (target.kind === 'share_invite') {
+    router.push('/(main)/(tabs)');
   } else if (target.alertId) {
     router.push({ pathname: '/(main)/alerts/[id]', params: { id: target.alertId } });
   } else {

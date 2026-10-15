@@ -34,18 +34,37 @@ class Settings(BaseSettings):
     # Fuseau des horaires déclarés par les parents (Cameroun : WAT, UTC+1).
     DEFAULT_TIMEZONE: str = "Africa/Douala"
     # Vérification OTP : "dev" (code fixe DEV_OTP_CODE, développement uniquement),
-    # "disabled" (étape déclarée non requise — état réel tant qu'aucun fournisseur
-    # SMS/email n'est choisi, À VALIDER par l'équipe), "provider" (fournisseur réel, non implémenté).
+    # "disabled" (étape déclarée non requise, À VALIDER par l'équipe),
+    # "email" (code aléatoire à usage unique envoyé par email — nécessite EMAIL_BACKEND).
+    # "provider" est l'ancien nom de "email". SMS : non implémenté (fournisseur non choisi).
     OTP_MODE: str = ""
     DEV_OTP_CODE: str = "123456"
+    OTP_TTL_MINUTES: int = 10
+    OTP_MAX_ATTEMPTS: int = 5
+    OTP_RESEND_COOLDOWN_S: int = 60
+    OTP_MAX_PER_HOUR: int = 5
+
+    # Emails transactionnels (app/services/email) : "disabled" | "console" (dev) | "smtp".
+    EMAIL_BACKEND: str = "disabled"
+    EMAIL_FROM: str = ""
+    EMAIL_FROM_NAME: str = "SIREN"
+    EMAIL_REPLY_TO: str = ""
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_STARTTLS: bool = True
+    SMTP_USE_SSL: bool = False
+    SMTP_TIMEOUT_S: int = 15
     # Écoute audio (étiquettes) : BLOQUÉE tant que le cadre juridique n'est pas validé (CDC App §4.4).
     AUDIO_ENABLED: bool = False
 
     @property
     def otp_mode(self) -> str:
-        if self.OTP_MODE in ("dev", "disabled", "provider"):
+        mode = "email" if self.OTP_MODE == "provider" else self.OTP_MODE
+        if mode in ("dev", "disabled", "email"):
             # Le code fixe n'est jamais accepté hors développement.
-            return "disabled" if self.OTP_MODE == "dev" and self.ENVIRONMENT != "development" else self.OTP_MODE
+            return "disabled" if mode == "dev" and self.ENVIRONMENT != "development" else mode
         return "dev" if self.ENVIRONMENT == "development" else "disabled"
     # Au-delà, un point de télémétrie est considéré comme hors d'usage (horloge device déréglée).
     TELEMETRY_MAX_FUTURE_SKEW_S: int = 300

@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MapPinned, Gauge, Layers } from 'lucide-react-native';
 import { Button } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { storage } from '@/utils/storage';
 import { useTranslation } from 'react-i18next';
 
@@ -17,6 +17,8 @@ const slides = [
 ] as const;
 
 export default function OnboardingScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [index, setIndex] = useState(0);
   const isLast = index === slides.length - 1;
@@ -43,7 +45,7 @@ export default function OnboardingScreen() {
       </View>
       <View style={styles.illustration}>
         <View style={styles.iconCircle}>
-          <slide.Icon size={64} color={colors.primary} strokeWidth={1.5} />
+          <slide.Icon size={64} color={colors.accent} strokeWidth={1.5} />
         </View>
       </View>
       <View style={styles.textBlock}>
@@ -60,7 +62,7 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   topBar: { height: 44, justifyContent: 'center', alignItems: 'flex-end', paddingHorizontal: spacing.xxl },
   skip: { ...typography.body, fontFamily: fontFamily.medium, color: colors.muted },
@@ -80,4 +82,4 @@ const styles = StyleSheet.create({
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.sm },
   body: { ...typography.body, fontFamily: fontFamily.regular, color: colors.muted, lineHeight: 22 },
   footer: { paddingHorizontal: spacing.xxl, paddingBottom: spacing.xxl },
-});
+}));

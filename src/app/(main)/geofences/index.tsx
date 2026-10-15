@@ -1,17 +1,19 @@
 import { formatDistanceM } from '@/utils/format';
 import { useEffect } from 'react';
-import { Alert as RNAlert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert as RNAlert, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft, Plus, ShieldBan, ShieldCheck } from 'lucide-react-native';
 import { Card } from '@/components';
-import { colors, fontFamily, radii, shadow, spacing, typography } from '@/theme';
+import { fontFamily, radii, shadow, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useChildren } from '@/api/hooks/useChildren';
 import { useDeleteGeofence, useGeofences } from '@/api/hooks/useGeofences';
 import { useUiStore } from '@/stores/uiStore';
 import { useTranslation } from 'react-i18next';
 
 export default function GeofencesListScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { data: children } = useChildren();
   const selectedChildId = useUiStore((s) => s.selectedChildId);
@@ -26,9 +28,9 @@ export default function GeofencesListScreen() {
   const deleteGeofence = useDeleteGeofence(activeChild?.id);
 
   function confirmDelete(id: string, nom: string) {
-    RNAlert.alert('Supprimer le périmètre', `Supprimer « ${nom} » ?`, [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Supprimer', style: 'destructive', onPress: () => deleteGeofence.mutate(id) },
+    RNAlert.alert(t('geofences.deleteTitle'), t('geofences.deleteConfirm', { name: nom }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: () => deleteGeofence.mutate(id) },
     ]);
   }
 
@@ -91,13 +93,13 @@ export default function GeofencesListScreen() {
         onPress={() => router.push({ pathname: '/(main)/geofences/[id]', params: { id: 'new', childId: activeChild?.id ?? '' } })}
         accessibilityLabel={t('geofences.add')}
       >
-        <Plus size={26} color={colors.white} />
+        <Plus size={26} color={colors.onPrimary} />
       </Pressable>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   backButton: { marginLeft: spacing.xl, marginBottom: spacing.md },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
@@ -105,7 +107,7 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceChip },
   chipActive: { backgroundColor: colors.primary },
   chipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
-  chipTextActive: { color: colors.white },
+  chipTextActive: { color: colors.onPrimary },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   emptyText: { ...typography.body, color: colors.muted, textAlign: 'center' },
   list: { padding: spacing.xl, paddingBottom: 96 },
@@ -125,4 +127,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadow.floating,
   },
-});
+}));

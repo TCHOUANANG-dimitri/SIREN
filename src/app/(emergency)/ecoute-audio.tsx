@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Ear, ShieldAlert } from 'lucide-react-native';
 import { Banner, Button, Card, TextField } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useAudioLogs, useRequestAudioActivation } from '@/api/hooks/useAudio';
 import { toUserMessage } from '@/api/errors';
 import { formatClock } from '@/utils/format';
@@ -17,6 +17,8 @@ const MIN_REASON_LENGTH = 10;
 const SESSION_SECONDS = 30;
 
 export default function AudioListeningScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const { data: logs } = useAudioLogs(childId);
@@ -64,7 +66,7 @@ export default function AudioListeningScreen() {
       {secondsLeft > 0 && activeLog ? (
         <Card style={styles.activeCard}>
           <View style={styles.activeHeader}>
-            <Ear size={18} color={colors.primary} />
+            <Ear size={18} color={colors.accent} />
             <Text style={styles.activeTitle}>{t('emergency.audioSessionActive', { seconds: secondsLeft })}</Text>
           </View>
           {activeLog.labels.map((label) => (
@@ -76,7 +78,7 @@ export default function AudioListeningScreen() {
       ) : (
         <View style={styles.requestBlock}>
           <TextField label={t('emergency.requestReason')} value={reason} onChangeText={setReason} placeholder={t('emergency.requestReasonPlaceholder')} />
-          <Button label={t('emergency.requestListening')} icon={<Ear size={16} color={colors.white} />} onPress={activate} loading={requestActivation.isPending} disabled={!featureFlags.audio || reason.trim().length < MIN_REASON_LENGTH} />
+          <Button label={t('emergency.requestListening')} icon={<Ear size={16} color={colors.onPrimary} />} onPress={activate} loading={requestActivation.isPending} disabled={!featureFlags.audio || reason.trim().length < MIN_REASON_LENGTH} />
         </View>
       )}
 
@@ -99,7 +101,7 @@ export default function AudioListeningScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   scroll: { flex: 1 },
   content: { padding: spacing.xl, paddingBottom: spacing.xxxl },
@@ -125,4 +127,4 @@ const styles = StyleSheet.create({
   journalCard: { marginBottom: spacing.sm },
   journalLine: { ...typography.body, fontFamily: fontFamily.medium, color: colors.ink },
   journalReason: { ...typography.caption, color: colors.muted, marginTop: 2 },
-});
+}));

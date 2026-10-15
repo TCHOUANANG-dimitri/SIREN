@@ -15,6 +15,7 @@
     "@tanstack/react-query-persist-client": "5.101.4",
     "axios": "^1.18.1",
     "expo": "^54.0.0",
+    "expo-asset": "12.0.13",
     "expo-build-properties": "~1.0.10",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.13",
@@ -46,6 +47,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@babel/runtime": "7.29.7",
     "@expo/vector-icons": "^15.0.2",
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "29.5.14",
@@ -67,7 +69,8 @@
     "typecheck": "tsc --noEmit",
     "build:apk:debug": "cd android && ./gradlew assembleDebug",
     "build:apk:release": "cd android && ./gradlew assembleRelease",
-    "build:apk:eas": "eas build -p android --profile preview"
+    "build:apk:eas": "eas build -p android --profile preview",
+    "i18n:check": "node scripts/i18n-check.mjs"
   },
   "private": true
 }

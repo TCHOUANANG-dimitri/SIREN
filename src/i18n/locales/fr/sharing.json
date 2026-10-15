@@ -1,0 +1,66 @@
+{
+  "sharing": {
+    "title": "Partage",
+    "primaryOnly": "La gestion des accès partagés est réservée au parent principal.",
+    "empty": "Aucun proche pour l'instant. Invitez une personne de confiance pour partager le suivi.",
+    "inviteTitle": "Inviter un proche",
+    "inviteSubtitle": "Tous les droits sont désactivés par défaut : choisissez ce que cette personne pourra voir.",
+    "contactField": "Email ou téléphone",
+    "contactPlaceholder": "nom@exemple.com ou +237 6…",
+    "grantedRights": "Droits accordés",
+    "sendInvite": "Envoyer l'invitation",
+    "revokeAccess": "Révoquer l'accès",
+    "auditTitle": "Journal des accès",
+    "auditEmpty": "Aucune consultation enregistrée.",
+    "previewNone": "Cette personne ne verra aucune information tant qu'aucun droit n'est accordé.",
+    "previewSome": "Cette personne pourra voir : {{rights}}.",
+    "slotsLeft_one": "Encore {{count}} proche peut être invité.",
+    "slotsLeft_other": "Encore {{count}} proches peuvent être invités.",
+    "noRights": "Aucun droit accordé",
+    "rightsUpdated": "Droits mis à jour",
+    "noChild": "Ajoutez d'abord un enfant pour partager son suivi.",
+    "forChild": "Pour {{name}}",
+    "slotsUsed_one": "{{count}} proche sur {{max}} maximum",
+    "slotsUsed_other": "{{count}} proches sur {{max}} maximum",
+    "status": {
+      "invite": "Invité",
+      "actif": "Actif",
+      "revoque": "Révoqué"
+    },
+    "statusLine": "Statut : {{status}}",
+    "shareA11y": "{{name}}, {{status}}. Ouvrir les droits.",
+    "inviteFor": "Inviter un proche pour {{name}}",
+    "offline": "Hors connexion : l'invitation pourra être envoyée une fois le réseau revenu.",
+    "contactHelp": "La personne doit déjà avoir un compte SIREN avec cet email ou ce numéro.",
+    "inviteCreated": "{{name}} est invité(e) pour {{child}}. L'invitation apparaîtra dans son application SIREN.",
+    "inviteCreatedNotified": "{{name}} est invité(e) pour {{child}}. Un email l'en a informé(e).",
+    "revokeConfirm": "Retirer tous les droits de {{name}} ? Cette personne ne verra plus aucune information.",
+    "revoke": "Révoquer"
+  },
+  "permissions": {
+    "position_precise": {
+      "label": "Position précise en temps réel",
+      "description": "Voir la localisation exacte sur la carte."
+    },
+    "etat_zone": {
+      "label": "État de zone",
+      "description": "Savoir si l'enfant est dans ou hors d'une zone connue, sans la carte précise."
+    },
+    "alertes_prealerte": {
+      "label": "Pré-alertes",
+      "description": "Être notifié en cas de comportement inhabituel."
+    },
+    "alertes_urgence": {
+      "label": "Urgences",
+      "description": "Être notifié en cas d'urgence confirmée."
+    },
+    "historique": {
+      "label": "Historique des trajets",
+      "description": "Consulter les déplacements passés."
+    },
+    "mobilisation": {
+      "label": "Aide aux recherches",
+      "description": "Être sollicité pour aider aux recherches en cas de disparition."
+    }
+  }
+}

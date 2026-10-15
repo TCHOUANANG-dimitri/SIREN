@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, ShieldCheck } from 'lucide-react-native';
 import { Banner, SkeletonCard } from '@/components';
-import { colors, fontFamily, shadow, spacing, typography } from '@/theme';
+import { fontFamily, shadow, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { useChildren } from '@/api/hooks/useChildren';
 import { useAllAlerts } from '@/api/hooks/useAlerts';
@@ -13,6 +13,8 @@ import type { Child } from '@/models/entities';
 import { useTranslation } from 'react-i18next';
 
 export default function HomeScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const { data: children, isLoading, isError, refetch, isRefetching } = useChildren();
@@ -34,7 +36,7 @@ export default function HomeScreen() {
           <Text style={styles.subGreeting}>{t('home.subtitle')}</Text>
         </View>
         <Pressable onPress={() => router.push('/(main)/(tabs)/settings')} hitSlop={8} style={styles.settingsIcon}>
-          <ShieldCheck size={22} color={colors.primary} />
+          <ShieldCheck size={22} color={colors.accent} />
         </Pressable>
       </View>
 
@@ -59,18 +61,18 @@ export default function HomeScreen() {
           keyExtractor={(item: Child) => item.id}
           renderItem={({ item }) => <ChildCard child={item} />}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
         />
       )}
 
       <Pressable style={styles.fab} onPress={() => router.push('/(main)/add-child')} accessibilityLabel={t('children.addChild')}>
-        <Plus size={26} color={colors.white} />
+        <Plus size={26} color={colors.onPrimary} />
       </Pressable>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   header: {
     flexDirection: 'row',
@@ -99,4 +101,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadow.floating,
   },
-});
+}));

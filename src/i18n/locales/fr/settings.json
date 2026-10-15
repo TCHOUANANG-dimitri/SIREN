@@ -1,0 +1,101 @@
+{
+  "settings": {
+    "sections": {
+      "account": "Compte",
+      "security": "Sécurité",
+      "preferences": "Préférences",
+      "notifications": "Notifications",
+      "family": "Famille",
+      "information": "Informations",
+      "session": "Session et compte"
+    },
+    "profileSaved": "Profil enregistré.",
+    "emailReadOnly": "L'adresse email sert à vous connecter ; elle ne peut pas être modifiée ici.",
+    "emailNotVerified": "Adresse pas encore confirmée.",
+    "biometricLock": "Verrouillage biométrique",
+    "biometricDesc": "Demander l'empreinte ou le visage à l'ouverture de l'application.",
+    "language": {
+      "title": "Langue",
+      "syncPending": "La langue de l'application a changé. Elle sera enregistrée sur votre compte (notifications et emails) dès que la connexion le permettra."
+    },
+    "appearance": {
+      "title": "Apparence",
+      "system": "Système",
+      "light": "Clair",
+      "dark": "Sombre"
+    },
+    "notif": {
+      "scope": "Pré-alertes et informations : ces choix s'appliquent aux notifications affichées quand l'application est ouverte. Pour couper les notifications reçues application fermée, utilisez les réglages du téléphone.",
+      "urgence": "Urgences",
+      "urgenceAlways": "Les urgences sont toujours notifiées, avec la priorité maximale.",
+      "alwaysOn": "Toujours actives",
+      "prealerte": "Pré-alertes",
+      "information": "Informations (batterie, dispositif)",
+      "systemSettings": "Réglages de notification du téléphone",
+      "systemSettingsDesc": "Autorisations, son, affichage sur l'écran verrouillé."
+    },
+    "family": {
+      "children": "Mes enfants",
+      "sharing": "Proches de confiance"
+    },
+    "demo": {
+      "title": "Mode démonstration",
+      "body": "Données fictives, sans serveur. Réinitialiser remet les enfants, alertes et historique de démonstration à zéro.",
+      "reset": "Réinitialiser la démonstration",
+      "resetDone": "Démonstration réinitialisée.",
+      "simulateOffline": "Simuler une coupure réseau (8 s)"
+    },
+    "security": {
+      "title": "Sécurité",
+      "passwordAnd2fa": "Mot de passe et vérification en deux étapes",
+      "twofaOn": "Vérification en deux étapes activée",
+      "twofaOff": "Vérification en deux étapes désactivée",
+      "twofaTitle": "Vérification en deux étapes",
+      "twofaLabel": "Code par email à la connexion",
+      "twofaFooter": "À chaque connexion, un code à usage unique est envoyé à {{email}}.",
+      "twofaConfirmEnable": "Saisissez votre mot de passe pour activer la vérification en deux étapes.",
+      "twofaConfirmDisable": "Saisissez votre mot de passe pour désactiver la vérification en deux étapes.",
+      "twofaEnabled": "Vérification en deux étapes activée. Un email de confirmation vous a été envoyé si l'envoi d'emails est disponible.",
+      "twofaDisabled": "Vérification en deux étapes désactivée.",
+      "passwordTitle": "Mot de passe",
+      "passwordFooter": "Après le changement, vos autres appareils sont déconnectés.",
+      "currentPassword": "Mot de passe actuel",
+      "changePassword": "Changer le mot de passe",
+      "passwordChanged": "Mot de passe modifié. Vos autres appareils ont été déconnectés.",
+      "offline": "Hors connexion : les réglages de sécurité ne peuvent pas être modifiés pour l'instant."
+    },
+    "about": {
+      "title": "À propos",
+      "tagline": "Détecter le danger avant la disparition.",
+      "mission": "Mission",
+      "missionBody": "SIREN aide les parents à protéger leurs enfants : un dispositif porté par l'enfant transmet sa position et ses mouvements, et un moteur d'analyse repère ce qui sort de ses habitudes pour vous alerter au plus tôt.",
+      "howBody": "L'application est votre poste de commande : suivi sur la carte, alertes expliquées, partage avec vos proches et réaction en urgence.",
+      "notASubstitute": "SIREN ne remplace ni la vigilance d'un adulte ni les secours. En cas de danger, appelez la police (117).",
+      "versionSection": "Version",
+      "version": "Version",
+      "build": "Build",
+      "environment": "Environnement",
+      "env": {
+        "development": "Développement",
+        "staging": "Préproduction",
+        "production": "Production"
+      },
+      "dataSource": "Données",
+      "dataDemo": "Démonstration (fictives)",
+      "dataServer": "Serveur SIREN",
+      "apiContract": "Contrat d'API",
+      "team": "Équipe",
+      "teamBody": "SIREN est conçu par une équipe organisée en trois pôles : Application, Dispositif et Intelligence artificielle.",
+      "contactFooter": "Les coordonnées de contact figurent dans les mentions légales.",
+      "credits": "Crédits",
+      "creditsBody": "Fonds de carte © contributeurs OpenStreetMap (licence ODbL), servis par OpenFreeMap. Rendu cartographique MapLibre. Police Inter (licence SIL Open Font)."
+    },
+    "logout": "Se déconnecter",
+    "logoutConfirmTitle": "Se déconnecter ?",
+    "logoutConfirmBody": "Vous ne recevrez plus d'alertes sur ce téléphone jusqu'à votre prochaine connexion.",
+    "deleteAccount": "Supprimer mon compte",
+    "deleteAccountDesc": "Supprime votre compte et coupe tous les accès aux données de vos enfants.",
+    "deleteTitle": "Supprimer le compte ?",
+    "deleteBody": "Votre compte sera supprimé, ainsi que l'accès aux données de vos enfants pour vous et vos proches. Cette action est définitive."
+  }
+}

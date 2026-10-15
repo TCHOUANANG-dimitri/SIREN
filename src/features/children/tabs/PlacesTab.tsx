@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { Home, MapPin, Plus, School } from 'lucide-react-native';
 import { Banner, BottomSheet, Button, Card, Skeleton, TextField } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { usePlaces, usePatchPlace, useCreatePlace } from '@/api/hooks/usePlaces';
 import { useChildren } from '@/api/hooks/useChildren';
 import { usePosition } from '@/api/hooks/useTracking';
@@ -16,6 +16,8 @@ const iconFor = (place: Place) => {
 };
 
 export function PlacesTab({ childId }: { childId: string }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { data: children } = useChildren();
   const child = children?.find((c) => c.id === childId);
@@ -59,7 +61,7 @@ export function PlacesTab({ childId }: { childId: string }) {
     <View style={styles.flex}>
       {child && child.modelConfidence < 40 && (
         <View style={styles.padded}>
-          <Banner kind="info" message={`L'IA apprend encore les lieux de votre enfant — confiance ${Math.round(child.modelConfidence)}%.`} />
+          <Banner kind="info" message={t('childTabs.placesLearning', { percent: Math.round(child.modelConfidence) })} />
         </View>
       )}
 
@@ -78,7 +80,7 @@ export function PlacesTab({ childId }: { childId: string }) {
               <Pressable onPress={() => openEdit(item)}>
                 <Card style={styles.card}>
                   <View style={styles.iconWrap}>
-                    <Icon size={18} color={colors.primary} />
+                    <Icon size={18} color={colors.accent} />
                   </View>
                   <View style={styles.info}>
                     <View style={styles.nameRow}>
@@ -104,7 +106,7 @@ export function PlacesTab({ childId }: { childId: string }) {
       )}
 
       <View style={styles.footer}>
-        <Button label={t('childTabs.addPlace')} icon={<Plus size={16} color={colors.white} />} onPress={() => setAddOpen(true)} />
+        <Button label={t('childTabs.addPlace')} icon={<Plus size={16} color={colors.onPrimary} />} onPress={() => setAddOpen(true)} />
       </View>
 
       <BottomSheet visible={!!editing} onClose={() => setEditing(null)}>
@@ -122,7 +124,7 @@ export function PlacesTab({ childId }: { childId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   flex: { flex: 1 },
   padded: { padding: spacing.lg },
   emptyText: { ...typography.body, color: colors.muted, textAlign: 'center', marginTop: spacing.xl },
@@ -138,4 +140,4 @@ const styles = StyleSheet.create({
   schedule: { ...typography.caption, color: colors.muted, marginTop: 2 },
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
   sheetTitle: { ...typography.title2, fontFamily: fontFamily.semiBold, color: colors.ink, marginBottom: spacing.lg },
-});
+}));

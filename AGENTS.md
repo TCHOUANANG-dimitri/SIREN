@@ -15,12 +15,13 @@ npx expo start              # dev server (Expo Go / simulator)
 | `npm test` | Jest + jest-expo (all `*.test.*` files) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | `expo lint` (ESLint) |
+| `npm run i18n:check` | Traductions : clés manquantes, variables, textes en dur, clés inutilisées |
 | `npm run android` | `expo run:android` |
 | `npm run ios` | `expo run:ios` |
 | `npm run build:apk:debug` | Native Gradle APK |
 | `npm run build:apk:eas` | EAS preview APK |
 
-**Order**: `lint → typecheck → test` before committing.
+**Order**: `lint → typecheck → i18n:check → test` before committing.
 
 ## Architecture
 
@@ -46,10 +47,11 @@ npx expo start              # dev server (Expo Go / simulator)
 | `src/stores/` | Zustand stores (auth, location, UI) |
 | `src/features/` | Feature modules (auth, emergency, tracking, etc.) |
 | `src/components/` | Shared UI components |
-| `src/theme/` | Design tokens (`tokens.ts`), Inter font loading |
+| `src/theme/` | Light/dark palettes (`tokens.ts`), `useTheme` / `makeStyles` (`theme.ts`), `AppThemeProvider` |
+| `src/legal/` | Versioned legal documents (FR/EN content + registry) |
 | `src/models/` | TypeScript entity types |
 | `src/config/` | `env.ts` (zod-validated env) |
-| `src/i18n/` | i18next `fr.json` / `en.json` |
+| `src/i18n/` | i18next catalogues by domain (`locales/<lang>/*.json`), language priority (`language.ts`) — see `docs/I18N.md` |
 | `src/utils/` | Storage, secure storage, geo, logger, notifications |
 
 ## Key patterns
@@ -64,7 +66,9 @@ npx expo start              # dev server (Expo Go / simulator)
 - **RBAC**: `src/features/sharing/permissions.ts` defines the action-permission matrix for `principal` vs `secondaire` roles. Tests at `src/features/sharing/__tests__/permissions.test.ts`.
 - **Risk scoring**: `src/api/mock/fusionScore.ts` with hysteresis gate. Tested at `src/api/mock/__tests__/fusionScore.test.ts`.
 - **VS Code**: auto-fix + organize imports on save (`.vscode/settings.json`).
-- **i18n**: `useTranslation()` from `react-i18next`.
+- **i18n**: `useTranslation()` from `react-i18next`. No user-facing text in code; glossary in `docs/I18N.md`. Server errors are shown via `apiErrors.reasons.<detail.code>`.
+- **Theme**: never import a palette in a screen; use `makeStyles((colors) => ({…}))` + `const styles = useStyles()` and `useTheme()` for inline colours. Semantic roles are documented in `src/theme/tokens.ts`.
+- **Notifications / emails**: texts are written by the server in the recipient's language (`server/app/services/push.py`, `server/app/services/email/templates.py`); keep `notifications.push.*` in sync (tested).
 - **Env vars**: set in `.env` as `EXPO_PUBLIC_*`, exposed via `app.config.ts` `extra`, validated by zod in `src/config/env.ts`.
 
 ## Testing quirks

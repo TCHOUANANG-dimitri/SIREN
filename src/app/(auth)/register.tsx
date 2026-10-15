@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { ArrowLeft, Check } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Banner, Button, PasswordStrengthMeter, TextField } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useRegister } from '@/api/hooks/useAuth';
 import { toUserMessage } from '@/api/errors';
 import { passwordSchema } from '@/features/auth/passwordPolicy';
@@ -34,6 +34,8 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 export default function RegisterScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const register = useRegister();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -63,7 +65,7 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={8}>
-          <ArrowLeft size={18} color={colors.primary} />
+          <ArrowLeft size={18} color={colors.accent} />
           <Text style={styles.backText}>{t('auth.login')}</Text>
         </Pressable>
 
@@ -159,12 +161,37 @@ export default function RegisterScreen() {
           control={control}
           name="acceptTerms"
           render={({ field }) => (
-            <Pressable style={styles.termsRow} onPress={() => field.onChange(!field.value)}>
-              <View style={[styles.checkbox, field.value && styles.checkboxChecked]}>
-                {field.value && <Check size={12} color={colors.white} strokeWidth={3} />}
+            <View style={styles.termsBlock}>
+              <Pressable
+                style={styles.termsRow}
+                onPress={() => field.onChange(!field.value)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: field.value }}
+                accessibilityLabel={t('auth.acceptTermsA11y')}
+                hitSlop={8}
+              >
+                <View style={[styles.checkbox, field.value && styles.checkboxChecked]}>
+                  {field.value && <Check size={12} color={colors.onPrimary} strokeWidth={3} />}
+                </View>
+                <Text style={styles.termsText}>{t('auth.acceptTerms')}</Text>
+              </Pressable>
+              <View style={styles.termsLinks}>
+                <Text
+                  style={styles.termsLink}
+                  accessibilityRole="link"
+                  onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'terms' } })}
+                >
+                  {t('legal.docs.terms')}
+                </Text>
+                <Text
+                  style={styles.termsLink}
+                  accessibilityRole="link"
+                  onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'privacy' } })}
+                >
+                  {t('legal.docs.privacy')}
+                </Text>
               </View>
-              <Text style={styles.termsText}>{t('auth.acceptTerms')}</Text>
-            </Pressable>
+            </View>
           )}
         />
         {errors.acceptTerms && <Text style={styles.termsError}>{t(errors.acceptTerms.message ?? '')}</Text>}
@@ -189,14 +216,17 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   flex: { flex: 1, backgroundColor: colors.surface },
   content: { flexGrow: 1, padding: spacing.xxl, paddingTop: spacing.lg },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xl },
-  backText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.primary },
+  backText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.accent },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.muted, marginBottom: spacing.xl },
-  termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.xs },
+  termsBlock: { marginBottom: spacing.xs },
+  termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, minHeight: 32 },
+  termsLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, marginLeft: 28, marginTop: spacing.xs },
+  termsLink: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.accent, textDecorationLine: 'underline', paddingVertical: spacing.xs },
   checkbox: {
     width: 20,
     height: 20,
@@ -212,5 +242,5 @@ const styles = StyleSheet.create({
   termsError: { ...typography.caption, color: colors.urgence, marginBottom: spacing.md },
   footerRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' },
   footerText: { ...typography.body, color: colors.slate },
-  footerLink: { ...typography.body, fontFamily: fontFamily.semiBold, color: colors.primary },
-});
+  footerLink: { ...typography.body, fontFamily: fontFamily.semiBold, color: colors.accent },
+}));

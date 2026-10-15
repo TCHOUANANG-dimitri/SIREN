@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft, MessageSquareWarning } from 'lucide-react-native';
 import { Banner, Button, Card, PermissionToggle, TextField } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useCommunityReports, useCreateCommunityReport } from '@/api/hooks/useCommunity';
 import { useLocationStore } from '@/stores/locationStore';
 import { storage } from '@/utils/storage';
@@ -21,6 +21,8 @@ const MIN_REPORT_LENGTH = 10;
  * visible (serveur) ; l'auteur n'est pas exposé aux autres utilisateurs.
  */
 export default function CommunityScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { data: reports } = useCommunityReports();
   const createReport = useCreateCommunityReport();
@@ -126,7 +128,7 @@ export default function CommunityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface, paddingTop: spacing.xxxl },
   backButton: { marginLeft: spacing.xl, marginBottom: spacing.md },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, paddingHorizontal: spacing.xl, marginBottom: spacing.md },
@@ -141,4 +143,4 @@ const styles = StyleSheet.create({
   formPanel: { padding: spacing.xl, borderTopWidth: 1, borderTopColor: colors.border },
   formActions: { flexDirection: 'row', gap: spacing.sm },
   footer: { padding: spacing.xl, borderTopWidth: 1, borderTopColor: colors.border },
-});
+}));

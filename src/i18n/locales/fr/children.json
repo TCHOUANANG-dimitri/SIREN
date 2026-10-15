@@ -1,0 +1,180 @@
+{
+  "home": {
+    "subtitle": "Voici l'état de vos enfants",
+    "emptyTitle": "Ajoutez votre premier enfant",
+    "emptyBody": "Appairez un dispositif SIREN pour commencer la protection.",
+    "loadError": "Impossible de charger vos enfants. Vérifiez votre connexion.",
+    "greeting": "Bonjour {{name}}"
+  },
+  "children": {
+    "profileTitle": "Profil de l'enfant",
+    "profileSubtitle": "Ces informations aident à identifier votre enfant.",
+    "firstName": "Prénom de l'enfant *",
+    "firstNamePlaceholder": "Léa",
+    "firstNameRequired": "Le prénom de l'enfant est obligatoire.",
+    "duplicateName": "Vous avez déjà un enfant enregistré sous ce prénom.",
+    "pairTitle": "Appairer le dispositif",
+    "pairSubtitle": "Scannez le QR code sur le dispositif SIREN.",
+    "cameraPermission": "Autorisez la caméra pour scanner le QR code.",
+    "allowCamera": "Autoriser la caméra",
+    "deviceIdLabel": "Identifiant du dispositif *",
+    "deviceIdPlaceholder": "SIREN-XXXX-XXXX",
+    "pairingFailed": "L'appairage a échoué. Réessayez.",
+    "paired": "Dispositif associé !",
+    "pairedBody": "Le dispositif SIREN est connecté et prêt.",
+    "device": "Dispositif",
+    "online": "En ligne · GPS actif",
+    "defineProtection": "Définir la protection →",
+    "seeOngoingEmergency": "Voir l'urgence en cours →",
+    "deviceOffline": "Hors ligne",
+    "deviceOnline": "En ligne",
+    "viewDetails": "Voir les détails de {{child}}",
+    "searchingDevice": "Recherche du dispositif…",
+    "searchDevice": "Rechercher le dispositif",
+    "deviceIdRequired": "L'identifiant du dispositif est obligatoire.",
+    "deviceIdTooShort": "L'identifiant doit contenir au moins 5 caractères.",
+    "manualEntry": "ou saisir l'identifiant manuellement",
+    "addChild": "Ajouter un enfant",
+    "selector": {
+      "label": "Choisir l'enfant — {{context}}",
+      "hint": "Afficher {{name}}"
+    }
+  },
+  "wizard": {
+    "homeTitle": "Où est votre domicile ?",
+    "homeSubtitle": "Sélectionnez l'adresse et le rayon de protection autour de chez vous.",
+    "address": "Adresse",
+    "homeAddressPlaceholder": "12 Rue des Acacias, Yaoundé",
+    "schoolTitle": "Où est l'école ?",
+    "schoolSubtitle": "Adresse, rayon et horaires de présence attendue.",
+    "schoolAddressPlaceholder": "École primaire du quartier",
+    "attendanceDays": "Jours de présence",
+    "arrivalTime": "Heure d'arrivée",
+    "departureTime": "Heure de sortie",
+    "placesTitle": "Lieux fréquents",
+    "placesSubtitle": "Église, marché, grand-mère… Nommez le lieu, puis pointez sa position sur la carte.",
+    "placeName": "Nom du lieu",
+    "placeNamePlaceholder": "Église, marché…",
+    "placeNameRequired": "Donnez un nom à ce lieu.",
+    "placeNameDuplicate": "Un lieu porte déjà ce nom.",
+    "addressOrPosition": "Adresse ou position",
+    "searchAddress": "Rechercher une adresse…",
+    "addPlace": "Ajouter ce lieu",
+    "perimeterTitle": "Périmètre autorisé",
+    "perimeterSubtitle": "Quartier ou ville : une sortie de cette zone sera signalée.",
+    "sleepTitle": "Sommeil & contacts d'urgence",
+    "sleepSubtitle": "Plage horaire habituelle de sommeil et personnes à prévenir.",
+    "bedtime": "Coucher",
+    "wakeTime": "Réveil",
+    "emergencyContacts": "Contacts d'urgence",
+    "contactName": "Nom du contact",
+    "contactNamePlaceholder": "Papa, Grand-mère…",
+    "contactPhonePlaceholder": "+237 6 __ __ __ __",
+    "addContact": "Ajouter ce contact",
+    "saved": "Protection de base activée : vos règles déclarées et les détecteurs universels sont actifs.",
+    "steps": {
+      "home": "1 Maison",
+      "school": "2 École",
+      "places": "3 Lieux",
+      "perimeter": "4 Périmètre",
+      "sleep": "5 Sommeil"
+    },
+    "defaultHomeName": "Maison",
+    "defaultSchoolName": "École",
+    "saveAndContinue": "Enregistrer et continuer",
+    "next": "Suivant →"
+  },
+  "childTabs": {
+    "noPositionRight": "Vous n'avez pas le droit de voir la position de cet enfant.",
+    "noPreciseposition": "La position précise n'est pas partagée avec vous.",
+    "currentPosition": "Position actuelle",
+    "searchOnMap": "Rechercher un nom sur la carte…",
+    "requestPosition": "Demander la position maintenant",
+    "noHistory": "Aucun déplacement enregistré sur cette période.",
+    "departure": "Départ",
+    "arrival": "Arrivée",
+    "noPlaces": "Aucun lieu pour le moment.",
+    "renamePlace": "Renommer le lieu",
+    "addPlace": "Ajouter un lieu",
+    "reasons": "Raisons",
+    "subScoreBreakdown": "Décomposition par sous-score",
+    "modelConfidence": "Confiance du modèle",
+    "recentTrend": "Évolution récente",
+    "powerMode": "Mode d'énergie",
+    "alertSensitivity": "Sensibilité des alertes",
+    "cautious": "Prudent",
+    "tolerant": "Tolérant",
+    "information": "Informations",
+    "settingsVersion": "Version des paramètres",
+    "firmware": "Firmware",
+    "lastSync": "Dernière synchronisation",
+    "settingsSaved": "Réglages enregistrés",
+    "forceSync": "Forcer une synchronisation",
+    "noPosition": "Aucune position disponible pour le moment.",
+    "battery": "Batterie",
+    "deviceLoadError": "Impossible de charger les réglages du dispositif.",
+    "energyModeUnknown": "Mode actuel non reconnu : choisissez-en un.",
+    "fixRequested": "Demande envoyée. La position s'affichera dès que le dispositif répondra.",
+    "inForbiddenZone": "Dans une zone interdite : {{zone}}",
+    "inZone": "Dans la zone {{zone}}",
+    "lastSeen": "Dernier contact",
+    "outsideKnownZones": "Hors des zones connues",
+    "principalOnlySettings": "Seul le parent principal peut modifier ces réglages.",
+    "refreshDeviceState": "Actualiser l'état du dispositif",
+    "searchMatch": "Lieu trouvé : {{place}}",
+    "searchNoMatch": "Aucun lieu enregistré ne correspond",
+    "settingsSentToServer": "Réglages enregistrés. Le dispositif les appliquera à sa prochaine connexion.",
+    "syncExplanation": "Les réglages passent par le serveur : le dispositif les récupère lors de sa prochaine connexion.",
+    "updated": "Mis à jour {{when}}",
+    "energy": {
+      "continu": "Continu",
+      "equilibre": "Équilibré",
+      "economie": "Économie"
+    },
+    "energyHint": {
+      "continu": "Suivi le plus fin, autonomie la plus courte",
+      "equilibre": "Recommandé au quotidien",
+      "economie": "Autonomie maximale, positions plus espacées"
+    },
+    "tab": {
+      "map": "Carte",
+      "history": "Historique",
+      "places": "Lieux",
+      "score": "Score",
+      "device": "Dispositif"
+    },
+    "placesLearning": "SIREN apprend encore les lieux habituels de votre enfant (confiance : {{percent}} %)."
+  },
+  "risk": {
+    "subScore": {
+      "geo": "Géographique",
+      "mouvement": "Mouvement",
+      "universel": "Détecteurs universels",
+      "declaratif": "Règles déclarées"
+    },
+    "confidenceLearning": "La couche personnalisée est encore en apprentissage — la confiance progresse avec l'usage quotidien.",
+    "confidenceMature": "La routine de cet enfant est bien connue du modèle.",
+    "noReason": "Aucun signal particulier.",
+    "computedAt": "Calculé {{when}}",
+    "reason": {
+      "concordance": {
+        "label": "{{count}} signaux concordants",
+        "detail": "Plusieurs détecteurs indépendants signalent une anomalie en même temps, ce qui renforce le score."
+      },
+      "nuit": {
+        "label": "Contexte : nuit",
+        "detail": "Un déplacement entre 22 h et 6 h est considéré comme plus inhabituel."
+      },
+      "hors_perimetre": {
+        "label": "Contexte : hors périmètre",
+        "detail": "L'enfant est dans une zone interdite ou absent d'un lieu prévu à cette heure."
+      }
+    }
+  },
+  "riskState": {
+    "veille": "Veille",
+    "prealerte": "Pré-alerte",
+    "urgence": "Urgence",
+    "disparition": "Disparition"
+  }
+}

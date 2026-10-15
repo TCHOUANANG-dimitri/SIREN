@@ -29,7 +29,8 @@ def test_register_accepts_policy_compliant_password():
         ("development", "", "dev"),
         ("production", "", "disabled"),
         ("production", "dev", "disabled"),  # le code fixe n'est jamais accepté en production
-        ("staging", "provider", "provider"),
+        ("staging", "email", "email"),
+        ("staging", "provider", "email"),  # ancien nom du mode email
     ],
 )
 def test_otp_mode_resolution(env, mode, expected):

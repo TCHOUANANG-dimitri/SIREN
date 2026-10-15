@@ -1,7 +1,7 @@
 import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig, type Method } from 'axios';
 import { API_VERSION, env } from '@/config/env';
 import { logger } from '@/utils/logger';
-import { ApiError, codeFromStatus, userMessageFor, type ErrorCode } from '../errors';
+import { ApiError, codeFromStatus, reasonMessage, userMessageFor, type ErrorCode } from '../errors';
 
 /**
  * Client HTTP unique de l'application (mode live).
@@ -75,13 +75,25 @@ function toApiError(error: unknown, messages?: RequestOptions['messages']): ApiE
     }
     const status = error.response.status;
     const code = codeFromStatus(status);
-    return new ApiError(messages?.[code] ?? userMessageFor(code), status, code, {
+    const detail = (error.response.data as { detail?: unknown } | undefined)?.detail;
+    // Motif métier structuré ({ code, message, params? }) : le texte vient des traductions
+    // de l'app, jamais du serveur (qui peut répondre dans une autre langue).
+    const structured = detail && typeof detail === 'object' && !Array.isArray(detail) ? (detail as { code?: unknown; params?: unknown }) : null;
+    const reason = typeof structured?.code === 'string' ? structured.code : undefined;
+    const params = structured?.params && typeof structured.params === 'object' ? (structured.params as Record<string, unknown>) : undefined;
+    return new ApiError(
+      reasonMessage(reason, params) ?? messages?.[code] ?? userMessageFor(code),
       status,
-      url: error.config?.url,
-      method: error.config?.method,
-      // Le détail serveur est conservé pour le diagnostic, jamais affiché tel quel.
-      detail: (error.response.data as { detail?: unknown } | undefined)?.detail,
-    });
+      code,
+      {
+        status,
+        url: error.config?.url,
+        method: error.config?.method,
+        // Le détail serveur est conservé pour le diagnostic, jamais affiché tel quel.
+        detail,
+      },
+      reason
+    );
   }
   return new ApiError(userMessageFor('unknown'), 0, 'unknown', error);
 }
@@ -181,6 +193,7 @@ export const http = {
   get: <T = unknown>(url: string, options?: RequestOptions) => request<T>('GET', url, undefined, options),
   post: <T = unknown>(url: string, body?: unknown, options?: RequestOptions) => request<T>('POST', url, body ?? {}, options),
   patch: <T = unknown>(url: string, body?: unknown, options?: RequestOptions) => request<T>('PATCH', url, body ?? {}, options),
+  put: <T = unknown>(url: string, body?: unknown, options?: RequestOptions) => request<T>('PUT', url, body ?? {}, options),
   delete: <T = unknown>(url: string, options?: RequestOptions) => request<T>('DELETE', url, undefined, options),
 };
 

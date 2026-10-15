@@ -1,12 +1,16 @@
 import { queryClient } from '@/api/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { usePendingAuthStore } from '@/stores/pendingAuthStore';
+import { usePreferencesStore } from '@/stores/preferencesStore';
 import { useUiStore } from '@/stores/uiStore';
 import { storage } from '@/utils/storage';
 import { logger } from '@/utils/logger';
 import { clearPersistedQueryCache } from '@/api/persistence';
 
-/** Préférences locales liées au compte — purgées à la déconnexion (CDC App §8 Confidentialité). */
+/**
+ * Préférences locales liées au compte — purgées à la déconnexion (CDC App §8 Confidentialité).
+ * Le thème et la langue sont des réglages du téléphone : ils sont conservés.
+ */
 export const ACCOUNT_SCOPED_KEYS = [
   'siren.prefs.notifications',
   'siren.prefs.biometricLock',
@@ -32,6 +36,7 @@ export async function signOut(options: { revokeOnServer?: boolean } = {}) {
   queryClient.clear();
   usePendingAuthStore.getState().clear();
   useUiStore.getState().setSelectedChildId(null);
+  void usePreferencesStore.getState().setNotifications({ prealerte: true, information: true });
   await Promise.allSettled([clearPersistedQueryCache(), storage.clearAll(ACCOUNT_SCOPED_KEYS)]);
   await useAuthStore.getState().logout();
 }

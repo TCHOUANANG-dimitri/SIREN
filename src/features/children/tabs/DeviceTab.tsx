@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { RefreshCw } from 'lucide-react-native';
 import { Banner, Button, Card, Skeleton } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useDeviceSettings, usePatchDeviceSettings } from '@/api/hooks/useDevice';
 import { useChildStatus } from '@/api/hooks/useChildren';
 import { useCurrentAccess } from '@/features/sharing/useCurrentAccess';
@@ -21,6 +21,8 @@ const ENERGY_MODES: EnergyMode[] = ['continu', 'equilibre', 'economie'];
  * prochaine connexion (GET /device/v1/pack). L'app ne contacte jamais le boîtier.
  */
 export function DeviceTab({ childId }: { childId: string }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { data: settings, isLoading, isError, refetch } = useDeviceSettings(childId);
   const status = useChildStatus(childId);
@@ -118,7 +120,7 @@ export function DeviceTab({ childId }: { childId: string }) {
       <Button
         label={t('childTabs.refreshDeviceState')}
         variant="secondary"
-        icon={<RefreshCw size={16} color={colors.primary} />}
+        icon={<RefreshCw size={16} color={colors.accent} />}
         onPress={() => {
           void refetch();
           void status.refetch();
@@ -129,7 +131,7 @@ export function DeviceTab({ childId }: { childId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   content: { padding: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.md },
   card: { marginBottom: spacing.md },
   cardTitle: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink, marginBottom: spacing.md },
@@ -141,10 +143,10 @@ const styles = StyleSheet.create({
   modeAutonomy: { ...typography.caption, color: colors.muted },
   sensitivityHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs },
   hint: { ...typography.caption, color: colors.muted, marginTop: spacing.xs },
-  sensitivityValue: { ...typography.bodyStrong, fontFamily: fontFamily.bold, color: colors.primary },
+  sensitivityValue: { ...typography.bodyStrong, fontFamily: fontFamily.bold, color: colors.accent },
   sliderBounds: { flexDirection: 'row', justifyContent: 'space-between' },
   sliderBoundText: { ...typography.caption, color: colors.muted },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
   infoKey: { ...typography.body, color: colors.slate },
   infoValue: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
-});
+}));

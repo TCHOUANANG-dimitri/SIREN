@@ -25,6 +25,11 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     telephone: Optional[str] = Field(None, max_length=30)
     password: str = Field(..., max_length=128)
+    # Langue de l'interface au moment de l'inscription (emails et push suivants).
+    langue: Optional[str] = Field(None, pattern="^(fr|en)$")
+    # Versions des documents juridiques acceptées (src/legal/registry.ts côté app).
+    acceptedTermsVersion: Optional[str] = Field(None, max_length=20)
+    acceptedPrivacyVersion: Optional[str] = Field(None, max_length=20)
 
     _policy = field_validator("password")(validate_password_policy)
 
@@ -50,16 +55,40 @@ class ForgotPasswordRequest(BaseModel):
 
 class OtpRequest(BaseModel):
     destination: Optional[str] = None
+    accessToken: Optional[str] = None
 
 
 class OtpVerifyRequest(BaseModel):
     code: str = Field(..., min_length=4, max_length=10)
     accessToken: Optional[str] = None
+    challengeToken: Optional[str] = Field(None, max_length=128)
 
 
-class TFACodeRequest(BaseModel):
-    tempToken: str
-    code: str
+class ChallengeRequest(BaseModel):
+    challengeToken: str = Field(..., min_length=10, max_length=128)
+
+
+class TwoFactorVerifyRequest(ChallengeRequest):
+    code: str = Field(..., min_length=4, max_length=10)
+
+
+class ResetPasswordRequest(ChallengeRequest):
+    code: str = Field(..., min_length=4, max_length=10)
+    newPassword: str = Field(..., max_length=128)
+
+    _policy = field_validator("newPassword")(validate_password_policy)
+
+
+class ChangePasswordRequest(BaseModel):
+    currentPassword: str = Field(..., max_length=128)
+    newPassword: str = Field(..., max_length=128)
+
+    _policy = field_validator("newPassword")(validate_password_policy)
+
+
+class TwoFactorToggleRequest(BaseModel):
+    enabled: bool
+    password: str = Field(..., max_length=128)
 
 
 class UserPatchRequest(BaseModel):

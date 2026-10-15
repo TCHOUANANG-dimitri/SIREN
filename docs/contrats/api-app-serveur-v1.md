@@ -18,7 +18,7 @@
 | Unités | vitesse **km/h** (`speedKmh`), précision **mètres** (`accuracyM`), rayon **mètres** (`radiusM`), batterie **%** (0–100), scores **0–100**, confiance **0–100**. |
 | Jours | `jours` : 0 = dimanche … 6 = samedi. Horaires `HH:mm` en **heure locale** (`DEFAULT_TIMEZONE`, Africa/Douala). |
 | Écritures | Chaque POST/PATCH/DELETE porte un en-tête `Idempotency-Key` (généré par l'app). Le serveur ne l'exploite pas encore ; les routes sensibles sont rendues idempotentes par construction (voir tableau). |
-| Erreurs | `{ "detail": "…" }` + code HTTP. L'app n'affiche jamais `detail` : elle traduit le code (voir `apiErrors.*`). |
+| Erreurs | `{ "detail": { "code": "<motif>", "message": "…", "params"?: {…} } }` pour les erreurs métier (voir « Erreurs métier »), ou `{ "detail": "…" }` (erreurs génériques, 422 de validation). L'app n'affiche jamais `detail.message` : elle traduit `detail.code` (`apiErrors.reasons.*`), sinon le statut HTTP (`apiErrors.*`). |
 
 ## Autorisation (RBAC)
 
@@ -35,15 +35,20 @@ Maximum **3** accès non révoqués (invités + actifs) par enfant (409 au-delà
 
 | Méthode et chemin | Droit requis | Réponse | Notes |
 |---|---|---|---|
-| `POST /auth/register` | — | `{user, accessToken, refreshToken}` | Mot de passe ≥ 10 car., minuscule, majuscule, chiffre, symbole (422 sinon). |
-| `POST /auth/login` | — | `{user, accessToken, refreshToken, twofaRequired}` | 2FA : flux « jeton temporaire » à spécifier. |
+| `POST /auth/register` | — | `{user, accessToken, refreshToken}` | Mot de passe ≥ 10 car., minuscule, majuscule, chiffre, symbole (422 sinon). Champs optionnels : `langue`, `acceptedTermsVersion`, `acceptedPrivacyVersion` (preuve du consentement). 409 `email_taken`. |
+| `POST /auth/login` | — | `{user, accessToken, refreshToken, twofaRequired:false}` **ou** `{twofaRequired:true, challengeToken, expiresIn}` | Avec 2FA, **aucun jeton de session** avant le code. 401 `invalid_credentials`. |
+| `POST /auth/2fa/verify` | — | `{user, accessToken, refreshToken}` | `{challengeToken, code}`. Erreurs `otp_invalid` (400), `otp_expired` (400), `otp_attempts_exceeded` (429), `challenge_invalid` (400). |
+| `POST /auth/2fa/resend` | — | `{challengeToken, expiresIn, sent}` | Invalide le code précédent. 429 `otp_rate_limited` (`params.retryAfter`). |
 | `POST /auth/refresh` | — | `{accessToken, refreshToken}` | Rotation. |
 | `POST /auth/logout` | — | 204 | Révoque le refresh token. |
-| `POST /auth/request-otp` | — | `{required, sent, devHint?}` | `required=false` : l'app saute l'écran OTP (voir `OTP_MODE`). |
-| `POST /auth/verify-otp` | — | `{verified}` | Code de dev accepté seulement si `ENVIRONMENT=development`. |
-| `POST /auth/forgot` | — | `{sent: true}` | **Aucun email envoyé** (fournisseur non branché). |
+| `POST /auth/request-otp` | — | `{required, sent, challengeToken?, expiresIn?, devHint?}` | Corps `{accessToken}` (session en attente). `required=false` : l'app saute l'écran (voir `OTP_MODE`). `devHint` seulement en `OTP_MODE=dev` (développement). |
+| `POST /auth/verify-otp` | — | `{verified}` | `{code, challengeToken}` ; marque l'email confirmé (`emailVerified`). Code fixe accepté seulement en développement. |
+| `POST /auth/forgot` | — | `{challengeToken, expiresIn}` | Même réponse que le compte existe ou non. 503 `email_unavailable` sans canal email ; 502 `email_failed`. |
+| `POST /auth/reset-password` | — | 204 | `{challengeToken, code, newPassword}` ; révoque toutes les sessions ; email d'alerte de sécurité. |
 | `GET/PATCH /users/me` | session | `User` | `langue` ∈ `fr|en`. |
 | `DELETE /users/me` | session | 204 | Révoque sessions et jetons push, désactive les enfants, révoque les partages. |
+| `POST /users/me/password` | session | `{accessToken, refreshToken}` | `{currentPassword, newPassword}` ; autres sessions révoquées ; 400 `password_incorrect`. |
+| `PUT /users/me/2fa` | session | `User` | `{enabled, password}` ; 400 `password_incorrect` ; activation refusée (503 `email_unavailable`) sans canal email. |
 | `POST /users/me/push-token` | session | 204 | `{token, platform: fcm|apns}` (jeton natif, pas Expo Push). |
 | `GET /children` | session | `Child[]` | |
 | `POST /children` | parent | `Child` | Appairage par identifiant seul : **voir contrat dispositif**. |
@@ -64,10 +69,10 @@ Maximum **3** accès non révoqués (invités + actifs) par enfant (409 au-delà
 | `GET /children/alerts` | session | `Alert[]` visibles | Déclarée avant `/{id}` (sinon capturée). |
 | `GET /children/{id}/alerts` | `alertes_*` | `Alert[]` | Filtré par niveau selon les droits. |
 | `PATCH /children/alerts/{id}` | parent | `Alert` | `status` ∈ `acquittee|fausse|resolue` ; idempotent ; pas de retour à `active`. |
-| `GET/POST /children/{id}/shares` | parent | `SecondaryAccess` | Invité retrouvé par email **ou** téléphone ; doit avoir un compte. |
-| `GET/PATCH /children/shares/{id}` | parent ou invité | `SecondaryAccess` | L'invité peut accepter / se retirer, pas changer ses droits. |
+| `GET/POST /children/{id}/shares` | parent | `SecondaryAccess` (+ `notified` à la création) | Identifiant normalisé (email en minuscules, téléphone sans séparateurs, indicatif toléré). Erreurs : 422 `identifier_invalid`, 422 `self_invite`, 404 `invitee_not_found`, 409 `already_shared`, 409 `secondary_limit` (`params.max`). `notified` = un email a réellement été envoyé. |
+| `GET/PATCH /children/shares/{id}` | parent ou invité | `SecondaryAccess` | L'invité peut accepter / se retirer, pas changer ses droits (403 `rights_owner_only`, 409 `invitation_invalid`). |
 | `GET /children/{id}/permissions` | accès | `Permission[]` | |
-| `GET /children/{id}/shares/audit` | parent | `AccessAuditEntry[]` | Alimenté par chaque lecture d'un secondaire. |
+| `GET /children/{id}/shares/audit` | parent | `AccessAuditEntry[]` | Alimenté par chaque lecture d'un secondaire. `infoType` = code du droit (`position_precise`, `etat_zone`, `historique`) ; entrées antérieures : libellé français historique. |
 | `GET /children/{id}/search-zone` | `mobilisation` ou `position_precise` | `SearchZone` | `generatedAt` nul = module IA pas encore branché. |
 | `POST /children/{id}/disappearance` | parent | 202 | Effets serveur (notification, fiche) à implémenter. |
 | `GET/POST /children/{id}/emergency-contacts` | lecture : urgence/mobilisation ; écriture : parent | `EmergencyContact` | |
@@ -95,6 +100,30 @@ toutes les 15 s, position 20 s), et l'écran d'urgence se déclenche sur le scor
 
 ## Notifications push (FCM)
 
-`data` : `child_id`, `alert_id`, `childId`, `alertId`, `level` (`urgence|prealerte`), `score`.
+Texte rédigé par le serveur **dans la langue du destinataire** (`users.langue`) ;
+catalogue `server/app/services/push.py`, identique à `notifications.push.*` côté app
+(test `test_app_and_server_push_catalogs_match`).
+
+`data` (toutes les valeurs sont des chaînes) :
+`v` (`"1"`), `type` (`urgence|prealerte|low_battery|share_invite`), `titleKey`, `bodyKey`,
+`vars` (JSON), `lang`, et selon le type `childId`/`child_id`, `alertId`/`alert_id`, `level`, `score`.
+Un payload v1 sans `type` reste accepté (type déduit de `level`).
 Canal Android : `siren-urgence` (priorité max), `siren-prealerte`, `siren-information`.
-L'app valide les identifiants avant toute navigation.
+L'app valide les identifiants avant toute navigation. Détail des types : `docs/NOTIFICATIONS.md`.
+
+## Erreurs métier (`detail.code`)
+
+| Code | HTTP | Sens |
+|---|---|---|
+| `invalid_credentials` | 401 | Email ou mot de passe incorrect |
+| `email_taken` | 409 | Email déjà utilisé |
+| `otp_invalid` / `otp_expired` / `otp_attempts_exceeded` / `otp_rate_limited` | 400 / 400 / 429 / 429 | Code à usage unique |
+| `challenge_invalid` | 400 / 401 | Vérification inconnue, expirée ou compte indisponible |
+| `email_unavailable` / `email_failed` | 503 / 502 | Aucun canal email / envoi refusé — jamais de faux succès |
+| `password_incorrect` | 400 | Mot de passe actuel incorrect |
+| `session_invalid` | 401 | Refresh token invalide ou révoqué |
+| `identifier_invalid` / `self_invite` / `invitee_not_found` / `already_shared` / `secondary_limit` | 422 / 422 / 404 / 409 / 409 | Partage |
+| `rights_owner_only` / `invitation_invalid` | 403 / 409 | Réponse d'un invité |
+
+Ajouter un code : serveur (`api_error`), `ErrorReason` (`src/api/errors.ts`) et
+`apiErrors.reasons.<code>` en FR et EN.

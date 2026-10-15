@@ -35,13 +35,14 @@ export const mockApi: SirenApi = {
   mode: 'mock',
   auth: {
     register: auth.register,
-    login: async (input) => ({ ...(await auth.login(input)), twofaRequired: false }),
+    login: auth.login,
     refresh: auth.refresh,
-    requestOtp: async () => ({ required: true, ...(await auth.requestOtp()) }),
-    verifyOtp: ({ code }) => auth.verifyOtp(code),
-    forgotPassword: async (email) => {
-      await auth.forgotPassword(email);
-    },
+    requestOtp: ({ accessToken }) => auth.requestOtp(accessToken),
+    verifyOtp: ({ code, challengeToken }) => auth.verifyOtp({ code, challengeToken }),
+    verifySecondFactor: auth.verifySecondFactor,
+    resendSecondFactor: auth.resendSecondFactor,
+    forgotPassword: auth.forgotPassword,
+    resetPassword: auth.resetPassword,
     logout: async () => {},
   },
   users: {
@@ -50,6 +51,8 @@ export const mockApi: SirenApi = {
       await users.deleteMyAccount(token());
     },
     registerPushToken: async () => {},
+    changePassword: (input) => auth.changePassword(token(), input),
+    setTwoFactor: (input) => auth.setTwoFactor(token(), input),
   },
   children: {
     list: () => children.listChildren(token()),
@@ -96,7 +99,8 @@ export const mockApi: SirenApi = {
   },
   sharing: {
     list: (childId) => sharing.listShares(token(), childId),
-    create: (childId, input) => sharing.createShare(token(), childId, input),
+    // Le backend simulé n'envoie aucun email : `notified` reste faux.
+    create: async (childId, input) => ({ share: await sharing.createShare(token(), childId, input), notified: false }),
     get: (shareId) => sharing.getShare(token(), shareId),
     patch: (shareId, patch) => sharing.patchShare(token(), shareId, patch),
     myPermissions: (childId) => sharing.getMyPermissions(token(), childId),

@@ -15,3 +15,11 @@ jest.mock('expo-secure-store', () => {
     }),
   };
 });
+
+// Icônes : le paquet est livré en ESM (.mjs) ; un composant neutre suffit aux tests.
+jest.mock('lucide-react-native', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const Icon = (props) => React.createElement(View, { testID: props.testID });
+  return new Proxy({ __esModule: true }, { get: (target, name) => (name in target ? target[name] : Icon) });
+});

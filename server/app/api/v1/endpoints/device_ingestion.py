@@ -29,7 +29,7 @@ from app.schemas.device import (
     DeviceTelemetryRequest,
     DeviceTelemetryResponse,
 )
-from app.services.push import send_alert_push
+from app.services.push import send_alert_push, send_low_battery_push
 from app.services.scoring import compute_risk_score, persist_risk_score
 from app.services.telemetry import fix_quality_for, should_raise_alert, should_rescore, triage_batch
 from app.services.websocket_manager import publish_alert, publish_position, publish_risk
@@ -186,6 +186,13 @@ async def ingest_event(req: DeviceEventRequest, db: AsyncSession = Depends(get_d
     await crud_device_event.create(db, {"device_id": req.deviceId, "event_type": req.type})
     if req.type == "power_off":
         await crud_device.update(db, device, {"online": False})
+    if req.type == "low_battery":
+        # Canal « information » (CDC App §5) ; seuil décidé par le boîtier (C18).
+        from app.crud.child import crud_child
+
+        child = await crud_child.get_by_device(db, device.device_id)
+        if child is not None:
+            await send_low_battery_push(db, child)
     # BLOQUANT (IA / produit) : la réaction à un « removal » (retrait du boîtier)
     # doit être définie dans le moteur de fusion ; l'événement est seulement journalisé.
     return DeviceEventResponse(ack=True)

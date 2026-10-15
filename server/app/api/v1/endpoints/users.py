@@ -4,8 +4,11 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy import delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.endpoints.auth import revoke_all_refresh_tokens
+from app.api.v1.endpoints.auth import issue_tokens, revoke_all_refresh_tokens, user_dict
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.errors import api_error
+from app.core.security import hash_password, verify_password
 from app.core.dependencies import get_current_user
 from app.crud.push_token import crud_push_token
 from app.crud.user import crud_user
@@ -13,33 +16,53 @@ from app.models.child import Child
 from app.models.push_token import PushToken
 from app.models.sharing import SecondaryAccess
 from app.models.user import User
-from app.schemas.auth import PushTokenRequest, UserPatchRequest
+from app.schemas.auth import ChangePasswordRequest, PushTokenRequest, TwoFactorToggleRequest, UserPatchRequest
+from app.services.email import email_available
+from app.services.security_notifications import notify_password_changed, notify_twofa_changed
 
 router = APIRouter()
 
 
-def _user_dict(u):
-    return {
-        "id": u.id,
-        "nom": u.nom,
-        "email": u.email,
-        "telephone": u.telephone,
-        "role": u.role,
-        "langue": u.langue,
-        "twofaEnabled": u.twofa_enabled,
-        "createdAt": u.created_at.isoformat(),
-    }
-
-
 @router.get("/me")
 async def get_me(current_user: User = Depends(get_current_user)):
-    return _user_dict(current_user)
+    return user_dict(current_user)
 
 
 @router.patch("/me")
 async def patch_me(req: UserPatchRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     updated = await crud_user.update(db, current_user, req.model_dump(exclude_none=True))
-    return _user_dict(updated)
+    return user_dict(updated)
+
+
+@router.post("/me/password")
+async def change_password(req: ChangePasswordRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Change le mot de passe (ancien exigé), déconnecte les autres sessions, renvoie une nouvelle session."""
+    if not verify_password(req.currentPassword, current_user.password_hash):
+        raise api_error(status.HTTP_400_BAD_REQUEST, "password_incorrect", "Mot de passe actuel incorrect")
+    current_user.password_hash = hash_password(req.newPassword)
+    await revoke_all_refresh_tokens(db, current_user.id)
+    tokens = await issue_tokens(db, current_user.id)
+    await db.flush()
+    await notify_password_changed(current_user)
+    return tokens
+
+
+@router.put("/me/2fa")
+async def set_two_factor(req: TwoFactorToggleRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """
+    Active / désactive la vérification en deux étapes (code par email à chaque connexion).
+    Mot de passe exigé. L'activation est refusée sans canal email : elle bloquerait l'accès au compte.
+    """
+    if not verify_password(req.password, current_user.password_hash):
+        raise api_error(status.HTTP_400_BAD_REQUEST, "password_incorrect", "Mot de passe incorrect")
+    if req.enabled and settings.otp_mode != "dev" and not email_available():
+        raise api_error(status.HTTP_503_SERVICE_UNAVAILABLE, "email_unavailable", "Aucun canal email configuré")
+    changed = bool(current_user.twofa_enabled) != req.enabled
+    current_user.twofa_enabled = req.enabled
+    await db.flush()
+    if changed:
+        await notify_twofa_changed(current_user, req.enabled)
+    return user_dict(current_user)
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)

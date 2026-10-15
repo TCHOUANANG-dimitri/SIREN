@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { colors, radii, spacing } from '@/theme';
+import { radii, spacing, makeStyles } from '@/theme';
 
 interface BottomSheetProps {
   visible: boolean;
@@ -20,6 +20,7 @@ interface BottomSheetProps {
 }
 
 export function BottomSheet({ visible, onClose, children, style }: BottomSheetProps) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const { height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -59,11 +60,11 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay },
   sheet: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     paddingHorizontal: spacing.xl,
@@ -77,4 +78,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     marginBottom: spacing.lg,
   },
-});
+}));

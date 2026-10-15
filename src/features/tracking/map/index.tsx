@@ -16,7 +16,7 @@ import {
   type CameraRef,
 } from '@maplibre/maplibre-react-native';
 import { MapPin } from 'lucide-react-native';
-import { colors } from '@/theme';
+import { makeStyles, lightColors } from '@/theme';
 import { env } from '@/config/env';
 import { circlePolygon, lineString, zoomForLatitudeDelta, latitudeDeltaForZoom } from './geo';
 
@@ -124,11 +124,12 @@ interface MarkerProps {
 
 export function Marker({
   coordinate,
-  pinColor = colors.primary,
+  pinColor = lightColors.primary,
   title,
   description,
   children,
 }: MarkerProps) {
+  const styles = useStyles();
   return (
     <ViewAnnotation
       lngLat={[coordinate.longitude, coordinate.latitude]}
@@ -140,7 +141,7 @@ export function Marker({
           accessibilityLabel={[title, description].filter(Boolean).join(' — ') || undefined}
           style={styles.marker}
         >
-          <MapPin size={28} color={pinColor} fill={colors.white} />
+          <MapPin size={28} color={pinColor} fill={lightColors.onPrimary} />
         </View>
       )}
     </ViewAnnotation>
@@ -159,7 +160,7 @@ interface CircleProps {
 export function Circle({
   center,
   radius,
-  strokeColor = colors.primary,
+  strokeColor = lightColors.primary,
   fillColor = 'rgba(211,47,46,0.12)',
   strokeWidth = 2,
 }: CircleProps) {
@@ -191,7 +192,7 @@ interface PolylineProps {
 
 export function Polyline({
   coordinates,
-  strokeColor = colors.primary,
+  strokeColor = lightColors.primary,
   strokeWidth = 3,
 }: PolylineProps) {
   const shape = useMemo(() => lineString(coordinates), [coordinates]);
@@ -209,9 +210,9 @@ export function Polyline({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   marker: { alignItems: 'center', justifyContent: 'center' },
-});
+}));
 
 export interface HeatmapPoint {
   latitude: number;

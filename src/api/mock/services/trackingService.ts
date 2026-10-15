@@ -16,7 +16,7 @@ export async function getPosition(token: string | null, childId: string): Promis
   const hist = getDb().positions[childId];
   const last = hist?.[hist.length - 1];
   if (!last) throw new ApiError(i18n.t('errors.positionUnavailable'), 404);
-  if (user.role === 'secondaire') logAccess(childId, user.id, user.nom, 'Position précise');
+  if (user.role === 'secondaire') logAccess(childId, user.id, user.nom, 'position_precise');
   return last;
 }
 
@@ -53,7 +53,7 @@ export async function getZoneState(token: string | null, childId: string): Promi
   const matchPlace = places.find((p) => haversineDistanceM(last.lat, last.lon, p.lat, p.lon) <= p.radiusM);
   const matchGeofence = geofences.find((g) => haversineDistanceM(last.lat, last.lon, g.lat, g.lon) <= g.radiusM);
   const zone = matchPlace?.nom ?? (matchGeofence ? matchGeofence.nom : null);
-  if (user.role === 'secondaire') logAccess(childId, user.id, user.nom, 'État de zone');
+  if (user.role === 'secondaire') logAccess(childId, user.id, user.nom, 'etat_zone');
   return { inZone: !!zone, zoneName: zone, asOf: last.timestamp };
 }
 
@@ -70,7 +70,7 @@ export async function getHistory(
   const hist = getDb().positions[childId] ?? [];
   const fromMs = from ? new Date(from).getTime() : -Infinity;
   const toMs = to ? new Date(to).getTime() : Infinity;
-  if (user.role === 'secondaire') logAccess(childId, user.id, user.nom, 'Historique des trajets');
+  if (user.role === 'secondaire') logAccess(childId, user.id, user.nom, 'historique');
   return hist.filter((p) => {
     const t = new Date(p.timestamp).getTime();
     return t >= fromMs && t <= toMs;

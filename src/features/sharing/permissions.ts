@@ -58,3 +58,12 @@ export const ALL_PERMISSIONS: Permission[] = [
 export function permissionLabel(t: (key: string) => string, permission: Permission) {
   return { label: t(`permissions.${permission}.label`), description: t(`permissions.${permission}.description`) };
 }
+
+/**
+ * Libellé d'une entrée du journal d'accès. Les entrées récentes portent le code
+ * du droit consulté ; les anciennes (avant l'i18n) un libellé français, affiché
+ * tel quel pour ne pas réécrire l'historique.
+ */
+export function auditInfoLabel(t: (key: string) => string, infoType: string): string {
+  return (ALL_PERMISSIONS as string[]).includes(infoType) ? permissionLabel(t, infoType as Permission).label : infoType;
+}

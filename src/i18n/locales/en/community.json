@@ -1,0 +1,17 @@
+{
+  "community": {
+    "title": "Community",
+    "nearbyAlerts": "Nearby disappearance alerts",
+    "nearbyAlertsDescription": "Receive a notification if a disappearance is reported in your area.",
+    "noReports": "No recent reports in your area.",
+    "reportButton": "Report suspicious behaviour",
+    "reportLabel": "Report description",
+    "reportPlaceholder": "Suspicious behaviour observed…",
+    "reportFailed": "Could not send the report.",
+    "tooShort": "Describe the situation in at least {{min}} characters.",
+    "locationRequired": "Allow phone location to place the report.",
+    "published": "Report published.",
+    "pendingModeration": "Thank you. Your report will be visible after moderation.",
+    "proximityLocalOnly": "Saved on this phone; nearby alerts aren't sent yet."
+  }
+}

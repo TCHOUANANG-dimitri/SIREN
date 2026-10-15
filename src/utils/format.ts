@@ -24,6 +24,17 @@ export function formatRelativeTime(isoTimestamp: string | null | undefined, now:
   return i18n.t('time.daysAgo', { count: Math.round(diffH / 24) });
 }
 
+/**
+ * Date seule (« 30 septembre 2026 » / « 30 September 2026 »). Une date AAAA-MM-JJ
+ * est une date civile : elle est lue à midi UTC pour ne pas changer de jour selon le fuseau.
+ */
+export function formatDate(value: string | null | undefined): string {
+  if (!value) return '—';
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00Z` : value);
+  if (!isValid(date)) return '—';
+  return date.toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 export function formatClock(isoTimestamp: string | null | undefined): string {
   if (!isoTimestamp) return '—';
   const date = new Date(isoTimestamp);

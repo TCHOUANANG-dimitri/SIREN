@@ -15,6 +15,7 @@ from app.models.community import CommunityReport
 from app.models.emergency_contact import EmergencyContact
 from app.models.audio import AudioActivation
 from app.models.device_event import DeviceEvent
+from app.models.otp_challenge import OtpChallenge
 
 __all__ = [
     "User", "RefreshToken", "Device", "Child", "Position",
@@ -22,5 +23,5 @@ __all__ = [
     "MarkovModel", "FamiliarCell", "HourlyProfile",
     "ParamPack", "RiskScore", "Alert",
     "SecondaryAccess", "AccessAudit", "PushToken",
-    "CommunityReport", "EmergencyContact", "AudioActivation", "DeviceEvent",
+    "CommunityReport", "EmergencyContact", "AudioActivation", "DeviceEvent", "OtpChallenge",
 ]

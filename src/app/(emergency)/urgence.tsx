@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert as RNAlert, BackHandler, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert as RNAlert, BackHandler, Linking, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -7,7 +7,7 @@ import { MapView, Marker } from '@/features/tracking/map';
 import { Ear, Phone, PhoneCall, Siren } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Banner, Button } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { usePosition } from '@/api/hooks/useTracking';
 import { useRisk } from '@/api/hooks/useRisk';
 import { useChildren } from '@/api/hooks/useChildren';
@@ -28,6 +28,8 @@ import { trackEvent } from '@/utils/logger';
  * Ne dépend ni des crédits ni de la publicité (CDC App §3, §13).
  */
 export default function EmergencyScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const { data: position } = usePosition(childId);
@@ -89,7 +91,7 @@ export default function EmergencyScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header} accessibilityRole="header">
-          <Siren size={28} color={colors.white} />
+          <Siren size={28} color={colors.onPrimary} />
           <Text style={styles.headerTitle}>{t('emergency.title', { child: child?.prenom ?? '' })}</Text>
           {!!risk?.reasons.length && <Text style={styles.headerSubtitle}>{risk.reasons.join(' · ')}</Text>}
         </View>
@@ -128,7 +130,7 @@ export default function EmergencyScreen() {
             <Button
               key={contact.id}
               label={t('emergency.callContact', { name: contact.nom })}
-              icon={<Phone size={18} color={colors.white} />}
+              icon={<Phone size={18} color={colors.onPrimary} />}
               variant="emergency"
               onPress={() => call(contact.telephone)}
               accessibilityHint={contact.telephone}
@@ -136,14 +138,14 @@ export default function EmergencyScreen() {
           ))}
           <Button
             label={t('emergency.callHelp', { number: EMERGENCY_NUMBERS.police })}
-            icon={<PhoneCall size={18} color={colors.white} />}
+            icon={<PhoneCall size={18} color={colors.onPrimary} />}
             variant="emergency"
             onPress={() => call(EMERGENCY_NUMBERS.police)}
           />
           {featureFlags.audio && can('access_audio') && (
             <Button
               label={t('emergency.audioListening')}
-              icon={<Ear size={18} color={colors.primary} />}
+              icon={<Ear size={18} color={colors.accent} />}
               variant="secondary"
               onPress={() => router.push({ pathname: '/(emergency)/ecoute-audio', params: { childId: childId ?? '' } })}
             />
@@ -164,13 +166,13 @@ export default function EmergencyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.urgence },
+const useStyles = makeStyles((colors) => ({
+  container: { flex: 1, backgroundColor: colors.urgenceFill },
   content: { paddingBottom: spacing.xxxl, gap: spacing.sm },
   header: { padding: spacing.xxl, paddingTop: spacing.xxxl, alignItems: 'center', gap: spacing.sm },
-  headerTitle: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.white, textAlign: 'center' },
+  headerTitle: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.onPrimary, textAlign: 'center' },
   headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.9)', textAlign: 'center' },
   mapWrapper: { marginHorizontal: spacing.xl, borderRadius: radii.lg, overflow: 'hidden', marginBottom: spacing.lg },
   map: { height: 220 },
   actions: { padding: spacing.xl, gap: spacing.md },
-});
+}));

@@ -108,9 +108,13 @@ def check_secondary_quota(current_shares: Iterable, exclude_id: Optional[str] = 
     """Refuse d'aller au-delà de MAX_SECONDARIES_PER_CHILD accès non révoqués."""
     active = [s for s in current_shares if _status_value(s.status) != "revoque" and s.id != exclude_id]
     if len(active) >= MAX_SECONDARIES_PER_CHILD:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Nombre maximal de proches atteint ({MAX_SECONDARIES_PER_CHILD})",
+        from app.core.errors import api_error
+
+        raise api_error(
+            status.HTTP_409_CONFLICT,
+            "secondary_limit",
+            f"Nombre maximal de proches atteint ({MAX_SECONDARIES_PER_CHILD})",
+            {"max": MAX_SECONDARIES_PER_CHILD},
         )
 
 

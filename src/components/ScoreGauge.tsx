@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors, fontFamily, riskColors, typography, type RiskColorKey } from '@/theme';
+import { useTranslation } from 'react-i18next';
+import { fontFamily, riskColorsFor, typography, type RiskColorKey, makeStyles, useTheme } from '@/theme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -14,10 +15,13 @@ interface ScoreGaugeProps {
 }
 
 export function ScoreGauge({ score, state, size = 180, strokeWidth = 14, label }: ScoreGaugeProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const anim = useRef(new Animated.Value(0)).current;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const color = riskColors[state].fg;
+  const { t } = useTranslation();
+  const color = riskColorsFor(colors, state).fg;
 
   useEffect(() => {
     Animated.timing(anim, {
@@ -60,15 +64,15 @@ export function ScoreGauge({ score, state, size = 180, strokeWidth = 14, label }
       </Svg>
       <View style={styles.center} pointerEvents="none">
         <Text style={[styles.score, { color: colors.ink }]}>{Math.round(score)}</Text>
-        <Text style={styles.label}>{label ?? riskColors[state].label}</Text>
+        <Text style={styles.label}>{label ?? t(`riskState.${state}`)}</Text>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   wrapper: { alignItems: 'center', justifyContent: 'center' },
   center: { position: 'absolute', alignItems: 'center' },
   score: { ...typography.display, fontFamily: fontFamily.bold },
   label: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.muted, marginTop: 2 },
-});
+}));

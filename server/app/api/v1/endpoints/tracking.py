@@ -49,7 +49,7 @@ async def get_position(child_id: str, current_user: User = Depends(get_current_u
     access = await get_child_access(db, current_user, child_id)
     access.require("position_precise")
     pos = await _latest(db, child_id)
-    await log_secondary_access(db, access, "Position précise")
+    await log_secondary_access(db, access, "position_precise")
     data = position_dict(pos) if pos else None
     if data is None:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -71,7 +71,7 @@ async def get_zone_state(child_id: str, current_user: User = Depends(get_current
     access = await get_child_access(db, current_user, child_id)
     access.require_any("etat_zone", "position_precise")
     pos = await _latest(db, child_id)
-    await log_secondary_access(db, access, "État de zone")
+    await log_secondary_access(db, access, "etat_zone")
     if not pos:
         return {"inSafeZone": True, "inZone": False, "zoneName": None, "asOf": None}
 
@@ -115,5 +115,5 @@ async def get_history(
     if to_dt:
         query = query.where(Position.ts <= to_dt)
     result = await db.execute(query.order_by(desc(Position.ts)).limit(HISTORY_MAX_POINTS))
-    await log_secondary_access(db, access, "Historique des trajets")
+    await log_secondary_access(db, access, "historique")
     return [d for d in (position_dict(p) for p in result.scalars().all()) if d is not None]

@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { Switch, Text, View } from 'react-native';
+import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 
 interface PermissionToggleProps {
   label: string;
@@ -17,6 +17,8 @@ export function PermissionToggle({
   onValueChange,
   disabled,
 }: PermissionToggleProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   return (
     <View style={styles.row}>
       <View style={styles.textCol}>
@@ -28,7 +30,7 @@ export function PermissionToggle({
         onValueChange={onValueChange}
         disabled={disabled}
         trackColor={{ false: colors.border, true: colors.primary }}
-        thumbColor={colors.white}
+        thumbColor={colors.onPrimary}
         accessibilityLabel={label}
         accessibilityRole="switch"
       />
@@ -36,7 +38,7 @@ export function PermissionToggle({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -47,4 +49,4 @@ const styles = StyleSheet.create({
   textCol: { flex: 1 },
   label: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
   description: { ...typography.caption, color: colors.muted, marginTop: 2 },
-});
+}));

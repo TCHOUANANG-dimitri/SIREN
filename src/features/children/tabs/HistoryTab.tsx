@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Platform, Pressable, Text, View } from 'react-native';
 import { MapView, Marker, Polyline } from '@/features/tracking/map';
 import { Play, Square } from 'lucide-react-native';
 import { Skeleton } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useHistory } from '@/api/hooks/useTracking';
 import { formatClock, formatSpeedKmh } from '@/utils/format';
 import type { Position } from '@/models/entities';
@@ -14,6 +14,8 @@ import { historyRange, type HistoryPeriod } from '@/features/tracking/historyRan
 const PERIODS: HistoryPeriod[] = ['today', 'yesterday', '7days', 'custom'];
 
 export function HistoryTab({ childId }: { childId: string }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [period, setPeriod] = useState<HistoryPeriod>('today');
   const [custom, setCustom] = useState<{ from: Date; to: Date }>(() => ({ from: new Date(), to: new Date() }));
@@ -72,9 +74,9 @@ export function HistoryTab({ childId }: { childId: string }) {
             accessibilityLabel={t('history.play')}
           >
             {playIndex === null ? (
-              <Play size={16} color={colors.primary} />
+              <Play size={16} color={colors.accent} />
             ) : (
-              <Square size={16} color={colors.primary} />
+              <Square size={16} color={colors.accent} />
             )}
           </Pressable>
         )}
@@ -135,20 +137,20 @@ export function HistoryTab({ childId }: { childId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   flex: { flex: 1 },
   periodRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceChip },
   chipActive: { backgroundColor: colors.primary },
   chipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
-  chipTextActive: { color: colors.white },
+  chipTextActive: { color: colors.onPrimary },
   playButton: { marginLeft: 'auto', width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
   padded: { padding: spacing.lg },
   emptyText: { ...typography.body, color: colors.muted, textAlign: 'center', marginTop: spacing.xl },
   map: { height: 200 },
-  playMarker: { width: 16, height: 16, borderRadius: 8, backgroundColor: colors.prealerte, borderWidth: 2, borderColor: colors.white },
+  playMarker: { width: 16, height: 16, borderRadius: 8, backgroundColor: colors.prealerteFill, borderWidth: 2, borderColor: colors.card },
   list: { padding: spacing.lg },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   rowTime: { ...typography.body, fontFamily: fontFamily.medium, color: colors.ink },
   rowSpeed: { ...typography.caption, color: colors.muted },
-});
+}));

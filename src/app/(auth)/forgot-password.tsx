@@ -1,23 +1,31 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ArrowLeft, MailCheck } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { Button, TextField } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { Banner, Button, TextField } from '@/components';
+import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useForgotPassword } from '@/api/hooks/useAuth';
+import { toUserMessage } from '@/api/errors';
 
-const schema = z.object({ email: z.string().email('Adresse email invalide') });
+const schema = z.object({ email: z.string().trim().email('validation.emailInvalid') });
 type FormValues = z.infer<typeof schema>;
 
+/**
+ * Mot de passe oublié, étape 1. Le serveur envoie un code par email si un compte
+ * existe ; la réponse est la même sinon (on ne révèle pas quels emails ont un compte).
+ * Sans canal email configuré, le serveur le dit : aucun faux « email envoyé ».
+ */
 export default function ForgotPasswordScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const forgotPassword = useForgotPassword();
-  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     control,
@@ -26,74 +34,61 @@ export default function ForgotPasswordScreen() {
   } = useForm<FormValues>({ resolver: zodResolver(schema), mode: 'onChange', defaultValues: { email: '' } });
 
   async function onSubmit(values: FormValues) {
-    await forgotPassword.mutateAsync(values.email);
-    setSent(true);
-  }
-
-  if (sent) {
-    return (
-      <SafeAreaView style={styles.successContainer} edges={['top']}>
-        <View style={styles.successIcon}>
-          <MailCheck size={40} color={colors.veille} />
-        </View>
-        <Text style={styles.successTitle}>{t('auth.linkSent')}</Text>
-        <Text style={styles.successBody}>
-          {t('auth.linkSentBody')}
-        </Text>
-        <Button label={t('auth.login')} onPress={() => router.replace('/(auth)/login')} />
-      </SafeAreaView>
-    );
+    setError(null);
+    try {
+      await forgotPassword.mutateAsync(values.email);
+      router.push('/(auth)/reset-password');
+    } catch (e) {
+      setError(toUserMessage(e));
+    }
   }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={8}>
-        <ArrowLeft size={18} color={colors.primary} />
-        <Text style={styles.backText}>{t('common.back')}</Text>
-      </Pressable>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={12} accessibilityRole="button">
+          <ArrowLeft size={18} color={colors.accent} />
+          <Text style={styles.backText}>{t('common.back')}</Text>
+        </Pressable>
 
-      <Text style={styles.title}>{t('auth.forgotTitle')}</Text>
-      <Text style={styles.subtitle}>
-        {t('auth.forgotBody')}
-      </Text>
+        <Text style={styles.title} accessibilityRole="header">{t('auth.forgotTitle')}</Text>
+        <Text style={styles.subtitle}>{t('auth.forgotBody')}</Text>
 
-      <Controller
-        control={control}
-        name="email"
-        render={({ field }) => (
-          <TextField
-            label={t('auth.email')}
-            value={field.value}
-            onChangeText={field.onChange}
-            onBlur={field.onBlur}
-            error={errors.email?.message}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            placeholder={t('auth.emailPlaceholder')}
-          />
-        )}
-      />
+        {error && <Banner kind="error" message={error} />}
 
-      <Button
-        label={t('auth.sendLink')}
-        onPress={handleSubmit(onSubmit)}
-        loading={forgotPassword.isPending}
-        disabled={!isValid}
-      />
-    </SafeAreaView>
+        <Controller
+          control={control}
+          name="email"
+          render={({ field }) => (
+            <TextField
+              label={t('auth.email')}
+              value={field.value}
+              onChangeText={field.onChange}
+              onBlur={field.onBlur}
+              error={errors.email?.message && t(errors.email.message)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              placeholder={t('auth.emailPlaceholder')}
+            />
+          )}
+        />
+
+        <Button
+          label={t('auth.sendCode')}
+          onPress={handleSubmit(onSubmit)}
+          loading={forgotPassword.isPending}
+          disabled={!isValid}
+        />
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.surface, padding: spacing.xxl, paddingTop: spacing.xxxl },
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xxl },
-  backText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.primary },
-  title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.sm },
-  subtitle: { ...typography.body, color: colors.muted, lineHeight: 22, marginBottom: spacing.xxl },
-  successContainer: { flex: 1, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', padding: spacing.xxl, gap: spacing.md },
-  successIcon: { width: 88, height: 88, borderRadius: 44, backgroundColor: colors.veilleSurface, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
-  successTitle: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink },
-  successBody: { ...typography.body, color: colors.muted, textAlign: 'center', marginBottom: spacing.xl },
-});
+const useStyles = makeStyles((colors) => ({
+  container: { flex: 1, backgroundColor: colors.surface, padding: spacing.xxl, paddingTop: spacing.xxxl, gap: spacing.sm },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xl, minHeight: 44 },
+  backText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.accent },
+  title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink },
+  subtitle: { ...typography.body, color: colors.muted, lineHeight: 22, marginBottom: spacing.lg },
+}));

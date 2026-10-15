@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Polyline } from 'react-native-svg';
 import { Info } from 'lucide-react-native';
 import { Card, ScoreGauge, Skeleton } from '@/components';
-import { colors, fontFamily, radii, riskColors, spacing, typography } from '@/theme';
+import { fontFamily, radii, riskColorsFor, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useRisk, useRiskHistory } from '@/api/hooks/useRisk';
 import { useTranslation } from 'react-i18next';
 import { explainReason } from '@/features/risk/reasons';
@@ -11,6 +11,7 @@ import { formatRelativeTime } from '@/utils/format';
 
 
 function Sparkline({ values }: { values: number[] }) {
+  const { colors } = useTheme();
   if (values.length < 2) return null;
   const width = 300;
   const height = 60;
@@ -19,7 +20,7 @@ function Sparkline({ values }: { values: number[] }) {
     .join(' ');
   return (
     <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
-      <Polyline points={points} fill="none" stroke={colors.primary} strokeWidth={2} />
+      <Polyline points={points} fill="none" stroke={colors.accent} strokeWidth={2} />
     </Svg>
   );
 }
@@ -29,6 +30,8 @@ function Sparkline({ values }: { values: number[] }) {
  * Si le code est connu (ex. « contexte:nuit »), un texte d'aide est proposé au tap.
  */
 function ReasonRow({ reason }: { reason: string }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const explanation = explainReason(t, reason);
@@ -50,6 +53,8 @@ function ReasonRow({ reason }: { reason: string }) {
 }
 
 export function RiskTab({ childId }: { childId: string }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { data: risk, isLoading } = useRisk(childId);
   const { data: history } = useRiskHistory(childId);
@@ -88,7 +93,7 @@ export function RiskTab({ childId }: { childId: string }) {
               <View
                 style={[
                   styles.subScoreFill,
-                  { width: `${Math.max(0, Math.min(100, value))}%`, backgroundColor: riskColors[risk.state].fg },
+                  { width: `${Math.max(0, Math.min(100, value))}%`, backgroundColor: riskColorsFor(colors, risk.state).fg },
                 ]}
               />
             </View>
@@ -119,7 +124,7 @@ export function RiskTab({ childId }: { childId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   padded: { padding: spacing.xl },
   content: { padding: spacing.lg, paddingBottom: spacing.xxxl },
   gaugeWrap: { alignItems: 'center', marginVertical: spacing.xl },
@@ -132,6 +137,6 @@ const styles = StyleSheet.create({
   subScoreTrack: { height: 8, borderRadius: radii.sm, backgroundColor: colors.border, overflow: 'hidden' },
   subScoreFill: { height: 8, borderRadius: radii.sm },
   confidenceHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
-  confidenceValue: { ...typography.bodyStrong, fontFamily: fontFamily.bold, color: colors.primary },
+  confidenceValue: { ...typography.bodyStrong, fontFamily: fontFamily.bold, color: colors.accent },
   confidenceHint: { ...typography.caption, color: colors.muted, marginTop: spacing.sm },
-});
+}));

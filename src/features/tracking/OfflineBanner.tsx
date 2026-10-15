@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useUiStore } from '@/stores/uiStore';
-import { colors, fontFamily, typography } from '@/theme';
+import { fontFamily, typography, makeStyles } from '@/theme';
 import { formatClock } from '@/utils/format';
 import { trackEvent } from '@/utils/logger';
 
@@ -30,6 +30,7 @@ function useLastSyncAt(): number | null {
  * S'appuie sur la connectivité réelle du téléphone et sur l'état du canal temps réel.
  */
 export function OfflineBanner() {
+  const styles = useStyles();
   const { t } = useTranslation();
   const deviceOnline = useUiStore((s) => s.deviceOnline);
   const status = useUiStore((s) => s.connectionStatus);
@@ -54,7 +55,7 @@ export function OfflineBanner() {
   );
 }
 
-const styles = StyleSheet.create({
-  banner: { backgroundColor: colors.prealerte, paddingVertical: 6, paddingHorizontal: 12, alignItems: 'center' },
-  text: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.white, textAlign: 'center' },
-});
+const useStyles = makeStyles((colors) => ({
+  banner: { backgroundColor: colors.prealerteFill, paddingVertical: 6, paddingHorizontal: 12, alignItems: 'center' },
+  text: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.onPrimary, textAlign: 'center' },
+}));

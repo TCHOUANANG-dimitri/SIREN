@@ -13,9 +13,11 @@ from app.core.authz import (
 )
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.core.errors import api_error
 from app.crud.sharing import crud_share
 from app.crud.user import crud_user
 from app.models.user import User
+from app.services.identifiers import is_self, normalize_identifier, same_phone
 
 router = APIRouter()
 
@@ -44,12 +46,28 @@ async def _share_dict(db, s):
     }
 
 
-async def _find_user(db, identifier: str):
-    identifier = identifier.strip()
-    if "@" in identifier:
-        return await crud_user.get_by_email(db, identifier.lower())
-    result = await db.execute(select(User).where(User.telephone == identifier, User.deleted_at.is_(None)))
-    return result.scalars().first()
+async def _find_user(db, identifier: str, kind: str):
+    if kind == "email":
+        user = await crud_user.get_by_email(db, identifier)
+        return user if user and user.deleted_at is None else None
+    # Les numéros sont saisis sous des formes variées (+237 6…, 6…) : comparaison normalisée.
+    result = await db.execute(select(User).where(User.telephone.is_not(None), User.deleted_at.is_(None)))
+    return next((u for u in result.scalars().all() if same_phone(u.telephone, identifier)), None)
+
+
+async def _notify_invitee(db, invitee, inviter, child) -> bool:
+    """Informe la personne invitée (email + push). Renvoie True seulement si l'email est réellement parti."""
+    from app.services.email import EmailDeliveryFailed, EmailUnavailable, render, send_email
+    from app.services.push import send_localized_push
+
+    await send_localized_push(db, invitee, "share_invite", {"inviter": inviter.nom, "child": child.prenom}, {"childId": child.id})
+    try:
+        await send_email(invitee.email, render("share_granted", invitee.langue or "fr", {
+            "name": invitee.nom, "inviter": inviter.nom, "child": child.prenom,
+        }))
+        return True
+    except (EmailUnavailable, EmailDeliveryFailed):
+        return False
 
 
 @router.get("/{child_id}/shares")
@@ -64,17 +82,23 @@ async def create_share(child_id: str, req: ShareCreate, current_user: User = Dep
     access = await get_child_access(db, current_user, child_id)
     access.require_principal()
 
-    # BLOQUANT (email / SMS) : l'invité doit déjà avoir un compte ; aucune invitation
-    # n'est envoyée tant qu'aucun fournisseur n'est branché (CDC App §10).
-    target_user = await _find_user(db, req.userIdentifier)
+    identifier, kind = normalize_identifier(req.userIdentifier)
+    if kind is None:
+        raise api_error(422, "identifier_invalid", "Email ou téléphone invalide")
+    # Contrôlé AVANT la recherche : on ne s'invite pas soi-même, quelle que soit la forme saisie.
+    if is_self(identifier, kind, current_user):
+        raise api_error(422, "self_invite", "Impossible de s'inviter soi-même")
+
+    # L'invité doit déjà avoir un compte SIREN (pas d'invitation « en attente » d'inscription, voir docs).
+    target_user = await _find_user(db, identifier, kind)
     if not target_user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+        raise api_error(404, "invitee_not_found", "Aucun compte SIREN pour cet identifiant")
     if target_user.id == current_user.id:
-        raise HTTPException(status_code=422, detail="Impossible de s'inviter soi-même")
+        raise api_error(422, "self_invite", "Impossible de s'inviter soi-même")
 
     existing = await crud_share.list_by_child(db, child_id)
     if any(s.user_id == target_user.id and getattr(s.status, "value", s.status) != "revoque" for s in existing):
-        raise HTTPException(status_code=409, detail="Partage déjà existant")
+        raise api_error(409, "already_shared", "Partage déjà existant")
     check_secondary_quota(existing)
 
     share = await crud_share.create(db, {
@@ -83,7 +107,8 @@ async def create_share(child_id: str, req: ShareCreate, current_user: User = Dep
         "permissions": sanitize_permissions(req.permissions),
         "status": "invite",
     })
-    return await _share_dict(db, share)
+    notified = await _notify_invitee(db, target_user, current_user, access.child)
+    return {**(await _share_dict(db, share)), "notified": notified}
 
 
 @router.get("/shares/{share_id}")
@@ -108,9 +133,9 @@ async def patch_share(share_id: str, req: SharePatch, current_user: User = Depen
     if is_invitee:
         # L'invité peut accepter (invite → actif) ou se retirer (→ revoque), jamais changer ses droits.
         if req.permissions is not None:
-            raise HTTPException(status_code=403, detail="Seul le parent modifie les droits")
+            raise api_error(403, "rights_owner_only", "Seul le parent modifie les droits")
         if req.status == "actif" and current_status != "invite":
-            raise HTTPException(status_code=409, detail="Invitation non valide")
+            raise api_error(409, "invitation_invalid", "Invitation non valide")
     else:
         access = await get_child_access(db, current_user, share.child_id)
         access.require_principal()

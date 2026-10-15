@@ -1,0 +1,66 @@
+{
+  "sharing": {
+    "title": "Sharing",
+    "primaryOnly": "Only the primary parent can manage shared access.",
+    "empty": "No trusted contacts yet. Invite someone you trust to share monitoring.",
+    "inviteTitle": "Invite a trusted contact",
+    "inviteSubtitle": "All rights are off by default: choose what this person will be able to see.",
+    "contactField": "Email or phone",
+    "contactPlaceholder": "name@example.com or +237 6…",
+    "grantedRights": "Granted rights",
+    "sendInvite": "Send invitation",
+    "revokeAccess": "Revoke access",
+    "auditTitle": "Access log",
+    "auditEmpty": "No views recorded yet.",
+    "previewNone": "This person will see nothing until a right is granted.",
+    "previewSome": "This person will be able to see: {{rights}}.",
+    "slotsLeft_one": "You can invite {{count}} more trusted contact.",
+    "slotsLeft_other": "You can invite {{count}} more trusted contacts.",
+    "noRights": "No rights granted",
+    "rightsUpdated": "Rights updated",
+    "noChild": "Add a child first to share their monitoring.",
+    "forChild": "For {{name}}",
+    "slotsUsed_one": "{{count}} of {{max}} trusted contacts",
+    "slotsUsed_other": "{{count}} of {{max}} trusted contacts",
+    "status": {
+      "invite": "Invited",
+      "actif": "Active",
+      "revoque": "Revoked"
+    },
+    "statusLine": "Status: {{status}}",
+    "shareA11y": "{{name}}, {{status}}. Open rights.",
+    "inviteFor": "Invite a trusted contact for {{name}}",
+    "offline": "You're offline: the invitation can be sent once the connection is back.",
+    "contactHelp": "The person must already have a SIREN account with this email or phone number.",
+    "inviteCreated": "{{name}} has been invited for {{child}}. The invitation will appear in their SIREN app.",
+    "inviteCreatedNotified": "{{name}} has been invited for {{child}}. They have been notified by email.",
+    "revokeConfirm": "Remove all of {{name}}'s rights? This person will no longer see any information.",
+    "revoke": "Revoke"
+  },
+  "permissions": {
+    "position_precise": {
+      "label": "Precise real-time location",
+      "description": "See the exact location on the map."
+    },
+    "etat_zone": {
+      "label": "Zone status",
+      "description": "Know whether the child is inside or outside a known zone, without the precise map."
+    },
+    "alertes_prealerte": {
+      "label": "Pre-alerts",
+      "description": "Be notified of unusual behaviour."
+    },
+    "alertes_urgence": {
+      "label": "Emergencies",
+      "description": "Be notified of a confirmed emergency."
+    },
+    "historique": {
+      "label": "Trip history",
+      "description": "View past trips."
+    },
+    "mobilisation": {
+      "label": "Help with the search",
+      "description": "Be asked to help with the search if the child goes missing."
+    }
+  }
+}

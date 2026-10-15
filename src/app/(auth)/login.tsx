@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { Banner, Button, TextField } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { fontFamily, spacing, typography, makeStyles } from '@/theme';
 import { useLogin } from '@/api/hooks/useAuth';
 import { toUserMessage } from '@/api/errors';
 
@@ -18,6 +18,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function LoginScreen() {
+  const styles = useStyles();
   const { t } = useTranslation();
   const login = useLogin();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -119,7 +120,7 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   flex: { flex: 1, backgroundColor: colors.surface },
   content: { flexGrow: 1, padding: spacing.xxl, paddingTop: spacing.xxxl },
   logoWrap: { alignItems: 'center', marginBottom: spacing.xxl },
@@ -127,8 +128,8 @@ const styles = StyleSheet.create({
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.muted, marginBottom: spacing.xxl },
   forgotLink: { alignSelf: 'flex-end', marginBottom: spacing.xxl, marginTop: -spacing.xs },
-  forgotText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.primary },
+  forgotText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.accent },
   footerRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' },
   footerText: { ...typography.body, color: colors.slate },
-  footerLink: { ...typography.body, fontFamily: fontFamily.semiBold, color: colors.primary },
-});
+  footerLink: { ...typography.body, fontFamily: fontFamily.semiBold, color: colors.accent },
+}));

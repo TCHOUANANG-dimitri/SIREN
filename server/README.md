@@ -99,6 +99,17 @@ server/
 - Hors `ENVIRONMENT=development`, le serveur refuse de démarrer avec les secrets d'exemple.
 - Base existante : appliquer `migrations/001_geofence_radius_and_device_defaults.sql`.
 
+## Emails transactionnels
+
+Catalogue bilingue et versionné : `app/services/email/templates.py` (confirmation
+d'email, code de connexion, mot de passe oublié, accès partagé, alertes de
+sécurité). Envoi par SMTP (`EMAIL_BACKEND=smtp`) : aucun prestataire imposé.
+Sans canal configuré, rien n'est simulé : les routes concernées répondent
+`503 email_unavailable`. Voir `docs/EMAILS.md` à la racine du dépôt.
+
+Les erreurs métier sont structurées : `{"detail": {"code": "<motif>", "message": "…"}}`
+(liste des motifs : `docs/contrats/api-app-serveur-v1.md`).
+
 ## Tests
 
 ```bash
@@ -115,12 +126,15 @@ Les tests n'exigent ni PostgreSQL ni Redis. Un `xfail` documente l'écart d'hyst
 | Méthode | Route | Description |
 |---|---|---|
 | POST | `/api/v1/auth/register` | Création de compte |
-| POST | `/api/v1/auth/login` | Connexion |
+| POST | `/api/v1/auth/login` | Connexion (si 2FA : `challengeToken`, aucun jeton de session) |
+| POST | `/api/v1/auth/2fa/verify` | Second facteur : code → session |
+| POST | `/api/v1/auth/2fa/resend` | Nouveau code de connexion |
 | POST | `/api/v1/auth/refresh` | Rafraîchir token |
-| POST | `/api/v1/auth/forgot` | Mot de passe oublié |
+| POST | `/api/v1/auth/forgot` | Mot de passe oublié : code par email (réponse identique si le compte n'existe pas) |
+| POST | `/api/v1/auth/reset-password` | Code + nouveau mot de passe |
 | POST | `/api/v1/auth/logout` | Déconnexion |
-| POST | `/api/v1/auth/request-otp` | Demander code OTP |
-| POST | `/api/v1/auth/verify-otp` | Vérifier code OTP |
+| POST | `/api/v1/auth/request-otp` | Code de confirmation d'email (inscription) |
+| POST | `/api/v1/auth/verify-otp` | Vérifier ce code |
 
 ### Utilisateurs
 | Méthode | Route | Description |
@@ -128,6 +142,8 @@ Les tests n'exigent ni PostgreSQL ni Redis. Un `xfail` documente l'écart d'hyst
 | GET | `/api/v1/users/me` | Profil utilisateur |
 | PATCH | `/api/v1/users/me` | Modifier profil |
 | DELETE | `/api/v1/users/me` | Supprimer compte |
+| POST | `/api/v1/users/me/password` | Changer le mot de passe (ancien exigé, autres sessions révoquées) |
+| PUT | `/api/v1/users/me/2fa` | Activer / désactiver la vérification en deux étapes (mot de passe exigé) |
 | POST | `/api/v1/users/me/push-token` | Enregistrer push token |
 
 ### Enfants

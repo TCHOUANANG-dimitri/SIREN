@@ -1,63 +1,66 @@
-import { useEffect } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
-import { useChildren } from '@/api/hooks/useChildren';
-import { useAccessAudit } from '@/api/hooks/useSharing';
-import { useUiStore } from '@/stores/uiStore';
-import { formatClock, formatRelativeTime } from '@/utils/format';
 import { useTranslation } from 'react-i18next';
+import { Banner, SkeletonCard } from '@/components';
+import { fontFamily, spacing, touchTarget, typography, makeStyles, useTheme } from '@/theme';
+import { useAccessAudit } from '@/api/hooks/useSharing';
+import { toUserMessage } from '@/api/errors';
+import { ChildSelector } from '@/features/children/ChildSelector';
+import { useSelectedChild } from '@/features/children/useSelectedChild';
+import { auditInfoLabel } from '@/features/sharing/permissions';
+import { formatClock, formatRelativeTime } from '@/utils/format';
 
 export default function AccessAuditScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
-  const { data: children } = useChildren();
-  const selectedChildId = useUiStore((s) => s.selectedChildId);
-  const setSelectedChildId = useUiStore((s) => s.setSelectedChildId);
-
-  useEffect(() => {
-    if (!selectedChildId && children && children.length > 0) setSelectedChildId(children[0].id);
-  }, [children, selectedChildId, setSelectedChildId]);
-
-  const activeChild = children?.find((c) => c.id === selectedChildId) ?? children?.[0];
-  const { data: audit } = useAccessAudit(activeChild?.id);
+  const { children, activeChild, select } = useSelectedChild();
+  const audit = useAccessAudit(activeChild?.id);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel={t('common.back')}>
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={12}
+        style={styles.backButton}
+        accessibilityRole="button"
+        accessibilityLabel={t('common.back')}
+      >
         <ArrowLeft size={20} color={colors.ink} />
       </Pressable>
-      <Text style={styles.title}>{t('sharing.auditTitle')}</Text>
+      <Text style={styles.title} accessibilityRole="header">{t('sharing.auditTitle')}</Text>
 
-      {children && children.length > 1 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.switcherRow}>
-          {children.map((c) => (
-            <Pressable
-              key={c.id}
-              onPress={() => setSelectedChildId(c.id)}
-              style={[styles.chip, c.id === activeChild?.id && styles.chipActive]}
-            >
-              <Text style={[styles.chipText, c.id === activeChild?.id && styles.chipTextActive]}>{c.prenom}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      )}
+      <ChildSelector
+        childrenList={children ?? []}
+        activeId={activeChild?.id}
+        onSelect={select}
+        contextLabel={t('sharing.auditTitle')}
+      />
 
-      {!audit || audit.length === 0 ? (
+      {audit.isError ? (
+        <View style={styles.list}>
+          <Banner kind="error" message={toUserMessage(audit.error)} />
+        </View>
+      ) : audit.isLoading ? (
+        <View style={styles.list}>
+          <SkeletonCard />
+        </View>
+      ) : !audit.data || audit.data.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>{t('sharing.auditEmpty')}</Text>
         </View>
       ) : (
         <FlatList
-          data={audit}
+          data={audit.data}
           keyExtractor={(a) => a.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <View style={styles.row}>
-              <View>
-                <Text style={styles.rowName}>{item.secondaryNom}</Text>
-                <Text style={styles.rowInfo}>{item.infoType}</Text>
+              <View style={styles.rowMain}>
+                <Text style={styles.rowName} numberOfLines={1}>{item.secondaryNom}</Text>
+                <Text style={styles.rowInfo}>{auditInfoLabel(t, item.infoType)}</Text>
               </View>
               <Text style={styles.rowTime}>{formatClock(item.timestamp)} · {formatRelativeTime(item.timestamp)}</Text>
             </View>
@@ -68,20 +71,16 @@ export default function AccessAuditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
-  backButton: { marginLeft: spacing.xl, marginBottom: spacing.md },
+  backButton: { marginLeft: spacing.md, width: touchTarget.min, height: touchTarget.min, alignItems: 'center', justifyContent: 'center' },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
-  switcherRow: { gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceChip },
-  chipActive: { backgroundColor: colors.primary },
-  chipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
-  chipTextActive: { color: colors.white },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  emptyText: { ...typography.body, color: colors.muted },
+  emptyText: { ...typography.body, color: colors.muted, textAlign: 'center' },
   list: { padding: spacing.xl },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  rowMain: { flex: 1 },
   rowName: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
   rowInfo: { ...typography.caption, color: colors.muted },
   rowTime: { ...typography.caption, color: colors.muted },
-});
+}));

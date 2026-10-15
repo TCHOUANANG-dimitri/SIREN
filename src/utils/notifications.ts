@@ -4,14 +4,22 @@ import type { Alert } from '@/models/entities';
 import i18n from '@/i18n';
 import { logger } from '@/utils/logger';
 import { storage } from '@/utils/storage';
+import { usePreferencesStore, type NotificationPrefs } from '@/stores/preferencesStore';
 
 /**
  * Notifications — CDC App §5.
  * Trois canaux Android : urgence (priorité max, son), pré-alerte, information.
- * En mode live, le push est émis par le serveur (FCM / APNs) : l'app se borne
- * à enregistrer son jeton et à router le tap. En mode mock, des notifications
- * locales simulent le push.
+ * En mode live, le push est émis par le serveur (FCM / APNs) dans la langue du
+ * compte (le téléphone ne peut pas traduire une notification reçue app fermée) ;
+ * l'app enregistre son jeton, garde la langue du compte à jour et route le tap.
+ * En mode mock, des notifications locales simulent le push avec le même
+ * catalogue (`notifications.push.*`, identique à server/app/services/push.py).
  */
+
+/** Types de notification du contrat v1 (payload `data.type`). */
+export type NotificationKind = 'urgence' | 'prealerte' | 'low_battery' | 'share_invite';
+
+const KINDS: readonly NotificationKind[] = ['urgence', 'prealerte', 'low_battery', 'share_invite'];
 
 export const NOTIFICATION_CHANNELS = {
   urgence: 'siren-urgence',
@@ -19,14 +27,27 @@ export const NOTIFICATION_CHANNELS = {
   information: 'siren-information',
 } as const;
 
+/**
+ * Faut-il afficher une notification reçue app ouverte ? Les urgences toujours ;
+ * pré-alertes et informations selon les préférences de Réglages.
+ */
+export function shouldDisplay(data: unknown, prefs: NotificationPrefs): boolean {
+  const target = parseNotificationData(data);
+  if (!target || target.level === 'urgence') return true;
+  return target.level === 'prealerte' ? prefs.prealerte : prefs.information;
+}
+
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
+  handleNotification: async (notification) => {
+    const show = shouldDisplay(notification.request.content.data, usePreferencesStore.getState().notifications);
+    return {
+      shouldShowAlert: show,
+      shouldPlaySound: show,
+      shouldSetBadge: false,
+      shouldShowBanner: show,
+      shouldShowList: show,
+    };
+  },
 });
 
 export async function ensureNotificationChannels(): Promise<void> {
@@ -54,6 +75,11 @@ export async function ensureNotificationChannels(): Promise<void> {
     logger.warn('Création des canaux de notification impossible', { error: String(error) });
   }
 }
+
+// Les noms de canaux sont visibles dans les réglages Android : ils suivent la langue de l'app.
+i18n.on('languageChanged', () => {
+  void ensureNotificationChannels();
+});
 
 /** Demande l'autorisation ; `null` si refusée — l'app reste utilisable sans push. */
 async function ensurePermission(): Promise<boolean> {
@@ -109,6 +135,7 @@ export async function syncPushToken(register: (token: DevicePushToken) => Promis
 
 /** Données de routage d'une notification, quel que soit le format émetteur. */
 export interface NotificationTarget {
+  kind: NotificationKind | 'unknown';
   childId: string;
   alertId?: string;
   level: 'urgence' | 'prealerte' | 'information';
@@ -128,21 +155,33 @@ export function parseNotificationData(data: unknown): NotificationTarget | null 
   const alertId = d.alertId ?? d.alert_id;
   if (typeof childId !== 'string' || !SAFE_ID.test(childId)) return null;
   if (alertId !== undefined && (typeof alertId !== 'string' || !SAFE_ID.test(alertId))) return null;
-  const level = d.level === 'urgence' || d.level === 'prealerte' ? d.level : 'information';
-  return { childId, alertId: alertId as string | undefined, level };
+  const declared = typeof d.type === 'string' && (KINDS as readonly string[]).includes(d.type) ? (d.type as NotificationKind) : null;
+  const level = d.level === 'urgence' || d.level === 'prealerte' ? d.level : declared === 'urgence' || declared === 'prealerte' ? declared : 'information';
+  // Payload v1 sans `type` : on le déduit du niveau (compatibilité avec les anciens envois).
+  const kind: NotificationTarget['kind'] = declared ?? (level === 'information' ? 'unknown' : level);
+  return { kind, childId, alertId: alertId as string | undefined, level };
+}
+
+/** Titre et corps d'une notification dans la langue courante de l'app. */
+export function notificationContent(kind: NotificationKind, vars: Record<string, string>): { title: string; body: string } {
+  return {
+    title: i18n.t(`notifications.push.${kind}.title`, vars),
+    body: i18n.t(`notifications.push.${kind}.body`, vars),
+  };
 }
 
 /** Mode mock uniquement : notification locale simulant le push serveur. */
 export async function notifyAlert(alert: Alert, childName: string): Promise<void> {
   try {
     const isUrgence = alert.level === 'urgence';
+    if (!isUrgence && !usePreferencesStore.getState().notifications.prealerte) return;
+    const kind: NotificationKind = isUrgence ? 'urgence' : 'prealerte';
+    const vars = { child: childName };
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: isUrgence
-          ? i18n.t('notifications.urgenceTitle', { child: childName })
-          : i18n.t('notifications.prealerteTitle', { child: childName }),
-        body: alert.reasons.join(', ') || i18n.t('notifications.defaultBody'),
-        data: { childId: alert.childId, alertId: alert.id, level: alert.level },
+        ...notificationContent(kind, vars),
+        // Même forme que le payload serveur (v1) : le routage ne distingue pas mock et live.
+        data: { v: '1', type: kind, childId: alert.childId, alertId: alert.id, level: alert.level, vars: JSON.stringify(vars) },
         sound: true,
         priority: isUrgence ? Notifications.AndroidNotificationPriority.MAX : Notifications.AndroidNotificationPriority.HIGH,
       },
@@ -150,7 +189,8 @@ export async function notifyAlert(alert: Alert, childName: string): Promise<void
         ? { channelId: isUrgence ? NOTIFICATION_CHANNELS.urgence : NOTIFICATION_CHANNELS.prealerte }
         : null,
     });
-  } catch {
-    // En cas d'échec, l'UI in-app (EmergencyGate, liste des alertes) reste la source de vérité.
+  } catch (error) {
+    // L'UI in-app (EmergencyGate, liste des alertes) reste la source de vérité ; l'échec est tracé.
+    logger.warn('Notification locale impossible', { errorCode: String(error) });
   }
 }

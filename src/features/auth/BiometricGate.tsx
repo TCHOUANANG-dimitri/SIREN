@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Fingerprint } from 'lucide-react-native';
 import { Button } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { storage } from '@/utils/storage';
 import { logger } from '@/utils/logger';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,8 @@ const BIOMETRIC_KEY = 'siren.prefs.biometricLock';
 
 /** Verrouillage biométrique optionnel à l'ouverture — CDC1 §13.2. Non bloquant si indisponible. */
 export function BiometricGate({ children }: { children: React.ReactNode }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [required, setRequired] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
@@ -41,8 +43,8 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
   async function attemptUnlock() {
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Déverrouiller SIREN",
-        cancelLabel: 'Annuler',
+        promptMessage: t('auth.biometricPrompt'),
+        cancelLabel: t('common.cancel'),
       });
       if (result.success) setUnlocked(true);
     } catch (error) {
@@ -55,7 +57,7 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
 
   return (
     <View style={styles.container}>
-      <Fingerprint size={56} color={colors.primary} />
+      <Fingerprint size={56} color={colors.accent} />
       <Text style={styles.title}>{t('auth.locked')}</Text>
       <Text style={styles.subtitle}>{t('auth.lockedSubtitle')}</Text>
       <Button label={t('auth.unlock')} onPress={attemptUnlock} />
@@ -63,8 +65,8 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   title: { ...typography.title2, fontFamily: fontFamily.semiBold, color: colors.ink },
   subtitle: { ...typography.body, color: colors.muted, marginBottom: spacing.md },
-});
+}));

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AppState, Image, StyleSheet, View } from 'react-native';
-import { colors } from '@/theme';
+import { makeStyles } from '@/theme';
 
 /**
  * Masque le contenu quand l'app quitte le premier plan, pour que l'aperçu du
@@ -8,6 +8,7 @@ import { colors } from '@/theme';
  * Sécurité : « flou de l'app en arrière-plan »).
  */
 export function PrivacyShield() {
+  const styles = useStyles();
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export function PrivacyShield() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   shield: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   logo: { width: 160, height: 107 },
-});
+}));

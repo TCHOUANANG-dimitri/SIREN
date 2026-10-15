@@ -123,3 +123,34 @@ describe('client HTTP', () => {
     }
   });
 });
+
+describe('motifs métier structurés (detail.code)', () => {
+  it('affiche la traduction de l’app, jamais le texte serveur', async () => {
+    session();
+    install(() => ({ status: 422, data: { detail: { code: 'self_invite', message: 'Impossible de s’inviter soi-même' } } }));
+    const error = (await http.post('/children/c1/shares', {}).catch((e) => e)) as ApiError;
+    expect(error.reason).toBe('self_invite');
+    expect(error.code).toBe('validation');
+    expect(error.message).not.toContain('Impossible');
+    expect(error.message.length).toBeGreaterThan(10);
+  });
+
+  it('interpole les paramètres du motif', async () => {
+    session();
+    install(() => ({ status: 409, data: { detail: { code: 'secondary_limit', message: 'x', params: { max: 3 } } } }));
+    const error = (await http.post('/children/c1/shares', {}).catch((e) => e)) as ApiError;
+    expect(error.message).toContain('3');
+  });
+
+  it('motif inconnu ou détail textuel : message générique du statut', async () => {
+    session();
+    install(() => ({ status: 409, data: { detail: { code: 'nouveau_motif_serveur' } } }));
+    const unknown = (await http.post('/x', {}).catch((e) => e)) as ApiError;
+    expect(unknown.reason).toBe('nouveau_motif_serveur');
+    expect(unknown.code).toBe('conflict');
+    install(() => ({ status: 404, data: { detail: 'Enfant introuvable' } }));
+    const legacy = (await http.get('/x').catch((e) => e)) as ApiError;
+    expect(legacy.reason).toBeUndefined();
+    expect(legacy.message).not.toContain('Enfant introuvable');
+  });
+});

@@ -1,0 +1,25 @@
+{
+  "notifications": {
+    "channelUrgence": "Emergencies",
+    "channelPrealerte": "Pre-alerts",
+    "channelInformation": "Information (zone, battery, device)",
+    "push": {
+      "urgence": {
+        "title": "Emergency — {{child}}",
+        "body": "Abnormal situation detected. Open SIREN now."
+      },
+      "prealerte": {
+        "title": "Pre-alert — {{child}}",
+        "body": "Unusual behaviour detected. Please check the situation."
+      },
+      "low_battery": {
+        "title": "Low battery — {{child}}",
+        "body": "{{child}}'s device needs charging soon."
+      },
+      "share_invite": {
+        "title": "New shared access",
+        "body": "{{inviter}} is sharing {{child}}'s monitoring with you. Open SIREN to respond."
+      }
+    }
+  }
+}

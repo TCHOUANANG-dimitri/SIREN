@@ -1,16 +1,17 @@
 import { Tabs } from 'expo-router';
 import { Home, Map, Bell, Users, Settings } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, fontFamily } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 
 export default function TabsLayout() {
+  const { colors } = useTheme();
   const { t } = useTranslation();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: { borderTopColor: colors.border },
         tabBarLabelStyle: { fontFamily: fontFamily.semiBold, fontSize: 12 },

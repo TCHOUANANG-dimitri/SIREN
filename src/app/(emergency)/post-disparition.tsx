@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react';
-import { BackHandler, Image, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Image, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { AlertOctagon, Share2 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Heatmap, MapView, Marker } from '@/features/tracking/map';
 import { Banner, Button, Card, Skeleton } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useSearchZone } from '@/api/hooks/useSearchZone';
 import { useChildren } from '@/api/hooks/useChildren';
 import { usePosition } from '@/api/hooks/useTracking';
@@ -21,6 +21,8 @@ import { formatClock, formatDateTime, formatRelativeTime } from '@/utils/format'
  * condition de crédits.
  */
 export default function PostDisappearanceScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const { data: zone, isLoading } = useSearchZone(childId, true);
@@ -65,7 +67,7 @@ export default function PostDisappearanceScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.header} accessibilityRole="header">
-          <AlertOctagon size={26} color={colors.white} />
+          <AlertOctagon size={26} color={colors.onPrimary} />
           <Text style={styles.headerTitle}>{t('emergency.postTitle')}</Text>
           <Text style={styles.headerSubtitle}>{child?.prenom}</Text>
         </View>
@@ -141,7 +143,7 @@ export default function PostDisappearanceScreen() {
           </Card>
 
           {shareError && <Banner kind="error" message={shareError} />}
-          <Button label={t('emergency.shareSheet')} icon={<Share2 size={16} color={colors.white} />} onPress={shareSheet} />
+          <Button label={t('emergency.shareSheet')} icon={<Share2 size={16} color={colors.onPrimary} />} onPress={shareSheet} />
           <View style={{ height: spacing.sm }} />
           <Button label={t('emergency.backToHome')} variant="secondary" onPress={() => router.replace('/(main)/(tabs)')} />
         </View>
@@ -150,23 +152,23 @@ export default function PostDisappearanceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.disparition },
+const useStyles = makeStyles((colors) => ({
+  container: { flex: 1, backgroundColor: colors.disparitionFill },
   scroll: { flex: 1 },
   content: { paddingBottom: spacing.xxxl },
   header: { padding: spacing.xxl, paddingTop: spacing.xxxl, alignItems: 'center', gap: spacing.sm },
-  headerTitle: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.white, textAlign: 'center' },
+  headerTitle: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.onPrimary, textAlign: 'center' },
   headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.9)' },
   padded: { padding: spacing.lg },
   mapWrapper: { marginHorizontal: spacing.lg, borderRadius: radii.lg, overflow: 'hidden' },
   map: { height: 240 },
-  card: { marginBottom: spacing.md, backgroundColor: colors.white },
+  card: { marginBottom: spacing.md, backgroundColor: colors.card },
   cardTitle: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink, marginBottom: spacing.sm },
   zoneItem: { ...typography.body, color: colors.slate, marginBottom: 4 },
   ficheRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
   fichePhoto: { width: 56, height: 56, borderRadius: 28 },
   fichePhotoPlaceholder: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
-  fichePhotoInitial: { ...typography.title2, fontFamily: fontFamily.bold, color: colors.primary },
+  fichePhotoInitial: { ...typography.title2, fontFamily: fontFamily.bold, color: colors.accent },
   ficheName: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
   ficheMeta: { ...typography.caption, color: colors.muted, marginTop: 2 },
-});
+}));

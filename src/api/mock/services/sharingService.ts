@@ -1,6 +1,7 @@
 import i18n from '@/i18n';
 import { getDb, mutateDb, genId } from '../db';
-import { ApiError } from '../../errors';
+import { ApiError, reasonError } from '../../errors';
+import { isSelf, normalizeIdentifier, samePhone } from '@/features/sharing/inviteRules';
 import { simulateLatency } from '../helpers';
 import { assertChildAccess, assertPrincipal, resolveCurrentUser } from '../session';
 import { SHARING_RULES } from '@/config/business';
@@ -25,36 +26,24 @@ export async function createShare(
   assertPrincipal(user);
   const db = getDb();
 
-  const existingUser = db.users.find(
-    (u) => u.email.toLowerCase() === input.userIdentifier.toLowerCase() || u.telephone === input.userIdentifier
+  // Mêmes règles que le serveur (sharing.py) : identifiant valide, pas soi-même,
+  // personne déjà inscrite, pas de doublon, plafond de 3.
+  const { identifier, kind } = normalizeIdentifier(input.userIdentifier);
+  if (!kind) throw reasonError('identifier_invalid', 422);
+  if (isSelf(identifier, kind, user)) throw reasonError('self_invite', 422);
+  const secondaryUser = db.users.find((u) =>
+    kind === 'email' ? u.email.toLowerCase() === identifier : samePhone(u.telephone, identifier)
   );
-  const alreadyInvited = existingUser
-    ? db.secondaryAccess.some(
-        (s) => s.childId === childId && s.userId === existingUser.id && s.status !== 'revoque'
-      )
-    : false;
-  if (alreadyInvited) throw new ApiError(i18n.t('errors.alreadyInvited'), 409);
+  if (!secondaryUser || secondaryUser.id === user.id) throw reasonError('invitee_not_found', 404);
+  const alreadyInvited = db.secondaryAccess.some(
+    (s) => s.childId === childId && s.userId === secondaryUser.id && s.status !== 'revoque'
+  );
+  if (alreadyInvited) throw reasonError('already_shared', 409);
 
   const activeShares = db.secondaryAccess.filter((s) => s.childId === childId && s.status !== 'revoque').length;
   if (activeShares >= SHARING_RULES.maxSecondariesPerChild) {
-    throw new ApiError(i18n.t('errors.secondaryLimit', { max: SHARING_RULES.maxSecondariesPerChild }), 409);
+    throw reasonError('secondary_limit', 409, { max: SHARING_RULES.maxSecondariesPerChild });
   }
-
-  const secondaryUser =
-    existingUser ??
-    (() => {
-      const created = {
-        id: genId('user'),
-        nom: input.userIdentifier,
-        email: input.userIdentifier.includes('@') ? input.userIdentifier : `${genId('u')}@invite.local`,
-        telephone: input.userIdentifier.includes('@') ? undefined : input.userIdentifier,
-        role: 'secondaire' as const,
-        langue: 'fr' as const,
-        createdAt: new Date().toISOString(),
-      };
-      mutateDb((d) => d.users.push(created));
-      return created;
-    })();
 
   const share: SecondaryAccess = {
     id: genId('share'),
@@ -97,7 +86,7 @@ export async function patchShare(
   if (patch.status && patch.status !== 'revoque' && share.status === 'revoque') {
     const activeShares = db.secondaryAccess.filter((s) => s.childId === share.childId && s.status !== 'revoque').length;
     if (activeShares >= SHARING_RULES.maxSecondariesPerChild) {
-      throw new ApiError(i18n.t('errors.secondaryLimit', { max: SHARING_RULES.maxSecondariesPerChild }), 409);
+      throw reasonError('secondary_limit', 409, { max: SHARING_RULES.maxSecondariesPerChild });
     }
   }
   mutateDb((d) => {

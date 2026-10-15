@@ -1,38 +1,138 @@
 /**
  * Design tokens — CDC_1_Application_Mobile.docx §3 (Identité visuelle et système de design).
  * Source de vérité unique pour couleurs, typographie, rayons et espacements.
+ *
+ * Les couleurs existent en deux palettes de mêmes clés (clair / sombre). Les
+ * écrans n'importent jamais une palette directement : ils passent par
+ * `useTheme()` ou `makeStyles()` (src/theme/theme.ts), qui choisissent la palette
+ * selon la préférence de l'utilisateur (Réglages → Apparence).
+ *
+ * Rôle sémantique de chaque clé :
+ * - surface        fond d'écran
+ * - card           fond des cartes, champs, feuilles (bottom sheets)
+ * - surfaceChip    fond neutre des puces / éléments inactifs
+ * - surfaceAlt     fond teinté marque (aperçus, encarts)
+ * - border         bordures et séparateurs
+ * - ink            texte principal
+ * - slate          texte secondaire
+ * - muted          texte tertiaire, icônes inactives, libellés d'aide
+ * - primary        remplissage de marque (boutons, puces actives) — texte `onPrimary` dessus
+ * - primaryDark    remplissage pressé / variante foncée
+ * - accent         marque utilisée comme texte ou icône sur `surface`/`card` (liens, onglet actif)
+ * - onPrimary      texte / icône posé sur un remplissage coloré (primary, *Fill)
+ * - veille / prealerte / urgence / disparition   couleur d'état en texte, icône, jauge
+ * - *Surface       fond teinté d'un état (badges, bandeaux)
+ * - *Fill          remplissage plein d'un état (en-tête d'urgence, bouton danger) — texte `onPrimary`
+ * - onWarning      texte posé sur `prealerteFill`
+ * - overlay        voile derrière les modales
  */
 
-export const colors = {
+export interface Palette {
+  primary: string;
+  primaryDark: string;
+  accent: string;
+  onPrimary: string;
+  ink: string;
+  slate: string;
+  muted: string;
+  veille: string;
+  veilleSurface: string;
+  veilleFill: string;
+  prealerte: string;
+  prealerteSurface: string;
+  prealerteFill: string;
+  onWarning: string;
+  urgence: string;
+  urgenceSurface: string;
+  urgenceFill: string;
+  disparition: string;
+  disparitionFill: string;
+  surface: string;
+  card: string;
+  surfaceAlt: string;
+  surfaceChip: string;
+  border: string;
+  overlay: string;
+}
+
+export const lightColors: Palette = {
   primary: '#D32F2E',
   primaryDark: '#9E1F1E',
+  accent: '#D32F2E',
+  onPrimary: '#FFFFFF',
   ink: '#1B1B1B',
   slate: '#3A3A3A',
-  muted: '#7A776F',
-  veille: '#2E7D52',
+  muted: '#6F6C65',
+  // Texte d'état sur fond teinté : assombri pour le contraste AA (4,5:1) ; les remplissages gardent la teinte d'origine.
+  veille: '#27704A',
   veilleSurface: '#E8F5EE',
-  prealerte: '#E08A00',
+  veilleFill: '#2E7D52',
+  prealerte: '#9A5B00',
   prealerteSurface: '#FDF1E0',
-  urgence: '#D32F2E',
+  prealerteFill: '#E08A00',
+  onWarning: '#1B1B1B',
+  urgence: '#C62828',
   urgenceSurface: '#FBE9E9',
+  urgenceFill: '#D32F2E',
   disparition: '#9E1F1E',
+  disparitionFill: '#9E1F1E',
   surface: '#FBFAF8',
+  card: '#FFFFFF',
   surfaceAlt: '#FBE9E9',
   surfaceChip: '#F0EDE8',
   border: '#D9D4CC',
-  white: '#FFFFFF',
-  black: '#000000',
   overlay: 'rgba(27,27,27,0.55)',
-} as const;
+};
+
+/**
+ * Palette sombre : contrastes AA vérifiés pour le texte (ink/slate/muted sur
+ * surface et card ≥ 4,5:1 ; onPrimary sur primary et *Fill ≥ 4,5:1). Les
+ * couleurs d'état en texte sont éclaircies ; les remplissages restent foncés
+ * pour garder un texte blanc lisible. L'urgence reste rouge dans les deux modes.
+ */
+export const darkColors: Palette = {
+  primary: '#C62828',
+  primaryDark: '#8E1B1B',
+  accent: '#FF7A73',
+  onPrimary: '#FFFFFF',
+  ink: '#F2F0EC',
+  slate: '#D6D2CB',
+  muted: '#A8A39A',
+  veille: '#6CCB94',
+  veilleSurface: '#15301F',
+  veilleFill: '#2E7D52',
+  prealerte: '#FFB547',
+  prealerteSurface: '#3A2A10',
+  prealerteFill: '#E08A00',
+  onWarning: '#1B1B1B',
+  urgence: '#FF7A73',
+  urgenceSurface: '#3B1818',
+  urgenceFill: '#C62828',
+  disparition: '#FF9E99',
+  disparitionFill: '#8E1B1B',
+  surface: '#121212',
+  card: '#1E1E1E',
+  surfaceAlt: '#3B1818',
+  surfaceChip: '#2A2A2A',
+  border: '#3A3A3A',
+  overlay: 'rgba(0,0,0,0.7)',
+};
 
 export type RiskColorKey = 'veille' | 'prealerte' | 'urgence' | 'disparition';
 
-export const riskColors: Record<RiskColorKey, { fg: string; bg: string; label: string }> = {
-  veille: { fg: colors.veille, bg: colors.veilleSurface, label: 'Veille' },
-  prealerte: { fg: colors.prealerte, bg: colors.prealerteSurface, label: 'Pré-alerte' },
-  urgence: { fg: colors.urgence, bg: colors.urgenceSurface, label: 'Urgence' },
-  disparition: { fg: colors.disparition, bg: colors.urgenceSurface, label: 'Disparition' },
-};
+/** Couleurs d'un état de risque dans la palette donnée (libellé : i18n `states.*`). */
+export function riskColorsFor(palette: Palette, state: RiskColorKey): { fg: string; bg: string } {
+  switch (state) {
+    case 'veille':
+      return { fg: palette.veille, bg: palette.veilleSurface };
+    case 'prealerte':
+      return { fg: palette.prealerte, bg: palette.prealerteSurface };
+    case 'urgence':
+      return { fg: palette.urgence, bg: palette.urgenceSurface };
+    case 'disparition':
+      return { fg: palette.disparition, bg: palette.urgenceSurface };
+  }
+}
 
 export const radii = {
   sm: 8,
@@ -65,14 +165,14 @@ export const typography = {
 
 export const shadow = {
   card: {
-    shadowColor: colors.black,
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 3,
   },
   floating: {
-    shadowColor: colors.black,
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 20,
@@ -80,6 +180,7 @@ export const shadow = {
   },
 };
 
+/** Cible tactile minimale (CDC §8 : ≥ 48 px). */
 export const touchTarget = { min: 48 };
 
 export const fontFamily = {

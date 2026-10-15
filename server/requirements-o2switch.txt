@@ -30,6 +30,8 @@ email-validator==2.2.0
 # --- Authentification ---
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+# passlib 1.7.4 ne fonctionne pas avec bcrypt ≥ 4.1 (hash_password lève une erreur) : version figée.
+bcrypt==4.0.1
 python-multipart==0.0.12
 pyotp==2.9.0
 

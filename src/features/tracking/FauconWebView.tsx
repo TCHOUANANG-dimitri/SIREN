@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { env } from '@/config/env';
 import { logger } from '@/utils/logger';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +19,8 @@ import { useTranslation } from 'react-i18next';
 type Status = 'loading' | 'ready' | 'error';
 
 export function FauconWebView() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [status, setStatus] = useState<Status>('loading');
   const [reloadKey, setReloadKey] = useState(0);
@@ -59,7 +61,7 @@ export function FauconWebView() {
 
       {status === 'loading' && (
         <View style={styles.overlay}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={colors.accent} />
           <Text style={styles.overlayText}>{t('map.fauconLoading')}</Text>
         </View>
       )}
@@ -77,7 +79,7 @@ export function FauconWebView() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   webview: { flex: 1, backgroundColor: colors.surface },
   overlay: {
@@ -98,5 +100,5 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: colors.primary,
   },
-  retryText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.white },
-});
+  retryText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.onPrimary },
+}));

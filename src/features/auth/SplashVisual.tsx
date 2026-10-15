@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Image, StyleSheet, View } from 'react-native';
-import { colors, spacing } from '@/theme';
+import { Animated, Image, View } from 'react-native';
+import { spacing, makeStyles } from '@/theme';
 
 /** Réutilisé par la route Splash et par le natif (image statique) — CDC1 §9.1. */
 export function SplashVisual() {
+  const styles = useStyles();
   const dotAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export function SplashVisual() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   // Ratio 3:2 du logo détouré (1418×945) : un cadre carré laisserait
   // une bande vide au-dessus et en dessous avec resizeMode="contain".
@@ -41,4 +42,4 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xxxl },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border },
   dotActive: { backgroundColor: colors.primary, width: 20 },
-});
+}));

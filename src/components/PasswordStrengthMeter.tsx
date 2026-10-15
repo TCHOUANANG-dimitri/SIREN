@@ -1,16 +1,19 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { passwordScore } from '@/features/auth/passwordPolicy';
 
 const labelKeys = ['veryWeak', 'veryWeak', 'weak', 'medium', 'good', 'excellent'];
-const colorsByScore = [colors.urgence, colors.urgence, colors.urgence, colors.prealerte, colors.veille, colors.veille];
+const toneByScore = ['urgence', 'urgence', 'urgence', 'prealerte', 'veille', 'veille'] as const;
 
 export function PasswordStrengthMeter({ password }: { password: string }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   if (!password) return null;
   const score = passwordScore(password);
+  const scoreColor = colors[toneByScore[score]];
 
   return (
     <View style={styles.wrapper}>
@@ -18,18 +21,18 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
         {[0, 1, 2, 3, 4].map((i) => (
           <View
             key={i}
-            style={[styles.bar, { backgroundColor: i < score ? colorsByScore[score] : colors.border }]}
+            style={[styles.bar, { backgroundColor: i < score ? scoreColor : colors.border }]}
           />
         ))}
       </View>
-      <Text style={[styles.label, { color: colorsByScore[score] }]}>{t(`passwordStrength.${labelKeys[score]}`)}</Text>
+      <Text style={[styles.label, { color: scoreColor }]}>{t(`passwordStrength.${labelKeys[score]}`)}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   wrapper: { marginTop: -spacing.sm, marginBottom: spacing.md },
   bars: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs },
   bar: { flex: 1, height: 4, borderRadius: radii.sm },
   label: { ...typography.caption, fontFamily: fontFamily.medium },
-});
+}));

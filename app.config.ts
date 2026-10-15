@@ -12,7 +12,8 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'sirenapp',
-  userInterfaceStyle: 'light',
+  // Clair / sombre / système : choisi dans Réglages → Apparence (src/theme/theme.ts).
+  userInterfaceStyle: 'automatic',
   ios: {
     bundleIdentifier: 'com.siren.app',
     // Pas de surcharge d'icône iOS : le paquet ./assets/expo.icon livré avec le

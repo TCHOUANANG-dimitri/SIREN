@@ -1,0 +1,16 @@
+{
+  "legal": {
+    "title": "Legal documents",
+    "listSubtitle": "Legal notice, privacy, terms and usage rules.",
+    "docs": {
+      "legal-notice": "Legal notice",
+      "privacy": "Privacy policy",
+      "terms": "Terms of use"
+    },
+    "meta": "Version {{version}} · published {{published}} · effective {{effective}}",
+    "versionShort": "Effective {{date}}.",
+    "draftBanner": "Provisional version: this document has not been legally reviewed yet and may change.",
+    "draftFooter": "These documents are provisional versions awaiting legal review.",
+    "notFound": "This document doesn't exist or is no longer available."
+  }
+}

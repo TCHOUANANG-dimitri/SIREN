@@ -23,6 +23,12 @@ class User(Base):
     langue: Mapped[str] = mapped_column(String(5), default="fr")
     twofa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     twofa_secret: Mapped[str] = mapped_column(String(64), nullable=True)
+    # Adresse confirmée par code (OTP_MODE=email) ; null = non vérifiée.
+    email_verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Versions des documents juridiques acceptées à l'inscription (src/legal côté app).
+    terms_version: Mapped[str] = mapped_column(String(20), nullable=True)
+    privacy_version: Mapped[str] = mapped_column(String(20), nullable=True)
+    legal_accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)

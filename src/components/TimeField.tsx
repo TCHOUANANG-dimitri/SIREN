@@ -1,8 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Clock } from 'lucide-react-native';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 
 interface TimeFieldProps {
   label: string;
@@ -21,6 +22,9 @@ interface TimeFieldProps {
  * heure valide et évite au parent de basculer le clavier en mode numérique.
  */
 export function TimeField({ label, value, onChange, error, hint }: TimeFieldProps) {
+  const { t } = useTranslation();
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [open, setOpen] = useState(false);
 
   function handleChange(event: DateTimePickerEvent, date?: Date) {
@@ -39,7 +43,7 @@ export function TimeField({ label, value, onChange, error, hint }: TimeFieldProp
         onPress={() => setOpen(true)}
         style={[styles.inputRow, { borderColor: error ? colors.urgence : colors.border }]}
         accessibilityRole="button"
-        accessibilityLabel={`${label} : ${value || 'non défini'}`}
+        accessibilityLabel={t('common.fieldValue', { label, value: value || t('common.notSet') })}
       >
         <Text style={[styles.value, !value && styles.placeholder]}>{value || '--:--'}</Text>
         <Clock size={18} color={colors.muted} />
@@ -78,7 +82,7 @@ function formatTime(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   wrapper: { marginBottom: spacing.md, maxWidth: 680, width: '100%', alignSelf: 'center' },
   label: {
     ...typography.label,
@@ -89,7 +93,7 @@ const styles = StyleSheet.create({
   inputRow: {
     borderRadius: radii.md,
     borderWidth: 1,
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
@@ -100,4 +104,4 @@ const styles = StyleSheet.create({
   placeholder: { color: colors.muted },
   error: { ...typography.caption, color: colors.urgence, marginTop: spacing.xs },
   hint: { ...typography.caption, color: colors.muted, marginTop: spacing.xs },
-});
+}));

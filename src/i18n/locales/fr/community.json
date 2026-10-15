@@ -1,0 +1,17 @@
+{
+  "community": {
+    "title": "Communauté",
+    "nearbyAlerts": "Alertes de disparition à proximité",
+    "nearbyAlertsDescription": "Recevoir une notification si une disparition est signalée dans votre secteur.",
+    "noReports": "Aucun signalement récent dans votre secteur.",
+    "reportButton": "Signaler un comportement suspect",
+    "reportLabel": "Description du signalement",
+    "reportPlaceholder": "Comportement suspect observé…",
+    "reportFailed": "Impossible d'envoyer le signalement.",
+    "tooShort": "Décrivez la situation en {{min}} caractères au moins.",
+    "locationRequired": "Autorisez la localisation du téléphone pour situer le signalement.",
+    "published": "Signalement publié.",
+    "pendingModeration": "Merci. Votre signalement sera visible après modération.",
+    "proximityLocalOnly": "Préférence enregistrée sur ce téléphone ; les alertes de proximité ne sont pas encore envoyées."
+  }
+}

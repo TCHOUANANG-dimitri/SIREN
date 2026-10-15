@@ -1,7 +1,6 @@
 import React, { forwardRef, useState } from 'react';
 import {
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -9,7 +8,7 @@ import {
 } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 
 interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   label: string;
@@ -23,11 +22,13 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   { label, error, hint, secureToggle, required, secureTextEntry, ...inputProps },
   ref
 ) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(!!secureTextEntry);
 
-  const borderColor = error ? colors.urgence : focused ? colors.primary : colors.border;
+  const borderColor = error ? colors.urgence : focused ? colors.accent : colors.border;
 
   return (
     <View style={styles.wrapper}>
@@ -76,7 +77,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   );
 });
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   wrapper: { marginBottom: spacing.md, maxWidth: 680, width: '100%', alignSelf: 'center' },
   label: {
     ...typography.label,
@@ -87,7 +88,7 @@ const styles = StyleSheet.create({
   optional: { fontFamily: fontFamily.regular, color: colors.muted },
   inputRow: {
     borderRadius: radii.md,
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
@@ -102,4 +103,4 @@ const styles = StyleSheet.create({
   },
   error: { ...typography.caption, color: colors.urgence, marginTop: spacing.xs },
   hint: { ...typography.caption, color: colors.muted, marginTop: spacing.xs },
-});
+}));

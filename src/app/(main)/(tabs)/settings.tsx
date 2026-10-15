@@ -1,26 +1,52 @@
 import { useEffect, useState } from 'react';
-import { Alert as RNAlert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert as RNAlert, KeyboardAvoidingView, Linking, Platform, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
-import { LogOut, RotateCcw, ShieldQuestion, Trash2 } from 'lucide-react-native';
-import { Banner, Button, Card, PermissionToggle, TextField } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import {
+  BellRing,
+  FileText,
+  Fingerprint,
+  Info,
+  KeyRound,
+  LogOut,
+  RotateCcw,
+  Smartphone,
+  Trash2,
+  Users,
+  Baby,
+  WifiOff,
+} from 'lucide-react-native';
+import { Banner, Button, SettingsChoice, SettingsRow, SettingsSection, TextField } from '@/components';
+import { fontFamily, makeStyles, spacing, typography, useTheme } from '@/theme';
 import { useAuthStore } from '@/stores/authStore';
+import { usePreferencesStore, type AppLanguage, type ThemePreference } from '@/stores/preferencesStore';
 import { usePatchMe, useDeleteAccount } from '@/api/hooks/useUsers';
 import { useLogout } from '@/api/hooks/useAuth';
 import { isMockMode } from '@/api/network';
 import { toUserMessage } from '@/api/errors';
-import { isTranslationApiActive } from '@/services/translationService';
+import { chooseLanguage, LANGUAGE_AUTONYMS } from '@/i18n/language';
 import { storage } from '@/utils/storage';
+import { appVersionLabel } from '@/features/system/appInfo';
 
-const NOTIF_PREFS_KEY = 'siren.prefs.notifications';
 const BIOMETRIC_KEY = 'siren.prefs.biometricLock';
 
+type Feedback = { kind: 'success' | 'error' | 'warning'; message: string } | null;
+
+/**
+ * Réglages — centre de contrôle du compte (CDC App §4.6).
+ * Compte → Sécurité → Préférences → Famille → Informations → Actions sensibles.
+ */
 export default function SettingsScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t, i18n } = useTranslation();
   const user = useAuthStore((s) => s.user);
+  const theme = usePreferencesStore((s) => s.theme);
+  const setTheme = usePreferencesStore((s) => s.setTheme);
+  const notifPrefs = usePreferencesStore((s) => s.notifications);
+  const setNotifPrefs = usePreferencesStore((s) => s.setNotifications);
   const logout = useLogout();
   const queryClient = useQueryClient();
   const patchMe = usePatchMe();
@@ -28,13 +54,9 @@ export default function SettingsScreen() {
 
   const [nom, setNom] = useState(user?.nom ?? '');
   const [telephone, setTelephone] = useState(user?.telephone ?? '');
-  const [saved, setSaved] = useState(false);
-  const [notifUrgence, setNotifUrgence] = useState(true);
-  const [notifPrealerte, setNotifPrealerte] = useState(true);
-  const [notifInfo, setNotifInfo] = useState(true);
   const [biometricLock, setBiometricLock] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Feedback>(null);
 
   // Le store d'auth s'hydrate de façon asynchrone : au premier rendu `user` est
   // encore null, et useState fige alors les champs sur une chaîne vide. On les
@@ -48,45 +70,35 @@ export default function SettingsScreen() {
   }, [userId]);
 
   useEffect(() => {
-    (async () => {
-      const prefs = await storage.getItem<{ urgence: boolean; prealerte: boolean; info: boolean }>(NOTIF_PREFS_KEY);
-      if (prefs) {
-        setNotifUrgence(prefs.urgence);
-        setNotifPrealerte(prefs.prealerte);
-        setNotifInfo(prefs.info);
-      }
-      const bio = await storage.getItem<boolean>(BIOMETRIC_KEY);
-      setBiometricLock(!!bio);
-    })();
+    storage.getItem<boolean>(BIOMETRIC_KEY).then((bio) => setBiometricLock(!!bio)).catch(() => {});
   }, []);
 
+  const profileDirty = nom.trim() !== (user?.nom ?? '') || telephone.trim() !== (user?.telephone ?? '');
+
   async function saveProfile() {
-    setError(null);
+    setFeedback(null);
+    if (nom.trim().length < 2) {
+      setFeedback({ kind: 'error', message: t('validation.nameTooShort') });
+      return;
+    }
     try {
-      await patchMe.mutateAsync({ nom, telephone });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1800);
+      await patchMe.mutateAsync({ nom: nom.trim(), telephone: telephone.trim() });
+      setFeedback({ kind: 'success', message: t('settings.profileSaved') });
     } catch (e) {
-      setError(toUserMessage(e));
+      setFeedback({ kind: 'error', message: toUserMessage(e) });
     }
   }
 
-  async function changeLanguage(lang: 'fr' | 'en') {
-    // La bascule locale est immédiate ; l'enregistrement serveur est un plus, pas un prérequis.
-    await i18n.changeLanguage(lang);
-    patchMe.mutate({ langue: lang });
-  }
-
-  async function updateNotifPrefs(next: Partial<{ urgence: boolean; prealerte: boolean; info: boolean }>) {
-    const merged = {
-      urgence: next.urgence ?? notifUrgence,
-      prealerte: next.prealerte ?? notifPrealerte,
-      info: next.info ?? notifInfo,
-    };
-    setNotifUrgence(merged.urgence);
-    setNotifPrealerte(merged.prealerte);
-    setNotifInfo(merged.info);
-    await storage.setItem(NOTIF_PREFS_KEY, merged);
+  async function changeLanguage(lang: AppLanguage) {
+    setFeedback(null);
+    // Bascule immédiate de l'interface, mémorisée sur ce téléphone.
+    await chooseLanguage(lang);
+    try {
+      // Le serveur en a besoin pour les notifications et les emails : on le dit si l'envoi échoue.
+      await patchMe.mutateAsync({ langue: lang });
+    } catch {
+      setFeedback({ kind: 'warning', message: t('settings.language.syncPending') });
+    }
   }
 
   async function toggleBiometric(value: boolean) {
@@ -100,171 +112,201 @@ export default function SettingsScreen() {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       await require('@/api/mock/entry').resetMockBackend();
       queryClient.clear();
+      setFeedback({ kind: 'success', message: t('settings.demo.resetDone') });
     } finally {
       setResetting(false);
     }
   }
 
-  function handleLogout() {
-    logout.mutate();
+  function confirmLogout() {
+    RNAlert.alert(t('settings.logoutConfirmTitle'), t('settings.logoutConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('settings.logout'), onPress: () => logout.mutate() },
+    ]);
   }
 
   function confirmDeleteAccount() {
-    RNAlert.alert(
-      t('settings.deleteTitle'),
-      t('settings.deleteBody'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            setError(null);
-            try {
-              await deleteAccount.mutateAsync();
-            } catch (e) {
-              setError(toUserMessage(e));
-            }
-          },
+    RNAlert.alert(t('settings.deleteTitle'), t('settings.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          setFeedback(null);
+          try {
+            await deleteAccount.mutateAsync();
+          } catch (e) {
+            setFeedback({ kind: 'error', message: toUserMessage(e) });
+          }
         },
-      ]
-    );
+      },
+    ]);
   }
+
+  const languageOptions = (['fr', 'en'] as const).map((key) => ({ key, label: LANGUAGE_AUTONYMS[key] }));
+  const themeOptions: { key: ThemePreference; label: string }[] = [
+    { key: 'system', label: t('settings.appearance.system') },
+    { key: 'light', label: t('settings.appearance.light') },
+    { key: 'dark', label: t('settings.appearance.dark') },
+  ];
+
+  const switchProps = { trackColor: { false: colors.border, true: colors.primary }, thumbColor: colors.onPrimary };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{t('tabs.settings')}</Text>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Text style={styles.title} accessibilityRole="header">{t('tabs.settings')}</Text>
 
-      {saved && <Banner kind="success" message={t('settings.prefsSaved')} />}
-      {error && <Banner kind="error" message={error} />}
+          {feedback && (
+            <View style={styles.feedback}>
+              <Banner kind={feedback.kind} message={feedback.message} />
+            </View>
+          )}
 
-      <Card style={styles.card}>
-        <Text style={styles.cardTitle}>{t('settings.profile')}</Text>
-        <TextField label={t('common.name')} value={nom} onChangeText={setNom} />
-        <TextField label={t('auth.email')} value={user?.email ?? ''} editable={false} />
-        <TextField label={t('common.phone')} required={false} value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" />
-        <Button label={t('common.save')} onPress={saveProfile} loading={patchMe.isPending} />
-      </Card>
+          <SettingsSection title={t('settings.sections.account')}>
+            <View style={styles.form}>
+              <TextField label={t('common.name')} value={nom} onChangeText={setNom} autoComplete="name" />
+              <TextField
+                label={t('auth.email')}
+                value={user?.email ?? ''}
+                editable={false}
+                hint={user?.emailVerified === false ? t('settings.emailNotVerified') : t('settings.emailReadOnly')}
+              />
+              <TextField
+                label={t('common.phone')}
+                required={false}
+                value={telephone}
+                onChangeText={setTelephone}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+              />
+              <Button label={t('common.save')} onPress={saveProfile} loading={patchMe.isPending} disabled={!profileDirty} />
+            </View>
+          </SettingsSection>
 
-      <Card style={styles.card}>
-        <Text style={styles.cardTitle}>{t('settings.languageTitle')}</Text>
-        <View style={styles.langRow}>
-          <Button
-            label="Français"
-            variant={i18n.language === 'fr' ? 'primary' : 'secondary'}
-            onPress={() => changeLanguage('fr')}
-            fullWidth={false}
-            style={styles.langButton}
-          />
-          <Button
-            label="English"
-            variant={i18n.language === 'en' ? 'primary' : 'secondary'}
-            onPress={() => changeLanguage('en')}
-            fullWidth={false}
-            style={styles.langButton}
-          />
-        </View>
-        <View style={styles.apiBadgeRow}>
-          <Text style={styles.apiBadgeText}>
-            {isTranslationApiActive()
-              ? t('settings.translationApiActive')
-              : t('settings.translationApiLocal')}
-          </Text>
-        </View>
-      </Card>
+          <SettingsSection title={t('settings.sections.security')}>
+            <SettingsRow
+              icon={KeyRound}
+              label={t('settings.security.passwordAnd2fa')}
+              description={user?.twofaEnabled ? t('settings.security.twofaOn') : t('settings.security.twofaOff')}
+              onPress={() => router.push('/(main)/settings/security')}
+            />
+            <SettingsRow
+              icon={Fingerprint}
+              label={t('settings.biometricLock')}
+              description={t('settings.biometricDesc')}
+              trailing={
+                <Switch value={biometricLock} onValueChange={toggleBiometric} accessibilityLabel={t('settings.biometricLock')} {...switchProps} />
+              }
+            />
+          </SettingsSection>
 
-      <Card style={styles.card}>
-        <Text style={styles.cardTitle}>{t('settings.notifications')}</Text>
-        <Text style={styles.cardBody}>{t('settings.notifLocalOnly')}</Text>
-        <PermissionToggle label={t('settings.notifUrgence')} value={notifUrgence} onValueChange={(v) => updateNotifPrefs({ urgence: v })} />
-        <PermissionToggle label={t('settings.notifPrealerte')} value={notifPrealerte} onValueChange={(v) => updateNotifPrefs({ prealerte: v })} />
-        <PermissionToggle label={t('settings.notifInfo')} value={notifInfo} onValueChange={(v) => updateNotifPrefs({ info: v })} />
-      </Card>
+          <SettingsSection title={t('settings.sections.preferences')}>
+            <View>
+              <Text style={styles.inlineLabel}>{t('settings.language.title')}</Text>
+              <SettingsChoice
+                options={languageOptions}
+                value={i18n.language === 'en' ? 'en' : 'fr'}
+                onChange={changeLanguage}
+                accessibilityLabel={t('settings.language.title')}
+              />
+            </View>
+            <View>
+              <Text style={styles.inlineLabel}>{t('settings.appearance.title')}</Text>
+              <SettingsChoice
+                options={themeOptions}
+                value={theme}
+                onChange={(value) => void setTheme(value)}
+                accessibilityLabel={t('settings.appearance.title')}
+              />
+            </View>
+          </SettingsSection>
 
-      <Card style={styles.card}>
-        <Text style={styles.cardTitle}>{t('settings.security')}</Text>
-        <PermissionToggle
-          label={t('settings.biometricLock')}
-          description={t('settings.biometricDesc')}
-          value={biometricLock}
-          onValueChange={toggleBiometric}
-        />
-      </Card>
+          <SettingsSection title={t('settings.sections.notifications')} footer={t('settings.notif.scope')}>
+            <SettingsRow icon={BellRing} label={t('settings.notif.urgence')} description={t('settings.notif.urgenceAlways')} value={t('settings.notif.alwaysOn')} />
+            <SettingsRow
+              label={t('settings.notif.prealerte')}
+              trailing={
+                <Switch
+                  value={notifPrefs.prealerte}
+                  onValueChange={(v) => void setNotifPrefs({ prealerte: v })}
+                  accessibilityLabel={t('settings.notif.prealerte')}
+                  {...switchProps}
+                />
+              }
+            />
+            <SettingsRow
+              label={t('settings.notif.information')}
+              trailing={
+                <Switch
+                  value={notifPrefs.information}
+                  onValueChange={(v) => void setNotifPrefs({ information: v })}
+                  accessibilityLabel={t('settings.notif.information')}
+                  {...switchProps}
+                />
+              }
+            />
+            <SettingsRow
+              icon={Smartphone}
+              label={t('settings.notif.systemSettings')}
+              description={t('settings.notif.systemSettingsDesc')}
+              onPress={() => void Linking.openSettings()}
+            />
+          </SettingsSection>
 
-      {isMockMode() && (
-      <Card style={styles.card}>
-        <Text style={styles.cardTitle}>{t('settings.demoMode')}</Text>
-        <Text style={styles.cardBody}>
-          {t('settings.demoBody')}
-        </Text>
-        <Button
-          label={t('settings.resetDemo')}
-          variant="secondary"
-          icon={<RotateCcw size={16} color={colors.primary} />}
-          onPress={handleReset}
-          loading={resetting}
-          style={{ marginBottom: spacing.sm }}
-        />
-        <Button
-          label={t('settings.simulateOffline')}
-          variant="ghost"
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          onPress={() => require('@/api/mock/entry').simulateMockDisconnect(8000)}
-        />
-      </Card>
-      )}
+          {user?.role === 'principal' && (
+            <SettingsSection title={t('settings.sections.family')}>
+              <SettingsRow icon={Baby} label={t('settings.family.children')} onPress={() => router.push('/(main)/(tabs)')} />
+              <SettingsRow icon={Users} label={t('settings.family.sharing')} onPress={() => router.push('/(main)/(tabs)/sharing')} />
+            </SettingsSection>
+          )}
 
-      <Card style={styles.card}>
-        <Text style={styles.cardTitle}>{t('settings.about')}</Text>
-        <View style={styles.aboutRow}>
-          <ShieldQuestion size={16} color={colors.muted} />
-          <Text style={styles.aboutText}>{t('settings.version', { version: Constants.expoConfig?.version ?? '1.0.0' })}</Text>
-        </View>
-        <Text
-          style={styles.aboutLink}
-          onPress={() => RNAlert.alert(t('settings.legal'), t('settings.legalBody'))}
-        >
-          {t('settings.legal')}
-        </Text>
-        <Text
-          style={styles.aboutLink}
-          onPress={() =>
-            RNAlert.alert(t('settings.privacy'), t('settings.privacyBody'))
-          }
-        >
-          {t('settings.privacy')}
-        </Text>
-      </Card>
+          <SettingsSection title={t('settings.sections.information')}>
+            <SettingsRow icon={Info} label={t('settings.about.title')} value={appVersionLabel()} onPress={() => router.push('/(main)/settings/about')} />
+            <SettingsRow icon={FileText} label={t('legal.title')} description={t('legal.listSubtitle')} onPress={() => router.push('/legal')} />
+          </SettingsSection>
 
-      <Button label={t('settings.logout')} variant="secondary" icon={<LogOut size={16} color={colors.primary} />} onPress={handleLogout} loading={logout.isPending} />
-      <View style={{ height: spacing.sm }} />
-      <Button
-        label={t('settings.deleteAccount')}
-        variant="ghost"
-        icon={<Trash2 size={16} color={colors.urgence} />}
-        onPress={confirmDeleteAccount}
-      />
-    </ScrollView>
-    </KeyboardAvoidingView>
+          {isMockMode() && (
+            <SettingsSection title={t('settings.demo.title')} footer={t('settings.demo.body')}>
+              <SettingsRow icon={RotateCcw} label={t('settings.demo.reset')} onPress={handleReset} disabled={resetting} />
+              <SettingsRow
+                icon={WifiOff}
+                label={t('settings.demo.simulateOffline')}
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
+                onPress={() => require('@/api/mock/entry').simulateMockDisconnect(8000)}
+              />
+            </SettingsSection>
+          )}
+
+          <SettingsSection title={t('settings.sections.session')}>
+            <SettingsRow icon={LogOut} label={t('settings.logout')} onPress={confirmLogout} disabled={logout.isPending} />
+            <SettingsRow
+              icon={Trash2}
+              label={t('settings.deleteAccount')}
+              description={t('settings.deleteAccountDesc')}
+              onPress={confirmDeleteAccount}
+              destructive
+              disabled={deleteAccount.isPending}
+            />
+          </SettingsSection>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
-  scrollContainer: { flex: 1 },
-  content: { padding: spacing.xl, paddingTop: spacing.xxxl, paddingBottom: spacing.xxxl, gap: spacing.md },
-  title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.sm },
-  card: { marginBottom: spacing.md },
-  cardTitle: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink, marginBottom: spacing.sm },
-  cardBody: { ...typography.caption, color: colors.muted, marginBottom: spacing.md },
-  langRow: { flexDirection: 'row', gap: spacing.sm },
-  langButton: { flex: 1 },
-  apiBadgeRow: { marginTop: spacing.sm, paddingTop: spacing.xs },
-  apiBadgeText: { ...typography.caption, color: colors.muted, lineHeight: 18 },
-  aboutRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-  aboutText: { ...typography.body, color: colors.slate },
-  aboutLink: { ...typography.body, fontFamily: fontFamily.medium, color: colors.primary, marginBottom: spacing.sm },
-});
+  content: { padding: spacing.xl, paddingTop: spacing.xxl, paddingBottom: spacing.xxxl },
+  title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: spacing.lg },
+  feedback: { marginBottom: spacing.lg },
+  form: { padding: spacing.lg, paddingBottom: spacing.md },
+  inlineLabel: {
+    ...typography.body,
+    fontFamily: fontFamily.medium,
+    color: colors.ink,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
+}));

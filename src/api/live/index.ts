@@ -2,6 +2,7 @@ import i18n from '@/i18n';
 import { logger } from '@/utils/logger';
 import type { SirenApi } from '../repositories';
 import { http, seg } from '../http/client';
+import { ApiError } from '../errors';
 import {
   alertSchema,
   audioLogSchema,
@@ -24,6 +25,9 @@ import {
   riskScoreSchema,
   searchZoneSchema,
   shareSchema,
+  loginResponseSchema,
+  otpChallengeSchema,
+  shareCreatedSchema,
   userSchema,
   zoneStateSchema,
 } from '../contracts';
@@ -42,6 +46,12 @@ function list<S extends Parameters<typeof parseContractList>[0]>(schema: S, data
 
 const children = (childId: string) => `/children/${seg(childId)}`;
 
+/** Un challenge sans jeton est inexploitable : réponse non conforme plutôt qu'écran bloqué. */
+function toChallenge(c: { challengeToken: string | null; expiresIn: number | null; devHint?: string }) {
+  if (!c.challengeToken) throw new ApiError(i18n.t('apiErrors.contract'), 502, 'contract');
+  return { challengeToken: c.challengeToken, expiresIn: c.expiresIn, devHint: c.devHint };
+}
+
 export const liveApi: SirenApi = {
   mode: 'live',
 
@@ -49,7 +59,7 @@ export const liveApi: SirenApi = {
     async register(input) {
       const data = await http.post('/auth/register', input, {
         skipAuth: true,
-        messages: { conflict: i18n.t('errors.emailAlreadyUsed') },
+        messages: { conflict: i18n.t('apiErrors.reasons.email_taken') },
       });
       const parsed = parseContract(authResponseSchema, data, 'POST /auth/register');
       return { user: parsed.user, accessToken: parsed.accessToken, refreshToken: parsed.refreshToken };
@@ -57,33 +67,48 @@ export const liveApi: SirenApi = {
     async login(input) {
       const data = await http.post('/auth/login', input, {
         skipAuth: true,
-        messages: { unauthorized: i18n.t('errors.invalidCredentials') },
+        messages: { unauthorized: i18n.t('apiErrors.reasons.invalid_credentials') },
       });
-      const parsed = parseContract(authResponseSchema, data, 'POST /auth/login');
-      return {
-        user: parsed.user,
-        accessToken: parsed.accessToken,
-        refreshToken: parsed.refreshToken,
-        twofaRequired: parsed.twofaRequired === true,
-      };
+      const parsed = parseContract(loginResponseSchema, data, 'POST /auth/login');
+      if ('twofaRequired' in parsed && parsed.twofaRequired === true && !('accessToken' in parsed)) {
+        const challenge = parseContract(otpChallengeSchema, data, 'POST /auth/login (2FA)');
+        if (!challenge.challengeToken) throw new ApiError(i18n.t('apiErrors.contract'), 502, 'contract');
+        return { twofaRequired: true, challengeToken: challenge.challengeToken, expiresIn: challenge.expiresIn, devHint: challenge.devHint };
+      }
+      const session = parseContract(authResponseSchema, data, 'POST /auth/login');
+      return { twofaRequired: false, user: session.user, accessToken: session.accessToken, refreshToken: session.refreshToken };
     },
     async refresh(refreshToken) {
       const data = await http.post('/auth/refresh', { refreshToken }, { skipAuth: true });
       return parseContract(refreshResponseSchema, data, 'POST /auth/refresh');
     },
-    async requestOtp({ destination }) {
-      // Le serveur v1 peut renvoyer un `devHint` de développement : il n'est jamais affiché en live.
-      const data = await http.post<{ required?: unknown }>('/auth/request-otp', { destination }, { skipAuth: true });
-      return { required: data?.required !== false };
+    async requestOtp({ accessToken }) {
+      // Le jeton de la session en attente identifie le compte ; il n'est jamais stocké.
+      const data = await http.post('/auth/request-otp', { accessToken }, { skipAuth: true });
+      const parsed = parseContract(otpChallengeSchema, data, 'POST /auth/request-otp');
+      return { required: parsed.required, challengeToken: parsed.challengeToken, expiresIn: parsed.expiresIn, devHint: parsed.devHint };
     },
-    async verifyOtp({ code, accessToken }) {
-      await http.post('/auth/verify-otp', { code, accessToken }, {
+    async verifyOtp({ code, accessToken, challengeToken }) {
+      await http.post('/auth/verify-otp', { code, accessToken, challengeToken: challengeToken ?? undefined }, {
         skipAuth: true,
-        messages: { unauthorized: i18n.t('errors.otpInvalid') },
+        messages: { unauthorized: i18n.t('apiErrors.reasons.otp_invalid') },
       });
     },
+    async verifySecondFactor({ challengeToken, code }) {
+      const data = await http.post('/auth/2fa/verify', { challengeToken, code }, { skipAuth: true });
+      const parsed = parseContract(authResponseSchema, data, 'POST /auth/2fa/verify');
+      return { user: parsed.user, accessToken: parsed.accessToken, refreshToken: parsed.refreshToken };
+    },
+    async resendSecondFactor(challengeToken) {
+      const data = await http.post('/auth/2fa/resend', { challengeToken }, { skipAuth: true });
+      return toChallenge(parseContract(otpChallengeSchema, data, 'POST /auth/2fa/resend'));
+    },
     async forgotPassword(email) {
-      await http.post('/auth/forgot', { email }, { skipAuth: true });
+      const data = await http.post('/auth/forgot', { email }, { skipAuth: true });
+      return toChallenge(parseContract(otpChallengeSchema, data, 'POST /auth/forgot'));
+    },
+    async resetPassword(input) {
+      await http.post('/auth/reset-password', input, { skipAuth: true });
     },
     async logout(refreshToken) {
       await http.post('/auth/logout', { refreshToken }, { skipAuth: true });
@@ -99,6 +124,13 @@ export const liveApi: SirenApi = {
     },
     async registerPushToken(input) {
       await http.post('/users/me/push-token', input);
+    },
+    async changePassword(input) {
+      const data = await http.post('/users/me/password', input);
+      return parseContract(refreshResponseSchema, data, 'POST /users/me/password');
+    },
+    async setTwoFactor(input) {
+      return parseContract(userSchema, await http.put('/users/me/2fa', input), 'PUT /users/me/2fa');
     },
   },
 
@@ -219,7 +251,7 @@ export const liveApi: SirenApi = {
       const data = await http.post(`${children(childId)}/shares`, input, {
         messages: { conflict: i18n.t('errors.alreadyInvitedOrLimit'), not_found: i18n.t('errors.inviteeNotFound') },
       });
-      return parseContract(shareSchema, data, 'POST /children/{id}/shares');
+      return parseContract(shareCreatedSchema, data, 'POST /children/{id}/shares');
     },
     async get(shareId) {
       return parseContract(shareSchema, await http.get(`/children/shares/${seg(shareId)}`), 'GET /children/shares/{id}');

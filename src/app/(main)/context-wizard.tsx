@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Phone, Plus, Trash2, User } from 'lucide-react-native';
 import { Banner, Button, Card, TextField, TimeField } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { MapPointRadiusPicker } from '@/features/tracking/MapPointRadiusPicker';
 import { AddressMapField } from '@/features/tracking/AddressMapField';
 import { useCreatePlace } from '@/api/hooks/usePlaces';
@@ -22,6 +22,8 @@ type FrequentPlace = { nom: string } & PointRadius;
 type Contact = { nom: string; telephone: string };
 
 export default function ContextWizardScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const [step, setStep] = useState(0);
@@ -249,7 +251,7 @@ export default function ContextWizardScreen() {
               minRadius={30}
               maxRadius={300}
             />
-            <Button label={t('wizard.addPlace')} variant="secondary" icon={<Plus size={16} color={colors.primary} />} onPress={addFrequentPlace} />
+            <Button label={t('wizard.addPlace')} variant="secondary" icon={<Plus size={16} color={colors.accent} />} onPress={addFrequentPlace} />
           </View>
         )}
 
@@ -299,7 +301,7 @@ export default function ContextWizardScreen() {
             ))}
             <TextField label={t('wizard.contactName')} value={contactName} onChangeText={setContactName} placeholder={t('wizard.contactNamePlaceholder')} />
             <TextField label={t('common.phone')} value={contactPhone} onChangeText={setContactPhone} placeholder={t('wizard.contactPhonePlaceholder')} keyboardType="phone-pad" />
-            <Button label={t('wizard.addContact')} variant="secondary" icon={<Phone size={16} color={colors.primary} />} onPress={addContact} />
+            <Button label={t('wizard.addContact')} variant="secondary" icon={<Phone size={16} color={colors.accent} />} onPress={addContact} />
           </View>
         )}
       </ScrollView>
@@ -321,13 +323,13 @@ export default function ContextWizardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   flex: { flex: 1, backgroundColor: colors.surface },
   tabsRow: { flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm, flexWrap: 'wrap' },
   tabChip: { backgroundColor: colors.surfaceChip, borderRadius: radii.pill, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   tabChipActive: { backgroundColor: colors.primary },
   tabChipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
-  tabChipTextActive: { color: colors.white },
+  tabChipTextActive: { color: colors.onPrimary },
   content: { padding: spacing.lg, paddingBottom: spacing.xxxl },
   title: { ...typography.title2, fontFamily: fontFamily.bold, color: colors.ink, marginBottom: 4 },
   subtitle: { ...typography.caption, color: colors.muted, marginBottom: spacing.lg },
@@ -336,7 +338,7 @@ const styles = StyleSheet.create({
   dayChip: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceChip },
   dayChipActive: { backgroundColor: colors.primary },
   dayChipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
-  dayChipTextActive: { color: colors.white },
+  dayChipTextActive: { color: colors.onPrimary },
   timeRow: { flexDirection: 'row', gap: spacing.md },
   timeField: { flex: 1 },
   placeCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
@@ -347,4 +349,4 @@ const styles = StyleSheet.create({
   footer: { padding: spacing.lg, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
   completeLaterLink: { ...typography.body, fontFamily: fontFamily.medium, color: colors.muted, textAlign: 'center' },
   successContainer: { flex: 1, backgroundColor: colors.surface, justifyContent: 'center', padding: spacing.xl },
-});
+}));

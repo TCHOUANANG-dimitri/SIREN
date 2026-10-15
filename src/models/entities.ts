@@ -20,6 +20,8 @@ export interface User {
   role: Role;
   langue: 'fr' | 'en';
   twofaEnabled?: boolean;
+  /** Adresse email confirmée par code (absent : inconnu, serveur v1). */
+  emailVerified?: boolean;
   createdAt: string;
 }
 

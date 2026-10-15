@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MapView, Marker } from '@/features/tracking/map';
 import { ArrowLeft } from 'lucide-react-native';
 import { Banner, Button, Card, Skeleton, StateBadge } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useAllAlerts, usePatchAlert } from '@/api/hooks/useAlerts';
 import { useChildren } from '@/api/hooks/useChildren';
 import { useCurrentAccess } from '@/features/sharing/useCurrentAccess';
@@ -13,6 +13,8 @@ import { formatClock } from '@/utils/format';
 import { useTranslation } from 'react-i18next';
 
 export default function AlertDetailScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: alerts } = useAllAlerts();
@@ -44,7 +46,7 @@ export default function AlertDetailScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <View style={[styles.headerBanner, { backgroundColor: isUrgence ? colors.urgence : colors.prealerte }]}>
         <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel={t('common.back')}>
-          <ArrowLeft size={20} color={colors.white} />
+          <ArrowLeft size={20} color={colors.onPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>{isUrgence ? 'Urgence' : 'Pré-alerte'}</Text>
         <Text style={styles.headerSubtitle}>
@@ -113,13 +115,13 @@ function statusLabel(t: (key: string) => string, status: string) {
   return ['active', 'acquittee', 'fausse', 'resolue'].includes(status) ? t(`alerts.status.${status}`) : status;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   scroll: { flex: 1 },
   content: { paddingBottom: spacing.xxxl },
   headerBanner: { padding: spacing.xl, paddingTop: spacing.xxxl },
   backButton: { marginBottom: spacing.lg },
-  headerTitle: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.white },
+  headerTitle: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.onPrimary },
   headerSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.85)', marginTop: 4 },
   map: { height: 200 },
   padded: { padding: spacing.lg },
@@ -130,4 +132,4 @@ const styles = StyleSheet.create({
   reasonItem: { ...typography.body, color: colors.slate, marginBottom: spacing.xs },
   statusValue: { ...typography.body, fontFamily: fontFamily.medium, color: colors.slate },
   actions: { gap: spacing.sm, marginTop: spacing.sm },
-});
+}));

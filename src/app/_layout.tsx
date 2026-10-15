@@ -4,7 +4,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { StatusBar } from 'expo-status-bar';
 import { queryClient } from '@/api/queryClient';
 import { persistOptions } from '@/api/persistence';
 import { registerOfflineMutations } from '@/api/offlineQueue';
@@ -14,6 +13,9 @@ import { configIssues, hasBlockingConfigError } from '@/config/env';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
 import { useAppFonts } from '@/theme';
+import { AppThemeProvider } from '@/theme/AppThemeProvider';
+import { usePreferencesStore } from '@/stores/preferencesStore';
+import { applyStartupLanguage } from '@/i18n/language';
 import { EmergencyGate } from '@/features/emergency/EmergencyGate';
 import { ConfigErrorScreen } from '@/features/system/ConfigErrorScreen';
 import { PrivacyShield } from '@/features/system/PrivacyShield';
@@ -35,7 +37,11 @@ configIssues.forEach((issue) => logger.warn(`Configuration ${issue.key} : ${issu
 const BOOT_TIMEOUT_MS = 2500;
 
 async function bootstrap(hydrate: () => Promise<void>) {
-  const tasks: Promise<unknown>[] = [hydrate()];
+  const tasks: Promise<unknown>[] = [
+    hydrate(),
+    // Thème et langue choisis sur ce téléphone : appliqués avant le premier écran.
+    usePreferencesStore.getState().hydrate().then(applyStartupLanguage),
+  ];
   if (isMockMode()) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     tasks.push(require('@/api/mock/entry').initMockBackend());
@@ -85,7 +91,7 @@ export default function RootLayout() {
               void queryClient.resumePausedMutations();
             }}
           >
-            <StatusBar style="dark" />
+            <AppThemeProvider>
             <EmergencyGate />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
@@ -97,6 +103,7 @@ export default function RootLayout() {
               />
             </Stack>
             <PrivacyShield />
+            </AppThemeProvider>
           </PersistQueryClientProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>

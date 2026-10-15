@@ -1,0 +1,101 @@
+{
+  "settings": {
+    "sections": {
+      "account": "Account",
+      "security": "Security",
+      "preferences": "Preferences",
+      "notifications": "Notifications",
+      "family": "Family",
+      "information": "Information",
+      "session": "Session and account"
+    },
+    "profileSaved": "Profile saved.",
+    "emailReadOnly": "Your email address is used to sign in; it can't be changed here.",
+    "emailNotVerified": "Address not confirmed yet.",
+    "biometricLock": "Biometric lock",
+    "biometricDesc": "Ask for your fingerprint or face when opening the app.",
+    "language": {
+      "title": "Language",
+      "syncPending": "The app language has changed. It will be saved to your account (notifications and emails) as soon as you're back online."
+    },
+    "appearance": {
+      "title": "Appearance",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "notif": {
+      "scope": "Pre-alerts and information: these choices apply to notifications shown while the app is open. To turn off notifications received while the app is closed, use your phone settings.",
+      "urgence": "Emergencies",
+      "urgenceAlways": "Emergencies are always notified, with the highest priority.",
+      "alwaysOn": "Always on",
+      "prealerte": "Pre-alerts",
+      "information": "Information (battery, device)",
+      "systemSettings": "Phone notification settings",
+      "systemSettingsDesc": "Permissions, sound, lock screen display."
+    },
+    "family": {
+      "children": "My children",
+      "sharing": "Trusted contacts"
+    },
+    "demo": {
+      "title": "Demo mode",
+      "body": "Sample data, no server. Resetting restores the demo children, alerts and history.",
+      "reset": "Reset the demo",
+      "resetDone": "Demo reset.",
+      "simulateOffline": "Simulate a network outage (8 s)"
+    },
+    "security": {
+      "title": "Security",
+      "passwordAnd2fa": "Password and two-step verification",
+      "twofaOn": "Two-step verification is on",
+      "twofaOff": "Two-step verification is off",
+      "twofaTitle": "Two-step verification",
+      "twofaLabel": "Email code at sign-in",
+      "twofaFooter": "Each time you sign in, a one-time code is sent to {{email}}.",
+      "twofaConfirmEnable": "Enter your password to turn on two-step verification.",
+      "twofaConfirmDisable": "Enter your password to turn off two-step verification.",
+      "twofaEnabled": "Two-step verification is on. A confirmation email was sent if email sending is available.",
+      "twofaDisabled": "Two-step verification is off.",
+      "passwordTitle": "Password",
+      "passwordFooter": "After the change, your other devices are signed out.",
+      "currentPassword": "Current password",
+      "changePassword": "Change password",
+      "passwordChanged": "Password changed. Your other devices have been signed out.",
+      "offline": "You're offline: security settings can't be changed right now."
+    },
+    "about": {
+      "title": "About",
+      "tagline": "Detect danger before a disappearance.",
+      "mission": "Mission",
+      "missionBody": "SIREN helps parents protect their children: a device worn by the child sends their location and movements, and an analysis engine spots anything outside their usual routine so you are alerted as early as possible.",
+      "howBody": "The app is your control centre: live map, explained alerts, sharing with trusted contacts and emergency response.",
+      "notASubstitute": "SIREN does not replace an adult's vigilance or emergency services. If there is danger, call the police (117).",
+      "versionSection": "Version",
+      "version": "Version",
+      "build": "Build",
+      "environment": "Environment",
+      "env": {
+        "development": "Development",
+        "staging": "Staging",
+        "production": "Production"
+      },
+      "dataSource": "Data",
+      "dataDemo": "Demo (sample data)",
+      "dataServer": "SIREN server",
+      "apiContract": "API contract",
+      "team": "Team",
+      "teamBody": "SIREN is built by a team organised in three groups: App, Device and Artificial Intelligence.",
+      "contactFooter": "Contact details are in the legal notice.",
+      "credits": "Credits",
+      "creditsBody": "Map backgrounds © OpenStreetMap contributors (ODbL licence), served by OpenFreeMap. Map rendering by MapLibre. Inter typeface (SIL Open Font Licence)."
+    },
+    "logout": "Sign out",
+    "logoutConfirmTitle": "Sign out?",
+    "logoutConfirmBody": "You won't receive alerts on this phone until you sign in again.",
+    "deleteAccount": "Delete my account",
+    "deleteAccountDesc": "Deletes your account and cuts off all access to your children's data.",
+    "deleteTitle": "Delete account?",
+    "deleteBody": "Your account will be deleted, along with access to your children's data for you and your trusted contacts. This cannot be undone."
+  }
+}

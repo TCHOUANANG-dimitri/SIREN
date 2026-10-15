@@ -5,7 +5,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -14,7 +13,7 @@ import { router } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Camera as CameraIcon, CheckCircle2, Keyboard, Plus } from 'lucide-react-native';
 import { Banner, Button, Card, ProgressSteps, TextField } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useChildren, useCreateChild, useFindDevice } from '@/api/hooks/useChildren';
 import { ApiError } from '@/api/network';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,6 +22,8 @@ import { useTranslation } from 'react-i18next';
 type Step = 'profil' | 'appairage' | 'verification';
 
 export default function AddChildScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>('profil');
   const [prenom, setPrenom] = useState('');
@@ -92,10 +93,10 @@ export default function AddChildScreen() {
               {photoUrl ? (
                 <Image source={{ uri: photoUrl }} style={styles.photo} />
               ) : (
-                <CameraIcon size={28} color={colors.primary} />
+                <CameraIcon size={28} color={colors.accent} />
               )}
               <View style={styles.photoBadge}>
-                <Plus size={12} color={colors.white} strokeWidth={3} />
+                <Plus size={12} color={colors.onPrimary} strokeWidth={3} />
               </View>
             </Pressable>
 
@@ -153,14 +154,14 @@ export default function AddChildScreen() {
                     />
                   ) : (
                     <View style={styles.scannerFallback}>
-                      <CameraIcon size={32} color={colors.white} />
+                      <CameraIcon size={32} color={colors.onPrimary} />
                       <Text style={styles.scannerFallbackText}>{t('children.cameraPermission')}</Text>
                       <Button label={t('children.allowCamera')} onPress={() => requestPermission()} />
                     </View>
                   )}
                 </View>
                 <Pressable onPress={() => setManualEntry(true)} style={styles.manualLink}>
-                  <Keyboard size={14} color={colors.primary} />
+                  <Keyboard size={14} color={colors.accent} />
                   <Text style={styles.manualLinkText}>{t('children.manualEntry')}</Text>
                 </Pressable>
               </>
@@ -245,7 +246,7 @@ export default function AddChildScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   flex: { flex: 1, backgroundColor: colors.surface },
   content: { flexGrow: 1, padding: spacing.xxl },
   stepBlock: { marginTop: spacing.xl },
@@ -282,13 +283,13 @@ const styles = StyleSheet.create({
   scannerBox: { borderRadius: radii.xl, overflow: 'hidden', height: 260, marginBottom: spacing.lg, backgroundColor: '#1A1A1A' },
   scanner: { flex: 1 },
   scannerFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
-  scannerFallbackText: { ...typography.caption, color: colors.white, textAlign: 'center' },
+  scannerFallbackText: { ...typography.caption, color: colors.onPrimary, textAlign: 'center' },
   manualLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.lg },
-  manualLinkText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.primary },
+  manualLinkText: { ...typography.body, fontFamily: fontFamily.medium, color: colors.accent },
   successIcon: { width: 88, height: 88, borderRadius: 44, backgroundColor: colors.veilleSurface, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
   cardLabel: { ...typography.label, color: colors.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md },
   cardRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
   cardKey: { ...typography.body, color: colors.slate },
   cardValueMono: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
   cardValueOk: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.veille },
-});
+}));

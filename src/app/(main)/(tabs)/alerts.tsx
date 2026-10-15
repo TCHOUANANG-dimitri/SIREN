@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AlertTriangle } from 'lucide-react-native';
 import { Card, StateBadge } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useAllAlerts } from '@/api/hooks/useAlerts';
 import { useChildren } from '@/api/hooks/useChildren';
 import { formatRelativeTime } from '@/utils/format';
@@ -12,6 +12,8 @@ import type { Alert } from '@/models/entities';
 import { useTranslation } from 'react-i18next';
 
 export default function AlertsScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { data: alerts, isLoading } = useAllAlerts();
   const { data: children } = useChildren();
@@ -92,14 +94,14 @@ export default function AlertsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, paddingHorizontal: spacing.xl, paddingTop: spacing.md },
   filterRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingTop: spacing.md, flexWrap: 'wrap' },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceChip },
   chipActive: { backgroundColor: colors.primary },
   chipText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.muted },
-  chipTextActive: { color: colors.white },
+  chipTextActive: { color: colors.onPrimary },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   emptyText: { ...typography.body, color: colors.muted },
   list: { padding: spacing.xl, gap: spacing.sm },
@@ -109,4 +111,4 @@ const styles = StyleSheet.create({
   time: { ...typography.caption, color: colors.muted },
   childName: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink, marginBottom: 2 },
   reason: { ...typography.caption, color: colors.muted },
-});
+}));

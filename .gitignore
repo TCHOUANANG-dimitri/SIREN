@@ -60,3 +60,11 @@ server/data/osm/
 # Firebase (push)
 google-services.json
 GoogleService-Info.plist
+
+# Sauvegardes de base et de stockage : peuvent contenir des données personnelles
+# (dont des données d'enfants) — jamais dans Git. Seuls les schémas reconstitués sont suivis.
+data/*.backup.gz
+data/*.backup
+data/*.dump
+data/*.storage.zip
+data/raw/

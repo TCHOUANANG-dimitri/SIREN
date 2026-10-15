@@ -1,0 +1,180 @@
+{
+  "home": {
+    "subtitle": "Here is how your children are doing",
+    "emptyTitle": "Add your first child",
+    "emptyBody": "Pair a SIREN device to start protection.",
+    "loadError": "Could not load your children. Check your connection.",
+    "greeting": "Hello {{name}}"
+  },
+  "children": {
+    "profileTitle": "Child profile",
+    "profileSubtitle": "This information helps identify your child.",
+    "firstName": "Child's first name *",
+    "firstNamePlaceholder": "Lea",
+    "firstNameRequired": "The child's first name is required.",
+    "duplicateName": "You already have a child registered under this first name.",
+    "pairTitle": "Pair the device",
+    "pairSubtitle": "Scan the QR code on the SIREN device.",
+    "cameraPermission": "Allow the camera to scan the QR code.",
+    "allowCamera": "Allow camera",
+    "deviceIdLabel": "Device ID *",
+    "deviceIdPlaceholder": "SIREN-XXXX-XXXX",
+    "pairingFailed": "Pairing failed. Please try again.",
+    "paired": "Device paired!",
+    "pairedBody": "The SIREN device is connected and ready.",
+    "device": "Device",
+    "online": "Online · GPS active",
+    "defineProtection": "Set up protection →",
+    "seeOngoingEmergency": "View ongoing emergency →",
+    "deviceOffline": "Offline",
+    "deviceOnline": "Online",
+    "viewDetails": "View details for {{child}}",
+    "searchingDevice": "Looking for the device…",
+    "searchDevice": "Find the device",
+    "deviceIdRequired": "The device ID is required.",
+    "deviceIdTooShort": "The ID must be at least 5 characters long.",
+    "manualEntry": "or enter the ID manually",
+    "addChild": "Add a child",
+    "selector": {
+      "label": "Choose a child — {{context}}",
+      "hint": "Show {{name}}"
+    }
+  },
+  "wizard": {
+    "homeTitle": "Where is your home?",
+    "homeSubtitle": "Select the address and the protection radius around your home.",
+    "address": "Address",
+    "homeAddressPlaceholder": "12 Acacia Street, Yaoundé",
+    "schoolTitle": "Where is the school?",
+    "schoolSubtitle": "Address, radius and expected attendance hours.",
+    "schoolAddressPlaceholder": "Local primary school",
+    "attendanceDays": "Attendance days",
+    "arrivalTime": "Arrival time",
+    "departureTime": "Leaving time",
+    "placesTitle": "Frequent places",
+    "placesSubtitle": "Church, market, grandmother's… Name the place, then point to its position on the map.",
+    "placeName": "Place name",
+    "placeNamePlaceholder": "Church, market…",
+    "placeNameRequired": "Give this place a name.",
+    "placeNameDuplicate": "A place already has this name.",
+    "addressOrPosition": "Address or position",
+    "searchAddress": "Search for an address…",
+    "addPlace": "Add this place",
+    "perimeterTitle": "Allowed zone",
+    "perimeterSubtitle": "Neighbourhood or city: leaving this zone will be flagged.",
+    "sleepTitle": "Sleep & emergency contacts",
+    "sleepSubtitle": "Usual sleeping hours and people to notify.",
+    "bedtime": "Bedtime",
+    "wakeTime": "Wake-up",
+    "emergencyContacts": "Emergency contacts",
+    "contactName": "Contact name",
+    "contactNamePlaceholder": "Dad, Grandma…",
+    "contactPhonePlaceholder": "+237 6 __ __ __ __",
+    "addContact": "Add this contact",
+    "saved": "Basic protection is on: your declared rules and the universal detectors are active.",
+    "steps": {
+      "home": "1 Home",
+      "school": "2 School",
+      "places": "3 Places",
+      "perimeter": "4 Zone",
+      "sleep": "5 Sleep"
+    },
+    "defaultHomeName": "Home",
+    "defaultSchoolName": "School",
+    "saveAndContinue": "Save and continue",
+    "next": "Next →"
+  },
+  "childTabs": {
+    "noPositionRight": "You don't have permission to see this child's location.",
+    "noPreciseposition": "The precise location isn't shared with you.",
+    "currentPosition": "Current location",
+    "searchOnMap": "Search for a name on the map…",
+    "requestPosition": "Request location now",
+    "noHistory": "No movement recorded for this period.",
+    "departure": "Departure",
+    "arrival": "Arrival",
+    "noPlaces": "No places yet.",
+    "renamePlace": "Rename place",
+    "addPlace": "Add a place",
+    "reasons": "Reasons",
+    "subScoreBreakdown": "Breakdown by sub-score",
+    "modelConfidence": "Model confidence",
+    "recentTrend": "Recent trend",
+    "powerMode": "Power mode",
+    "alertSensitivity": "Alert sensitivity",
+    "cautious": "Cautious",
+    "tolerant": "Tolerant",
+    "information": "Information",
+    "settingsVersion": "Settings version",
+    "firmware": "Firmware",
+    "lastSync": "Last synchronisation",
+    "settingsSaved": "Settings saved",
+    "forceSync": "Force a synchronisation",
+    "noPosition": "No location available yet.",
+    "battery": "Battery",
+    "deviceLoadError": "Could not load device settings.",
+    "energyModeUnknown": "Current mode not recognised: choose one.",
+    "fixRequested": "Request sent. The location will appear as soon as the device responds.",
+    "inForbiddenZone": "In a forbidden zone: {{zone}}",
+    "inZone": "In zone {{zone}}",
+    "lastSeen": "Last contact",
+    "outsideKnownZones": "Outside known zones",
+    "principalOnlySettings": "Only the primary parent can change these settings.",
+    "refreshDeviceState": "Refresh device status",
+    "searchMatch": "Place found: {{place}}",
+    "searchNoMatch": "No saved place matches",
+    "settingsSentToServer": "Settings saved. The device will apply them at its next connection.",
+    "syncExplanation": "Settings go through the server: the device picks them up at its next connection.",
+    "updated": "Updated {{when}}",
+    "energy": {
+      "continu": "Continuous",
+      "equilibre": "Balanced",
+      "economie": "Power saving"
+    },
+    "energyHint": {
+      "continu": "Finest tracking, shortest battery life",
+      "equilibre": "Recommended for daily use",
+      "economie": "Longest battery life, fewer positions"
+    },
+    "tab": {
+      "map": "Map",
+      "history": "History",
+      "places": "Places",
+      "score": "Score",
+      "device": "Device"
+    },
+    "placesLearning": "SIREN is still learning your child's usual places (confidence: {{percent}}%)."
+  },
+  "risk": {
+    "subScore": {
+      "geo": "Location",
+      "mouvement": "Movement",
+      "universel": "Universal detectors",
+      "declaratif": "Declared rules"
+    },
+    "confidenceLearning": "The personal layer is still learning — confidence grows with daily use.",
+    "confidenceMature": "The model knows this child's routine well.",
+    "noReason": "No particular signal.",
+    "computedAt": "Computed {{when}}",
+    "reason": {
+      "concordance": {
+        "label": "{{count}} matching signals",
+        "detail": "Several independent detectors flag an anomaly at the same time, which raises the score."
+      },
+      "nuit": {
+        "label": "Context: night",
+        "detail": "Movement between 10 pm and 6 am is treated as more unusual."
+      },
+      "hors_perimetre": {
+        "label": "Context: outside zone",
+        "detail": "The child is in a forbidden zone or away from an expected place at this time."
+      }
+    }
+  },
+  "riskState": {
+    "veille": "Normal",
+    "prealerte": "Pre-alert",
+    "urgence": "Emergency",
+    "disparition": "Missing"
+  }
+}

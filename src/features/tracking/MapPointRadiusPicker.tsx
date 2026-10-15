@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Circle, MapView, type MapViewRef } from './map';
 import Slider from '@react-native-community/slider';
 import { MapPin } from 'lucide-react-native';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
 
 interface MapPointRadiusPickerProps {
@@ -37,6 +37,8 @@ export function MapPointRadiusPicker({
   focusPoint,
   onChange,
 }: MapPointRadiusPickerProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [center, setCenter] = useState({ lat: latitude, lon: longitude });
   const [radius, setRadius] = useState(radiusM);
@@ -85,7 +87,7 @@ export function MapPointRadiusPicker({
           />
         </MapView>
         <View style={styles.pinOverlay} pointerEvents="none">
-          <MapPin size={32} color={colors.primary} fill={colors.surfaceAlt} />
+          <MapPin size={32} color={colors.accent} fill={colors.surfaceAlt} />
         </View>
       </View>
 
@@ -116,7 +118,7 @@ export function MapPointRadiusPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   mapWrapper: {
     borderRadius: radii.lg,
     overflow: 'hidden',
@@ -135,14 +137,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sliderCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     borderRadius: radii.md,
     padding: spacing.md,
     marginBottom: spacing.lg,
   },
   sliderHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs },
   sliderLabel: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.slate },
-  sliderValue: { ...typography.bodyStrong, fontFamily: fontFamily.bold, color: colors.primary },
+  sliderValue: { ...typography.bodyStrong, fontFamily: fontFamily.bold, color: colors.accent },
   sliderBounds: { flexDirection: 'row', justifyContent: 'space-between' },
   sliderBoundText: { ...typography.caption, color: colors.muted },
-});
+}));

@@ -88,6 +88,7 @@ export const userSchema = z
     role: z.enum(['principal', 'secondaire']),
     langue: z.string().nullable().optional(),
     twofaEnabled: z.boolean().optional(),
+    emailVerified: z.boolean().nullable().optional(),
     createdAt: isoDate,
   })
   .transform(
@@ -99,6 +100,7 @@ export const userSchema = z
       role: u.role,
       langue: u.langue === 'en' ? 'en' : 'fr',
       twofaEnabled: u.twofaEnabled ?? false,
+      emailVerified: u.emailVerified ?? undefined,
       createdAt: u.createdAt,
     })
   );
@@ -109,6 +111,26 @@ export const authResponseSchema = z.object({
   refreshToken: z.string().min(1),
   twofaRequired: z.boolean().nullable().optional(),
 });
+
+/** Code en attente : `challengeToken` absent = compatibilité v1 (code fixe de développement). */
+export const otpChallengeSchema = z
+  .object({
+    challengeToken: z.string().min(10).nullable().optional(),
+    expiresIn: z.number().int().positive().nullable().optional(),
+    devHint: z.string().nullable().optional(),
+    required: z.boolean().nullable().optional(),
+  })
+  .transform((c) => ({
+    challengeToken: c.challengeToken ?? null,
+    expiresIn: c.expiresIn ?? null,
+    devHint: c.devHint ?? undefined,
+    required: c.required !== false,
+  }));
+
+export const loginResponseSchema = z.union([
+  z.object({ twofaRequired: z.literal(true) }).passthrough(),
+  authResponseSchema,
+]);
 
 export const refreshResponseSchema = z.object({
   accessToken: z.string().min(1),
@@ -376,6 +398,19 @@ export const shareSchema = z
     invitedAt: isoDate,
   })
   .transform((s): SecondaryAccess => ({ ...s, permissions: toPermissions(s.permissions) }));
+
+/** Réponse de création : le partage + si un email d'information a réellement été envoyé. */
+export const shareCreatedSchema = z
+  .object({ notified: z.boolean().optional().catch(false) })
+  .passthrough()
+  .transform((raw, ctx) => {
+    const share = shareSchema.safeParse(raw);
+    if (!share.success) {
+      share.error.issues.forEach((issue) => ctx.addIssue({ ...issue, code: 'custom' as const, message: issue.message }));
+      return z.NEVER;
+    }
+    return { share: share.data, notified: raw.notified === true };
+  });
 
 export const permissionsSchema = z.array(z.string()).transform(toPermissions);
 

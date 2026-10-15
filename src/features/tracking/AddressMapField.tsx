@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MapPin, Search } from 'lucide-react-native';
 import { TextField } from '@/components';
-import { colors, fontFamily, radii, spacing, typography } from '@/theme';
+import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { searchAddress, reverseGeocode, type GeoResult } from '@/services/geocodingService';
 import { logger } from '@/utils/logger';
 import { MapPointRadiusPicker } from './MapPointRadiusPicker';
@@ -40,6 +40,8 @@ export function AddressMapField({
   minRadius,
   maxRadius,
 }: AddressMapFieldProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [suggestions, setSuggestions] = useState<GeoResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -148,7 +150,7 @@ export function AddressMapField({
 
       {searching && (
         <View style={styles.searchingRow}>
-          <ActivityIndicator size="small" color={colors.primary} />
+          <ActivityIndicator size="small" color={colors.accent} />
           <Text style={styles.searchingText}>{t('map.searchingAddresses')}</Text>
         </View>
       )}
@@ -193,7 +195,7 @@ export function AddressMapField({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   searchingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -202,7 +204,7 @@ const styles = StyleSheet.create({
   },
   searchingText: { ...typography.caption, color: colors.muted },
   suggestions: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -227,4 +229,4 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   coordsText: { ...typography.caption, color: colors.muted, fontFamily: fontFamily.regular },
-});
+}));

@@ -1,8 +1,8 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { BatteryMedium, Wifi, WifiOff } from 'lucide-react-native';
 import { Card, StateBadge } from '@/components';
-import { colors, fontFamily, spacing, typography } from '@/theme';
+import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useChildStatus } from '@/api/hooks/useChildren';
 import { useRisk } from '@/api/hooks/useRisk';
 import type { Child } from '@/models/entities';
@@ -11,6 +11,8 @@ import { LOW_BATTERY_PERCENT } from '@/config/business';
 import { useTranslation } from 'react-i18next';
 
 export function ChildCard({ child }: { child: Child }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { data: status } = useChildStatus(child.id);
   const { data: risk } = useRisk(child.id);
@@ -62,7 +64,7 @@ export function ChildCard({ child }: { child: Child }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   card: { marginBottom: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   avatar: { width: 52, height: 52, borderRadius: 26 },
@@ -74,7 +76,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: { ...typography.title2, fontFamily: fontFamily.bold, color: colors.primary },
+  avatarInitial: { ...typography.title2, fontFamily: fontFamily.bold, color: colors.accent },
   infoCol: { flex: 1, gap: spacing.xs },
   name: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
   score: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink },
@@ -85,4 +87,4 @@ const styles = StyleSheet.create({
   confidenceTrack: { height: 4, borderRadius: 2, backgroundColor: colors.border },
   confidenceFill: { height: 4, borderRadius: 2, backgroundColor: colors.primary },
   confidenceText: { ...typography.caption, color: colors.muted },
-});
+}));

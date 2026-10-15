@@ -1,0 +1,90 @@
+{
+  "common": {
+    "next": "Suivant",
+    "back": "Retour",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saveAndContinue": "Enregistrer et continuer",
+    "completeLater": "Compléter plus tard",
+    "retry": "Réessayer",
+    "loading": "Chargement…",
+    "error": "Une erreur est survenue",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "close": "Fermer",
+    "seeAll": "Tout voir",
+    "optional": "optionnel",
+    "skip": "Passer",
+    "send": "Envoyer",
+    "rename": "Renommer",
+    "name": "Nom",
+    "phone": "Téléphone",
+    "status": "Statut",
+    "all": "Tous",
+    "new": "Nouveau",
+    "preview": "Aperçu",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "fieldValue": "{{label}} : {{value}}",
+    "notSet": "non défini"
+  },
+  "tabs": {
+    "home": "Accueil",
+    "map": "Carte",
+    "alerts": "Alertes",
+    "sharing": "Partage",
+    "settings": "Réglages"
+  },
+  "time": {
+    "unknown": "inconnu",
+    "justNow": "à l'instant",
+    "secondsAgo": "il y a {{count}} s",
+    "minutesAgo": "il y a {{count}} min",
+    "hoursAgo": "il y a {{count}} h",
+    "daysAgo": "il y a {{count}} j"
+  },
+  "cardinal": {
+    "n": "nord",
+    "ne": "nord-est",
+    "e": "est",
+    "se": "sud-est",
+    "s": "sud",
+    "sw": "sud-ouest",
+    "w": "ouest",
+    "nw": "nord-ouest"
+  },
+  "offline": {
+    "banner": "Données hors ligne",
+    "bannerWithTime": "Données hors ligne — mises à jour à {{time}}",
+    "reconnecting": "Reconnexion en cours…"
+  },
+  "config": {
+    "title": "Configuration de l'application incomplète",
+    "body": "Cette version ne peut pas démarrer : les réglages ci-dessous doivent être corrigés avant de générer l'application."
+  },
+  "validation": {
+    "emailInvalid": "Adresse email invalide",
+    "nameTooShort": "Nom trop court",
+    "passwordLength": "10 caractères minimum",
+    "passwordTooLong": "128 caractères maximum",
+    "passwordLower": "Une minuscule requise",
+    "passwordUpper": "Une majuscule requise",
+    "passwordDigit": "Un chiffre requis",
+    "passwordSymbol": "Un symbole requis",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "passwordRequired": "Le mot de passe est requis",
+    "termsRequired": "Vous devez accepter les conditions d'utilisation",
+    "codeFormat": "Le code comporte 6 chiffres.",
+    "required": "Ce champ est obligatoire.",
+    "passwordUnchanged": "Choisissez un mot de passe différent de l'actuel."
+  },
+  "passwordStrength": {
+    "veryWeak": "Très faible",
+    "weak": "Faible",
+    "medium": "Moyen",
+    "good": "Bon",
+    "excellent": "Excellent"
+  }
+}
