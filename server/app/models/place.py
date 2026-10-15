@@ -18,7 +18,7 @@ class Place(Base):
     child_id: Mapped[str] = mapped_column(String(36), ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
     nom: Mapped[str] = mapped_column(String(150), nullable=False)
     geom: Mapped[str] = mapped_column(Geometry("Point", srid=4326), nullable=False)
-    radius_m: Mapped[float] = mapped_column(REAL, default=50)
+    radius_m: Mapped[float] = mapped_column(REAL, default=100)
     source: Mapped[PlaceSource] = mapped_column(SAEnum(PlaceSource), default=PlaceSource.DECLARE)
     visit_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

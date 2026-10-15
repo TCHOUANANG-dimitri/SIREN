@@ -1,11 +1,14 @@
-# SIREN — Configuration Caddy (reverse proxy avec TLS automatique)
-# https://caddyserver.com/docs/caddyfile
+{
+    # Email ACME (Let's Encrypt / ZeroSSL). Sur localhost, Caddy utilise
+    # automatiquement son CA interne et ne contacte aucun fournisseur.
+    email {$CADDY_EMAIL:admin@example.com}
+}
 
 {$DOMAIN:localhost} {
-    tls {$CADDY_EMAIL:admin@example.com}
-
+    # API, healthcheck, Swagger et WebSockets -> FastAPI
+    # (Caddy gère la négociation WebSocket nativement avec reverse_proxy)
     @api {
-        path /api/* /health /ws/*
+        path /api/* /health /docs /redoc /openapi.json /ws/*
     }
 
     reverse_proxy @api api:8000 {
@@ -13,7 +16,7 @@
         header_up X-Forwarded-Proto {scheme}
     }
 
-    # Sécurité
+    # Security headers
     header / {
         X-Content-Type-Options nosniff
         X-Frame-Options DENY
@@ -21,17 +24,9 @@
         Referrer-Policy strict-origin-when-cross-origin
     }
 
-    # Rate limiting sur l'authentification
-    rate_limit /api/v1/auth/* {
-        zone auth_rate
-        key {remote_host}
-        events 10
-        window 1m
-    }
-
-    # Logs
+    # Access logs -> stdout (capturés par docker logs)
     log {
-        output file /data/logs/access.log
+        output stdout
         format json
     }
 }

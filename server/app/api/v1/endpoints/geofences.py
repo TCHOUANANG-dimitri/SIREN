@@ -9,6 +9,7 @@ from app.core.dependencies import get_current_user
 from app.core.geo import point_lat_lon
 from app.crud.geofence import crud_geofence
 from app.models.user import User
+from app.rules.declarative import MAX_GEOFENCES_PER_CHILD
 
 router = APIRouter()
 
@@ -74,6 +75,9 @@ async def list_geofences(child_id: str, current_user: User = Depends(get_current
 async def create_geofence(child_id: str, req: GeofenceCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     access = await get_child_access(db, current_user, child_id)
     access.require_principal()
+    existing = await crud_geofence.list_by_child(db, child_id)
+    if len(existing) >= MAX_GEOFENCES_PER_CHILD:
+        raise HTTPException(status_code=400, detail=f"Limite de {MAX_GEOFENCES_PER_CHILD} périmètres par enfant atteinte")
     fence = await crud_geofence.create(db, {
         "child_id": child_id,
         "nom": req.nom.strip(),

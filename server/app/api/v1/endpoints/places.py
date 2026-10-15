@@ -9,6 +9,7 @@ from app.core.dependencies import get_current_user
 from app.core.geo import point_lat_lon
 from app.crud.place import crud_place, crud_place_schedule
 from app.models.user import User
+from app.rules.declarative import MAX_PLACES_PER_CHILD
 from app.schemas.child import ScheduleIn
 
 router = APIRouter()
@@ -65,6 +66,9 @@ async def list_places(child_id: str, current_user: User = Depends(get_current_us
 async def create_place(child_id: str, req: PlaceCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     access = await get_child_access(db, current_user, child_id)
     access.require_principal()
+    existing = await crud_place.list_by_child(db, child_id)
+    if len(existing) >= MAX_PLACES_PER_CHILD:
+        raise HTTPException(status_code=400, detail=f"Limite de {MAX_PLACES_PER_CHILD} lieux par enfant atteinte")
     place = await crud_place.create(db, {
         "child_id": child_id,
         "nom": req.nom.strip(),

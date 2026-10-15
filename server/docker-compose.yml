@@ -1,21 +1,52 @@
-version: "3.9"
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: siren-migration:local
+    command: python -m alembic upgrade head
+    env_file: .env
+    logging: *default-logging
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - siren_net
+
   api:
     build:
       context: .
       dockerfile: Dockerfile
+    image: siren-api:local
     ports:
-      - "8000:8000"
+      - "${SIREN_API_PORT:-8000}:8000"
     env_file: .env
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+    logging: *default-logging
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
     volumes:
-      - ./:/app
       - osm_data:/app/data/osm
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).read()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    stop_grace_period: 30s
     restart: unless-stopped
     networks:
       - siren_net
@@ -24,14 +55,24 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.worker
+    image: siren-worker:local
     env_file: .env
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+    logging: *default-logging
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
-    volumes:
-      - ./:/app
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import app; print('ok')\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    stop_grace_period: 30s
     restart: unless-stopped
     networks:
       - siren_net
@@ -40,15 +81,20 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.worker
-    command: celery -A app.tasks.celery_app beat --loglevel=info
+    image: siren-beat:local
+    command: celery -A app.tasks.celery_app beat --loglevel=info --schedule=/var/lib/celery/beat.schedule
     env_file: .env
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+    logging: *default-logging
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     volumes:
-      - ./:/app
+      - beat_data:/var/lib/celery
     restart: unless-stopped
     networks:
       - siren_net
@@ -60,15 +106,17 @@ services:
       POSTGRES_PASSWORD: siren_password
       POSTGRES_DB: siren
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
+    logging: *default-logging
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ./db_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./db_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U siren"]
+      test: ["CMD-SHELL", "pg_isready -U siren -d siren"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     restart: unless-stopped
     networks:
       - siren_net
@@ -76,9 +124,16 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
+    logging: *default-logging
     volumes:
       - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
     networks:
       - siren_net
@@ -88,13 +143,15 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    logging: *default-logging
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     env_file: .env
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - siren_net
@@ -102,6 +159,7 @@ services:
 volumes:
   pg_data:
   osm_data:
+  beat_data:
   redis_data:
   caddy_data:
   caddy_config:
