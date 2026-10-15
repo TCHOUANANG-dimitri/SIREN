@@ -15,6 +15,8 @@ export const ACCOUNT_SCOPED_KEYS = [
   'siren.prefs.notifications',
   'siren.prefs.biometricLock',
   'siren.prefs.communityProximity',
+  // Photos d'enfant choisies sur ce téléphone (features/children/localPhotos).
+  'siren.childPhotos',
   'siren.pushToken',
 ];
 

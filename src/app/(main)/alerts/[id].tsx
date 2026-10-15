@@ -11,6 +11,8 @@ import { useChildren } from '@/api/hooks/useChildren';
 import { useCurrentAccess } from '@/features/sharing/useCurrentAccess';
 import { formatClock } from '@/utils/format';
 import { useTranslation } from 'react-i18next';
+import { explainReason, reasonLabel, zoneNamesOf } from '@/features/risk/reasons';
+import { useGeofences } from '@/api/hooks/useGeofences';
 
 export default function AlertDetailScreen() {
   const styles = useStyles();
@@ -21,6 +23,8 @@ export default function AlertDetailScreen() {
   const { data: children } = useChildren();
   const alert = alerts?.find((a) => a.id === id);
   const { can } = useCurrentAccess(alert?.childId);
+  const { data: geofences } = useGeofences(alert?.childId);
+  const zoneNames = zoneNamesOf(geofences);
   const patchAlert = usePatchAlert();
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -48,7 +52,7 @@ export default function AlertDetailScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton} accessibilityLabel={t('common.back')}>
           <ArrowLeft size={20} color={colors.onPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{isUrgence ? 'Urgence' : 'Pré-alerte'}</Text>
+        <Text style={styles.headerTitle}>{t(isUrgence ? 'riskState.urgence' : 'riskState.prealerte')}</Text>
         <Text style={styles.headerSubtitle}>
           {child?.prenom} · {formatClock(alert.createdAt)}
         </Text>
@@ -82,7 +86,7 @@ export default function AlertDetailScreen() {
           <Text style={styles.cardTitle}>{t('alerts.detailedReasons')}</Text>
           {alert.reasons.map((reason) => (
             <Text key={reason} style={styles.reasonItem}>
-              • {reason}
+              • {explainReason(t, reason, { zoneNames })?.label ?? reasonLabel(t, reason)}
             </Text>
           ))}
         </Card>

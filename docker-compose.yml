@@ -1,0 +1,45 @@
+# SIREN — ensemble du projet.
+#
+#   Serveur (API, worker, beat, PostgreSQL/PostGIS, Redis, Caddy) :
+#     cp server/.env.docker.example server/.env   # puis renseigner les secrets
+#     docker compose up -d --build
+#
+#   Application mobile — contrôles reproductibles (lint, types, i18n, tests) :
+#     docker compose --profile mobile run --rm mobile-checks
+#
+#   Application mobile — serveur Metro pour Expo Go (même réseau Wi-Fi que le téléphone) :
+#     docker compose --profile mobile up mobile-dev
+#
+# L'APK n'est pas produit ici (compilation native Android : voir README).
+include:
+  - path: server/docker-compose.yml
+    project_directory: server
+    env_file: server/.env
+
+services:
+  mobile-checks:
+    profiles: ["mobile"]
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    image: siren-mobile:local
+    environment:
+      EXPO_PUBLIC_API_MODE: mock
+
+  mobile-dev:
+    profiles: ["mobile"]
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    image: siren-mobile:local
+    command: npx expo start --lan --port 8081
+    ports:
+      - "8081:8081"
+    environment:
+      # mock par défaut ; en live, pointer vers l'API publiée (http://<IP-du-poste>:8000).
+      EXPO_PUBLIC_API_MODE: ${EXPO_PUBLIC_API_MODE:-mock}
+      EXPO_PUBLIC_API_BASE_URL: ${EXPO_PUBLIC_API_BASE_URL:-http://localhost:8000}
+      EXPO_PUBLIC_WS_URL: ${EXPO_PUBLIC_WS_URL:-}
+      REACT_NATIVE_PACKAGER_HOSTNAME: ${REACT_NATIVE_PACKAGER_HOSTNAME:-}
+    volumes:
+      - ./src:/app/src

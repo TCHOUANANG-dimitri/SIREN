@@ -4,13 +4,14 @@ from sqlalchemy import String, Boolean, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from geoalchemy2 import Geometry
 from app.core.database import Base
+from app.models.types import UUIDStr
 
 
 class CommunityReport(Base):
     __tablename__ = "community_reports"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    author_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    id: Mapped[str] = mapped_column(UUIDStr, primary_key=True, default=lambda: str(uuid.uuid4()))
+    author_id: Mapped[str] = mapped_column(UUIDStr, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     secteur: Mapped[str] = mapped_column(String(100), nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     geom: Mapped[str] = mapped_column(Geometry("Point", srid=4326), nullable=True)

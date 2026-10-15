@@ -55,7 +55,10 @@
       "password_incorrect": "Mot de passe incorrect.",
       "password_weak": "Mot de passe trop faible : 10 caractères minimum, avec majuscule, minuscule, chiffre et symbole.",
       "email_taken": "Un compte existe déjà avec cet email.",
-      "invalid_credentials": "Email ou mot de passe incorrect."
+      "invalid_credentials": "Email ou mot de passe incorrect.",
+      "place_limit": "Limite atteinte : {{max}} lieux maximum par enfant. Supprimez un lieu pour en ajouter un autre.",
+      "geofence_limit": "Limite atteinte : {{max}} périmètres maximum par enfant. Supprimez un périmètre pour en ajouter un autre.",
+      "schedule_invalid": "L'heure d'arrivée doit précéder l'heure de sortie."
     }
   }
 }

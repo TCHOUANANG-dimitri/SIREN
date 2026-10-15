@@ -4,6 +4,7 @@ from sqlalchemy import String, SmallInteger, DateTime, ForeignKey, JSON, Enum as
 from sqlalchemy.orm import Mapped, mapped_column
 from geoalchemy2 import Geometry
 from app.core.database import Base
+from app.models.types import UUIDStr, pg_enum
 
 
 class AlertLevel(str, enum.Enum):
@@ -21,12 +22,12 @@ class AlertStatus(str, enum.Enum):
 class Alert(Base):
     __tablename__ = "alerts"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    child_id: Mapped[str] = mapped_column(String(36), ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
-    level: Mapped[AlertLevel] = mapped_column(SAEnum(AlertLevel), nullable=False)
+    id: Mapped[str] = mapped_column(UUIDStr, primary_key=True, default=lambda: str(uuid.uuid4()))
+    child_id: Mapped[str] = mapped_column(UUIDStr, ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    level: Mapped[AlertLevel] = mapped_column(pg_enum(AlertLevel, "alert_level"), nullable=False)
     score: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     reasons: Mapped[dict] = mapped_column(JSON, nullable=True)
     geom: Mapped[str] = mapped_column(Geometry("Point", srid=4326), nullable=True)
-    status: Mapped[AlertStatus] = mapped_column(SAEnum(AlertStatus), default=AlertStatus.ACTIVE)
+    status: Mapped[AlertStatus] = mapped_column(pg_enum(AlertStatus, "alert_status"), default=AlertStatus.ACTIVE)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     resolved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)

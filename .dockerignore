@@ -1,0 +1,26 @@
+# Contexte de Dockerfile.app (application mobile)
+.git
+.github
+.vscode
+.idea
+node_modules
+android
+ios
+.expo
+dist
+web-build
+coverage
+*.log
+*.apk
+*.aab
+*.keystore
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+google-services.json
+GoogleService-Info.plist
+# Serveur et données : hors image de l'application
+server
+data
+docs/*.docx

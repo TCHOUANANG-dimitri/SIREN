@@ -10,6 +10,7 @@ import { useChildren } from '@/api/hooks/useChildren';
 import { formatRelativeTime } from '@/utils/format';
 import type { Alert } from '@/models/entities';
 import { useTranslation } from 'react-i18next';
+import { reasonLabel } from '@/features/risk/reasons';
 
 export default function AlertsScreen() {
   const styles = useStyles();
@@ -58,7 +59,7 @@ export default function AlertsScreen() {
             style={[styles.chip, levelFilter === level && styles.chipActive]}
           >
             <Text style={[styles.chipText, levelFilter === level && styles.chipTextActive]}>
-              {level === 'prealerte' ? 'Pré-alerte' : 'Urgence'}
+              {t(`riskState.${level}`)}
             </Text>
           </Pressable>
         ))}
@@ -83,7 +84,7 @@ export default function AlertsScreen() {
                 </View>
                 <Text style={styles.childName}>{childName(item.childId)}</Text>
                 <Text style={styles.reason} numberOfLines={1}>
-                  {item.reasons.join(', ')}
+                  {item.reasons.map((r) => reasonLabel(t, r)).join(' · ')}
                 </Text>
               </Card>
             </Pressable>

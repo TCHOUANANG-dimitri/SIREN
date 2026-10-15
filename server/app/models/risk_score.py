@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import String, Integer, BigInteger, SmallInteger, DateTime, ForeignKey, JSON, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
+from app.models.types import UUIDStr, pg_enum
 
 
 class RiskState(str, enum.Enum):
@@ -16,9 +17,9 @@ class RiskScore(Base):
     __tablename__ = "risk_scores"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    child_id: Mapped[str] = mapped_column(String(36), ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    child_id: Mapped[str] = mapped_column(UUIDStr, ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
     score: Mapped[int] = mapped_column(SmallInteger, nullable=False)
-    state: Mapped[RiskState] = mapped_column(SAEnum(RiskState), default=RiskState.VEILLE)
+    state: Mapped[RiskState] = mapped_column(pg_enum(RiskState, "risk_state"), default=RiskState.VEILLE)
     confidence: Mapped[int] = mapped_column(SmallInteger, default=100)
     reasons: Mapped[dict] = mapped_column(JSON, nullable=True)
     sub_scores: Mapped[dict] = mapped_column(JSON, nullable=True)

@@ -76,6 +76,9 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        # Le même .env sert à Docker Compose (POSTGRES_*, SIREN_API_PORT…) : ces clés
+        # ne concernent pas l'application et ne doivent pas empêcher son démarrage.
+        extra = "ignore"
 
 
     def unsafe_production_settings(self) -> List[str]:

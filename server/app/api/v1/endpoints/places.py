@@ -6,10 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.authz import get_child_access
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.core.errors import api_error
 from app.core.geo import point_lat_lon
 from app.crud.place import crud_place, crud_place_schedule
 from app.models.user import User
-from app.rules.declarative import MAX_PLACES_PER_CHILD
+from app.rules.declarative import DEFAULT_PLACE_RADIUS_M, MAX_PLACES_PER_CHILD
 from app.schemas.child import ScheduleIn
 
 router = APIRouter()
@@ -19,7 +20,7 @@ class PlaceCreate(BaseModel):
     nom: str = Field(..., min_length=1, max_length=150)
     lat: float = Field(..., ge=-90, le=90)
     lon: float = Field(..., ge=-180, le=180)
-    radiusM: float = Field(50, ge=10, le=5000)
+    radiusM: float = Field(DEFAULT_PLACE_RADIUS_M, ge=10, le=5000)
     schedule: ScheduleIn | None = None
     icon: str | None = None
 
@@ -68,7 +69,7 @@ async def create_place(child_id: str, req: PlaceCreate, current_user: User = Dep
     access.require_principal()
     existing = await crud_place.list_by_child(db, child_id)
     if len(existing) >= MAX_PLACES_PER_CHILD:
-        raise HTTPException(status_code=400, detail=f"Limite de {MAX_PLACES_PER_CHILD} lieux par enfant atteinte")
+        raise api_error(400, "place_limit", f"Limite de {MAX_PLACES_PER_CHILD} lieux par enfant atteinte", {"max": MAX_PLACES_PER_CHILD})
     place = await crud_place.create(db, {
         "child_id": child_id,
         "nom": req.nom.strip(),
@@ -76,11 +77,15 @@ async def create_place(child_id: str, req: PlaceCreate, current_user: User = Dep
         "radius_m": req.radiusM,
     })
     if req.schedule:
+        # Colonnes TIME (et non texte) ; un créneau de lieu ne passe pas minuit
+        # (contrainte ck_place_schedule_hours) — le sommeil, lui, est géré sur l'enfant.
+        if req.schedule.start_time() >= req.schedule.end_time():
+            raise api_error(422, "schedule_invalid", "L'heure de début doit précéder l'heure de fin")
         await crud_place_schedule.create(db, {
             "place_id": place.id,
             "jours": req.schedule.jours,
-            "heure_debut": req.schedule.heureDebut,
-            "heure_fin": req.schedule.heureFin,
+            "heure_debut": req.schedule.start_time(),
+            "heure_fin": req.schedule.end_time(),
         })
     await db.refresh(place, ["schedules"])
     return _place_dict(place, fallback=(req.lat, req.lon))

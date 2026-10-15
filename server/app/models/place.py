@@ -4,6 +4,7 @@ from sqlalchemy import String, Integer, REAL, DateTime, ForeignKey, Enum as SAEn
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from geoalchemy2 import Geometry
 from app.core.database import Base
+from app.models.types import UUIDStr, pg_enum
 
 
 class PlaceSource(str, enum.Enum):
@@ -14,12 +15,12 @@ class PlaceSource(str, enum.Enum):
 class Place(Base):
     __tablename__ = "places"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    child_id: Mapped[str] = mapped_column(String(36), ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[str] = mapped_column(UUIDStr, primary_key=True, default=lambda: str(uuid.uuid4()))
+    child_id: Mapped[str] = mapped_column(UUIDStr, ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
     nom: Mapped[str] = mapped_column(String(150), nullable=False)
     geom: Mapped[str] = mapped_column(Geometry("Point", srid=4326), nullable=False)
     radius_m: Mapped[float] = mapped_column(REAL, default=100)
-    source: Mapped[PlaceSource] = mapped_column(SAEnum(PlaceSource), default=PlaceSource.DECLARE)
+    source: Mapped[PlaceSource] = mapped_column(pg_enum(PlaceSource, "place_source"), default=PlaceSource.DECLARE)
     visit_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
@@ -31,8 +32,8 @@ class Place(Base):
 class PlaceSchedule(Base):
     __tablename__ = "place_schedules"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    place_id: Mapped[str] = mapped_column(String(36), ForeignKey("places.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[str] = mapped_column(UUIDStr, primary_key=True, default=lambda: str(uuid.uuid4()))
+    place_id: Mapped[str] = mapped_column(UUIDStr, ForeignKey("places.id", ondelete="CASCADE"), nullable=False)
     jours: Mapped[list] = mapped_column(ARRAY(Integer), nullable=False)
     heure_debut: Mapped[str] = mapped_column(Time, nullable=False)
     heure_fin: Mapped[str] = mapped_column(Time, nullable=False)

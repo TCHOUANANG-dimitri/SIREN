@@ -13,6 +13,8 @@ import { usePatchChildContext } from '@/api/hooks/useChildren';
 import { useCreateEmergencyContact } from '@/api/hooks/useEmergencyContacts';
 import { useLocationStore } from '@/stores/locationStore';
 import { useTranslation } from 'react-i18next';
+import { toUserMessage } from '@/api/errors';
+import { CONFIG_LIMITS, DEFAULT_PLACE_RADIUS_M } from '@/config/business';
 
 
 const DAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
@@ -53,9 +55,16 @@ export default function ContextWizardScreen() {
   const [newPlaceName, setNewPlaceName] = useState('');
   const [newPlaceError, setNewPlaceError] = useState('');
   const [newPlaceAddress, setNewPlaceAddress] = useState('');
-  const [newPlacePoint, setNewPlacePoint] = useState<PointRadius>({ ...initialCenter, radiusM: 60 });
+  const [newPlacePoint, setNewPlacePoint] = useState<PointRadius>({ ...initialCenter, radiusM: DEFAULT_PLACE_RADIUS_M });
 
   const [perimeter, setPerimeter] = useState<PointRadius>({ ...initialCenter, radiusM: 1200 });
+  // Lieux à éviter (règle R1 : zone interdite) — 2 ou 3 conseillés.
+  const [forbidden, setForbidden] = useState<FrequentPlace[]>([]);
+  const [forbiddenName, setForbiddenName] = useState('');
+  const [forbiddenError, setForbiddenError] = useState('');
+  const [forbiddenAddress, setForbiddenAddress] = useState('');
+  const [forbiddenPoint, setForbiddenPoint] = useState<PointRadius>({ ...initialCenter, radiusM: 200 });
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [sleepStart, setSleepStart] = useState('22:00');
   const [sleepEnd, setSleepEnd] = useState('06:00');
@@ -95,6 +104,27 @@ export default function ContextWizardScreen() {
     setNewPlaceAddress('');
   }
 
+  function addForbidden() {
+    const nom = forbiddenName.trim();
+    if (!nom) {
+      setForbiddenError(t('wizard.placeNameRequired'));
+      return;
+    }
+    if (forbidden.some((p) => p.nom.toLocaleLowerCase() === nom.toLocaleLowerCase())) {
+      setForbiddenError(t('wizard.placeNameDuplicate'));
+      return;
+    }
+    // 1 périmètre de vie + lieux à éviter ≤ plafond serveur de périmètres.
+    if (forbidden.length + 1 >= CONFIG_LIMITS.geofencesPerChild) {
+      setForbiddenError(t('apiErrors.reasons.geofence_limit', { max: CONFIG_LIMITS.geofencesPerChild }));
+      return;
+    }
+    setForbidden((list) => [...list, { nom, ...forbiddenPoint }]);
+    setForbiddenName('');
+    setForbiddenError('');
+    setForbiddenAddress('');
+  }
+
   function addContact() {
     if (!contactName.trim() || !contactPhone.trim()) return;
     setContacts((list) => [...list, { nom: contactName.trim(), telephone: contactPhone.trim() }]);
@@ -103,11 +133,18 @@ export default function ContextWizardScreen() {
   }
 
   async function saveAll() {
-    if (!childId) return;
+    if (!childId || saving) return;
     setSaving(true);
+    setSaveError(null);
     try {
       await createPlace.mutateAsync({ nom: homeAddress || t('wizard.defaultHomeName'), ...home, icon: 'maison' });
       if (schoolAddress.trim()) {
+        // Même règle que la base (ck_place_schedule_hours) : vérifiée avant tout envoi.
+        if (schoolStart >= schoolEnd) {
+          setSaveError(t('apiErrors.reasons.schedule_invalid'));
+          setStep(1);
+          return;
+        }
         await createPlace.mutateAsync({
           nom: schoolAddress || t('wizard.defaultSchoolName'),
           ...school,
@@ -127,12 +164,26 @@ export default function ContextWizardScreen() {
         notifyOnEnter: true,
         notifyOnExit: true,
       });
+      for (const zone of forbidden) {
+        await createGeofence.mutateAsync({
+          nom: zone.nom,
+          type: 'interdit',
+          lat: zone.lat,
+          lon: zone.lon,
+          radiusM: zone.radiusM,
+          notifyOnEnter: true,
+          notifyOnExit: false,
+        });
+      }
       await patchContext.mutateAsync({ sleepSchedule: { jours: [0, 1, 2, 3, 4, 5, 6], heureDebut: sleepStart, heureFin: sleepEnd } });
       for (const contact of contacts) {
         await createContact.mutateAsync(contact);
       }
       setSaved(true);
       setTimeout(() => router.replace('/(main)/(tabs)'), 1400);
+    } catch (e) {
+      // Ce qui a déjà été créé est conservé côté serveur ; le parent peut compléter ensuite.
+      setSaveError(toUserMessage(e));
     } finally {
       setSaving(false);
     }
@@ -268,6 +319,51 @@ export default function ContextWizardScreen() {
               height={240}
               onChange={(v) => setPerimeter({ lat: v.lat, lon: v.lon, radiusM: v.radiusM })}
             />
+
+            <Text style={[styles.title, styles.sectionGap]}>{t('wizard.forbiddenTitle')}</Text>
+            <Text style={styles.subtitle}>{t('wizard.forbiddenSubtitle')}</Text>
+            {forbidden.map((zone, i) => (
+              <Card key={`${zone.nom}-${i}`} style={styles.placeCard}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.placeName}>{zone.nom}</Text>
+                  <Text style={styles.placeCoords}>{t('wizard.forbiddenRadius', { radius: zone.radiusM })}</Text>
+                </View>
+                <Pressable
+                  onPress={() => setForbidden((list) => list.filter((_, idx) => idx !== i))}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('wizard.removeItem', { name: zone.nom })}
+                >
+                  <Trash2 size={18} color={colors.urgence} />
+                </Pressable>
+              </Card>
+            ))}
+            <TextField
+              label={t('wizard.forbiddenName')}
+              value={forbiddenName}
+              onChangeText={(text) => {
+                setForbiddenName(text);
+                if (text.trim()) setForbiddenError('');
+              }}
+              placeholder={t('wizard.forbiddenPlaceholder')}
+              error={forbiddenError}
+            />
+            <AddressMapField
+              label={t('wizard.addressOrPosition')}
+              placeholder={t('wizard.searchAddress')}
+              address={forbiddenAddress}
+              onAddressChange={setForbiddenAddress}
+              point={forbiddenPoint}
+              onPointChange={setForbiddenPoint}
+              minRadius={50}
+              maxRadius={1000}
+            />
+            <Button
+              label={t('wizard.addForbidden')}
+              variant="secondary"
+              icon={<Plus size={16} color={colors.accent} />}
+              onPress={addForbidden}
+            />
           </View>
         )}
 
@@ -307,6 +403,7 @@ export default function ContextWizardScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
+        {saveError && <Banner kind="error" message={saveError} />}
         <Button
           label={isLastStep ? t('wizard.saveAndContinue') : t('wizard.next')}
           onPress={isLastStep ? saveAll : () => setStep((s) => s + 1)}
@@ -344,6 +441,7 @@ const useStyles = makeStyles((colors) => ({
   placeCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
   placeName: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
   placeCoords: { ...typography.caption, color: colors.muted, marginTop: 2 },
+  sectionGap: { marginTop: spacing.xxl },
   contactPhone: { ...typography.caption, color: colors.muted },
   addRow: { marginBottom: spacing.sm },
   footer: { padding: spacing.lg, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },

@@ -101,12 +101,23 @@ async def create_share(child_id: str, req: ShareCreate, current_user: User = Dep
         raise api_error(409, "already_shared", "Partage déjà existant")
     check_secondary_quota(existing)
 
-    share = await crud_share.create(db, {
-        "child_id": child_id,
-        "user_id": target_user.id,
-        "permissions": sanitize_permissions(req.permissions),
-        "status": "invite",
-    })
+    # Une seule ligne par (enfant, personne) — contrainte uq_secondary_access :
+    # ré-inviter une personne révoquée réactive sa ligne au lieu d'en créer une.
+    previous = next((s for s in existing if s.user_id == target_user.id), None)
+    if previous is not None:
+        share = await crud_share.update(db, previous, {
+            "permissions": sanitize_permissions(req.permissions),
+            "status": "invite",
+            "invited_at": datetime.now(timezone.utc),
+        })
+        share.responded_at = None
+    else:
+        share = await crud_share.create(db, {
+            "child_id": child_id,
+            "user_id": target_user.id,
+            "permissions": sanitize_permissions(req.permissions),
+            "status": "invite",
+        })
     notified = await _notify_invitee(db, target_user, current_user, access.child)
     return {**(await _share_dict(db, share)), "notified": notified}
 

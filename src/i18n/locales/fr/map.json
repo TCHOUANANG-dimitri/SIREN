@@ -32,8 +32,8 @@
   "geofences": {
     "title": "Périmètres",
     "empty": "Aucun périmètre. Dessinez une zone autorisée.",
-    "allowed": "Autorisé",
-    "forbidden": "Interdit",
+    "allowed": "Périmètre de vie",
+    "forbidden": "Lieu à éviter",
     "namePlaceholder": "Quartier, trajet école…",
     "notifyOnEnter": "Notifier à l'entrée",
     "notifyOnExit": "Notifier à la sortie",
@@ -41,6 +41,8 @@
     "newTitle": "Nouveau périmètre",
     "editTitle": "Modifier le périmètre",
     "deleteTitle": "Supprimer le périmètre ?",
-    "deleteConfirm": "« {{name}} » sera supprimé. Les alertes liées à ce périmètre s'arrêteront."
+    "deleteConfirm": "« {{name}} » sera supprimé. Les alertes liées à ce périmètre s'arrêteront.",
+    "subtitle": "Périmètre de vie (autorisé) et lieux à éviter (interdits). Cercles uniquement.",
+    "notificationsOn": "notifications actives"
   }
 }

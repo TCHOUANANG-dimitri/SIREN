@@ -1,3 +1,21 @@
+# SIREN — pile serveur (API, worker, beat, PostgreSQL/PostGIS, Redis, Caddy).
+# Configuration : copier .env.docker.example en .env (aucun secret réel dans Git).
+#   docker compose up -d --build
+# Développement (code monté, ports db/redis publiés en local) :
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+
+# Connexions internes construites à partir des mêmes variables que la base :
+# impossible d'avoir un mot de passe différent entre la base et l'API.
+x-runtime-env: &runtime-env
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-siren}:${POSTGRES_PASSWORD:?définir POSTGRES_PASSWORD dans .env}@db:5432/${POSTGRES_DB:-siren}
+  DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-siren}:${POSTGRES_PASSWORD:?définir POSTGRES_PASSWORD dans .env}@db:5432/${POSTGRES_DB:-siren}
+  REDIS_URL: redis://redis:6379/0
+  REDIS_ENABLED: "true"
+  CELERY_BROKER_URL: redis://redis:6379/1
+  CELERY_RESULT_BACKEND: redis://redis:6379/2
+
 x-logging: &default-logging
   driver: json-file
   options:
@@ -10,8 +28,12 @@ services:
       context: .
       dockerfile: Dockerfile
     image: siren-migration:local
-    command: python -m alembic upgrade head
+    # Migrations SQL versionnées (server/migrations/NNN_*.sql), suivies dans schema_migrations.
+    # Base neuve : déjà initialisée par data/schema.sql → rien à rejouer.
+    command: python migrations/apply.py
     env_file: .env
+    environment: *runtime-env
+    restart: "no"
     logging: *default-logging
     depends_on:
       db:
@@ -27,9 +49,7 @@ services:
     ports:
       - "${SIREN_API_PORT:-8000}:8000"
     env_file: .env
-    environment:
-      PYTHONUNBUFFERED: "1"
-      PYTHONDONTWRITEBYTECODE: "1"
+    environment: *runtime-env
     logging: *default-logging
     depends_on:
       db:
@@ -57,17 +77,18 @@ services:
       dockerfile: Dockerfile.worker
     image: siren-worker:local
     env_file: .env
-    environment:
-      PYTHONUNBUFFERED: "1"
-      PYTHONDONTWRITEBYTECODE: "1"
+    environment: *runtime-env
     logging: *default-logging
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migration:
+        condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import app; print('ok')\" || exit 1"]
+      # Le worker répond-il réellement au broker ?
+      test: ["CMD-SHELL", "celery -A app.tasks.celery_app inspect ping -d celery@$$HOSTNAME --timeout 5 | grep -q pong"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -84,15 +105,15 @@ services:
     image: siren-beat:local
     command: celery -A app.tasks.celery_app beat --loglevel=info --schedule=/var/lib/celery/beat.schedule
     env_file: .env
-    environment:
-      PYTHONUNBUFFERED: "1"
-      PYTHONDONTWRITEBYTECODE: "1"
+    environment: *runtime-env
     logging: *default-logging
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migration:
+        condition: service_completed_successfully
     volumes:
       - beat_data:/var/lib/celery
     restart: unless-stopped
@@ -102,17 +123,18 @@ services:
   db:
     image: postgis/postgis:15-3.4
     environment:
-      POSTGRES_USER: siren
-      POSTGRES_PASSWORD: siren_password
-      POSTGRES_DB: siren
-    ports:
-      - "127.0.0.1:5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-siren}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?définir POSTGRES_PASSWORD dans .env}
+      POSTGRES_DB: ${POSTGRES_DB:-siren}
     logging: *default-logging
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ./db_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      # Schéma reconstitué (data/SCHEMA.md), exécuté UNIQUEMENT sur un volume vide.
+      - ../data/schema.sql:/docker-entrypoint-initdb.d/99-siren-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U siren -d siren"]
+      # Par TCP : pendant l'initialisation (scripts initdb), PostgreSQL n'écoute que sur
+      # le socket local puis redémarre — un test par socket le déclarerait prêt trop tôt.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -123,8 +145,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "127.0.0.1:6379:6379"
     logging: *default-logging
     volumes:
       - redis_data:/data

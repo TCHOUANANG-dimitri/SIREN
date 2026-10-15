@@ -1,5 +1,6 @@
 import { getDb, mutateDb, genId } from '../db';
-import { ApiError } from '../../errors';
+import { ApiError, reasonError } from '../../errors';
+import { CONFIG_LIMITS } from '@/config/business';
 import { simulateLatency } from '../helpers';
 import { assertChildAccess, assertPrincipal, resolveCurrentUser } from '../session';
 import type { Geofence } from '@/models/entities';
@@ -21,6 +22,9 @@ export async function createGeofence(
   const user = resolveCurrentUser(token);
   assertChildAccess(childId, user);
   assertPrincipal(user); // "Définir/modifier périmètres" réservé au principal — CDC §7.2
+  if (getDb().geofences.filter((g) => g.childId === childId).length >= CONFIG_LIMITS.geofencesPerChild) {
+    throw reasonError('geofence_limit', 400, { max: CONFIG_LIMITS.geofencesPerChild });
+  }
   const geofence: Geofence = { id: genId('geo'), childId, ...input };
   mutateDb((d) => {
     d.geofences.push(geofence);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Polyline } from 'react-native-svg';
 import { Info } from 'lucide-react-native';
@@ -6,7 +6,9 @@ import { Card, ScoreGauge, Skeleton } from '@/components';
 import { fontFamily, radii, riskColorsFor, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useRisk, useRiskHistory } from '@/api/hooks/useRisk';
 import { useTranslation } from 'react-i18next';
-import { explainReason } from '@/features/risk/reasons';
+import { explainReason, reasonLabel, zoneNamesOf, type ReasonContext } from '@/features/risk/reasons';
+import { useGeofences } from '@/api/hooks/useGeofences';
+import { FUSION_WEIGHTS } from '@/config/business';
 import { formatRelativeTime } from '@/utils/format';
 
 
@@ -29,12 +31,12 @@ function Sparkline({ values }: { values: number[] }) {
  * Une raison vient TOUJOURS du serveur / IA ; l'app ne fabrique pas d'explication.
  * Si le code est connu (ex. « contexte:nuit »), un texte d'aide est proposé au tap.
  */
-function ReasonRow({ reason }: { reason: string }) {
+function ReasonRow({ reason, context }: { reason: string; context: ReasonContext }) {
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const explanation = explainReason(t, reason);
+  const explanation = explainReason(t, reason, context);
   return (
     <Pressable
       style={styles.reasonRow}
@@ -45,7 +47,7 @@ function ReasonRow({ reason }: { reason: string }) {
     >
       <Info size={14} color={colors.muted} />
       <View style={{ flex: 1 }}>
-        <Text style={styles.reasonText}>{explanation?.label ?? reason}</Text>
+        <Text style={styles.reasonText}>{explanation?.label ?? reasonLabel(t, reason)}</Text>
         {open && explanation && <Text style={styles.confidenceHint}>{explanation.detail}</Text>}
       </View>
     </Pressable>
@@ -58,6 +60,8 @@ export function RiskTab({ childId }: { childId: string }) {
   const { t } = useTranslation();
   const { data: risk, isLoading } = useRisk(childId);
   const { data: history } = useRiskHistory(childId);
+  const { data: geofences } = useGeofences(childId);
+  const reasonContext = useMemo(() => ({ zoneNames: zoneNamesOf(geofences) }), [geofences]);
 
   if (isLoading || !risk) {
     return (
@@ -79,7 +83,7 @@ export function RiskTab({ childId }: { childId: string }) {
         <Text style={styles.cardTitle}>{t('childTabs.reasons')}</Text>
         {risk.reasons.length === 0 && <Text style={styles.reasonText}>{t('risk.noReason')}</Text>}
         {risk.reasons.map((reason) => (
-          <ReasonRow key={reason} reason={reason} />
+          <ReasonRow key={reason} reason={reason} context={reasonContext} />
         ))}
         {risk.timestamp && <Text style={styles.confidenceHint}>{t('risk.computedAt', { when: formatRelativeTime(risk.timestamp) })}</Text>}
       </Card>
@@ -88,7 +92,14 @@ export function RiskTab({ childId }: { childId: string }) {
         <Text style={styles.cardTitle}>{t('childTabs.subScoreBreakdown')}</Text>
         {subScoreEntries.map(([key, value]) => (
           <View key={key} style={styles.subScoreRow}>
-            <Text style={styles.subScoreLabel}>{t(`risk.subScore.${key}`)}</Text>
+            <View style={styles.subScoreLabelBox}>
+              <Text style={styles.subScoreLabel}>{t(`risk.subScore.${key}`)}</Text>
+              {key in FUSION_WEIGHTS && (
+                <Text style={styles.subScoreWeight}>
+                  {t('risk.weight', { percent: Math.round(FUSION_WEIGHTS[key as keyof typeof FUSION_WEIGHTS] * 100) })}
+                </Text>
+              )}
+            </View>
             <View style={styles.subScoreTrack}>
               <View
                 style={[
@@ -134,6 +145,8 @@ const useStyles = makeStyles((colors) => ({
   reasonText: { ...typography.body, color: colors.slate },
   subScoreRow: { marginBottom: spacing.sm },
   subScoreLabel: { ...typography.caption, color: colors.muted, marginBottom: spacing.xs },
+  subScoreLabelBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  subScoreWeight: { ...typography.label, color: colors.muted, marginBottom: spacing.xs },
   subScoreTrack: { height: 8, borderRadius: radii.sm, backgroundColor: colors.border, overflow: 'hidden' },
   subScoreFill: { height: 8, borderRadius: radii.sm },
   confidenceHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },

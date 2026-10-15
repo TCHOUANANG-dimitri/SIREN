@@ -32,8 +32,8 @@
   "geofences": {
     "title": "Zones",
     "empty": "No zones yet. Draw an allowed area.",
-    "allowed": "Allowed",
-    "forbidden": "Forbidden",
+    "allowed": "Everyday zone",
+    "forbidden": "Place to avoid",
     "namePlaceholder": "Neighbourhood, school route…",
     "notifyOnEnter": "Notify on entry",
     "notifyOnExit": "Notify on exit",
@@ -41,6 +41,8 @@
     "newTitle": "New zone",
     "editTitle": "Edit zone",
     "deleteTitle": "Delete this zone?",
-    "deleteConfirm": "\"{{name}}\" will be deleted. Alerts linked to this zone will stop."
+    "deleteConfirm": "\"{{name}}\" will be deleted. Alerts linked to this zone will stop.",
+    "subtitle": "Everyday zone (allowed) and places to avoid (forbidden). Circles only.",
+    "notificationsOn": "notifications on"
   }
 }

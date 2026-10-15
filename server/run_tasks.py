@@ -9,6 +9,7 @@ Usage :
     source /home/USER/virtualenv/<nom>/<VERSION>/bin/activate && cd <APP_ROOT>
     python run_tasks.py retrain   # réentraînement nocturne (tous les enfants éligibles)
     python run_tasks.py purge     # purge des positions > POSITION_RETENTION_DAYS
+    python run_tasks.py partitions  # partitions mensuelles de positions (le 1er du mois)
 """
 
 import argparse
@@ -31,6 +32,8 @@ TASKS = {
     "retrain": ("app.tasks.retrain", "_retrain_all_children_async"),
     # équivalent : celery beat -> "purge-old-positions" (dimanche à 04:00)
     "purge": ("app.tasks.retrain", "_purge_async"),
+    # équivalent : celery beat -> "ensure-positions-partitions" (le 1er du mois à 02:30)
+    "partitions": ("app.tasks.retrain", "_ensure_partitions_async"),
 }
 
 

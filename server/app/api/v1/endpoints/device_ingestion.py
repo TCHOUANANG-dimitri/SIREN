@@ -173,7 +173,9 @@ async def get_pack(deviceId: str, key: str, have: int | None = None, db: AsyncSe
 
 
 # Types d'événements reconnus — à figer avec le pôle Dispositif (CDC Dispositif §2).
-KNOWN_EVENTS = {"removal", "power_on", "power_off", "low_battery", "charging"}
+from app.models.device_event import DEVICE_EVENT_CODES, DeviceEventType  # noqa: E402
+
+KNOWN_EVENTS = set(DEVICE_EVENT_CODES)
 
 
 @router.post("/v1/event")
@@ -183,7 +185,11 @@ async def ingest_event(req: DeviceEventRequest, db: AsyncSession = Depends(get_d
 
     if req.type not in KNOWN_EVENTS:
         logger.warning("Événement dispositif inconnu « %s » (%s)", req.type, device.device_id)
-    await crud_device_event.create(db, {"device_id": req.deviceId, "event_type": req.type})
+    # Le type PostgreSQL device_event_type n'accepte que des valeurs connues :
+    # un code inconnu est conservé dans payload sous « autre » (jamais perdu, jamais d'erreur 500).
+    stored = DEVICE_EVENT_CODES.get(req.type, DeviceEventType.AUTRE)
+    payload = None if req.type in DEVICE_EVENT_CODES else {"type": req.type[:50]}
+    await crud_device_event.create(db, {"device_id": req.deviceId, "event_type": stored, "payload": payload})
     if req.type == "power_off":
         await crud_device.update(db, device, {"online": False})
     if req.type == "low_battery":

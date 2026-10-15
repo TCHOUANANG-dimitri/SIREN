@@ -7,8 +7,11 @@ l'application est le poste de commande du parent (carte, alertes, urgence, parta
 | Dossier | Contenu |
 |---|---|
 | `src/` | Application Expo (React Native, TypeScript, Expo Router) |
-| `server/` | API FastAPI + PostgreSQL/PostGIS — conteneurisée : `cd server && docker compose up -d --build` (voir `server/README.md`) |
-| `docs/` | Contrats d'interface, contradictions entre CDC, traçabilité, risques, rapport |
+| `server/` | API FastAPI, worker et beat Celery (voir `server/README.md`) |
+| `data/` | Base reconstituée : `schema.sql` (PostgreSQL/PostGIS) et [`SCHEMA.md`](data/SCHEMA.md) ; sauvegardes hors Git |
+| `scripts/db/` | Régénération reproductible du schéma (`rebuild-schema.sh`) |
+| `docs/` | Contrats d'interface, contradictions entre CDC, traçabilité, risques, rapports |
+| `RAPPORT_SERVICES_ET_COUTS_SIREN.docx` | Services gratuits/payants, fonctionnalités manquantes, coûts (2 pages) |
 
 ## Démarrer
 
@@ -20,11 +23,25 @@ npx expo run:android      # development build (MapLibre et NetInfo sont natifs)
 
 Mode live (serveur réel) : voir [`docs/INTEGRATION-SERVEUR.md`](docs/INTEGRATION-SERVEUR.md).
 
+## Conteneurs (Docker Compose)
+
+```bash
+cp server/.env.docker.example server/.env   # remplacer chaque « a-remplacer » (aucun secret dans Git)
+docker compose up -d --build                # API, worker, beat, PostgreSQL/PostGIS, Redis, Caddy
+curl http://localhost:8000/health
+docker compose --profile mobile run --rm mobile-checks   # lint, types, i18n, tests de l'application
+docker compose --profile mobile up mobile-dev            # Metro pour Expo Go (port 8081)
+```
+
+La base est initialisée depuis `data/schema.sql` au premier démarrage, puis le
+service `migration` applique les migrations manquantes (`server/migrations/apply.py`).
+
 ## Qualité
 
 ```bash
-npm run lint && npm run typecheck && npm test   # application
-cd server && python -m pytest                   # serveur (sans base ni Redis)
+npm run lint && npm run typecheck && npm run i18n:check && npm test   # application
+cd server && python -m pytest                                          # serveur (sans base ni Redis)
+# serveur sur vraie base PostGIS : voir l'en-tête de server/tests/test_database.py
 ```
 
 ## Documentation

@@ -35,7 +35,10 @@ Les fichiers d'adaptation ajoutés au dépôt :
 
 1. Créer un projet sur [supabase.com](https://supabase.com) (gratuit).
 2. Activer **PostGIS** : Dashboard → *Database* → *Extensions* → activer `postgis`.
-3. Appliquer le schéma : *SQL Editor* → coller le contenu de `db_schema.sql` → *Run*.
+3. Appliquer le schéma :
+   - projet **neuf** : *SQL Editor* → coller le contenu de `db_schema.sql` (= `data/schema.sql`) → *Run* ;
+   - projet **existant** : `DATABASE_URL=… python migrations/apply.py` (migrations 001 → 003, sans perte de données).
+   Créer ensuite le cron mensuel `python run_tasks.py partitions` (partitions de positions).
 4. Récupérer l'URL de connexion : *Project Settings* → *Database* →
    *Connection string* (URI). Utiliser le **pooler** (`host:6543`) pour mutualisé :
    ```

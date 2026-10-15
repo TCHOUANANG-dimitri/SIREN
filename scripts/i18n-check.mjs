@@ -108,12 +108,14 @@ for (const key of allKeys) {
 // 4. Texte d'interface en dur (heuristique) : texte JSX et props textuelles littérales.
 const UI_PROPS = /\b(label|title|placeholder|message|accessibilityLabel|accessibilityHint|description|hint)=["']([^"'{}]*[A-Za-zÀ-ÿ]{3,}[^"'{}]*)["']/g;
 const JSX_TEXT = />\s*([A-Za-zÀ-ÿ][^<>{}\n]*[A-Za-zÀ-ÿ.!?])\s*</g;
+// Texte en dur dans une expression JSX : {cond ? 'Texte' : 'Autre'} ou {'Texte'}.
+const JSX_EXPR_TEXT = /[{?:]\s*['"]([A-ZÀ-Ý][a-zà-ÿ]+(?:[ -][A-Za-zÀ-ÿ'’]+)*)['"]\s*[}:]/g;
 const ALERT_TEXT = /Alert\.alert\(\s*['"`]([^'"`]*[A-Za-zÀ-ÿ]{3,}[^'"`]*)['"`]/g;
 const IGNORED = [/src\/api\/mock\//, /src\/legal\/content\//, /\.test\.tsx?$/];
 for (const file of files.filter((f) => f.endsWith('.tsx') && !IGNORED.some((re) => re.test(f)))) {
   const content = fs.readFileSync(file, 'utf8');
   const rel = path.relative(ROOT, file);
-  for (const re of [UI_PROPS, JSX_TEXT, ALERT_TEXT]) {
+  for (const re of [UI_PROPS, JSX_TEXT, JSX_EXPR_TEXT, ALERT_TEXT]) {
     for (const m of content.matchAll(re)) {
       const text = (m[2] ?? m[1]).trim();
       if (!text || /^[A-Z0-9_]+$/.test(text) || /^(Promise|Record|Array|Partial|Pick|Omit|Set|Map|ReturnType)$/.test(text)) continue;

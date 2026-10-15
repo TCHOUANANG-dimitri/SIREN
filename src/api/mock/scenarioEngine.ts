@@ -182,14 +182,17 @@ function buildReasons(params: {
   contexteNuit: boolean;
   horsPerimetre: boolean;
 }): string[] {
+  // Mêmes codes que le serveur (rules/declarative.py, rules/universal.py, fusion_score.py),
+  // traduits par src/features/risk/reasons.ts. La couche géographique n'émet pas de raison côté serveur.
   const reasons: string[] = [];
-  if (params.sGeo >= 0.5) reasons.push('Route inconnue');
-  if (params.sUniversel >= 0.5) reasons.push('Vitesse inhabituelle (véhicule)');
-  if (params.sDeclaratif >= 0.5) reasons.push('Sortie du périmètre autorisé');
-  if (params.sMouvement >= 0.5) reasons.push('Mouvement brusque détecté');
-  if (params.horsPerimetre) reasons.push('Hors du périmètre déclaré');
-  if (params.contexteNuit) reasons.push('Déplacement en heures de sommeil');
-  return reasons.length ? reasons : ['Activité normale'];
+  if (params.sDeclaratif >= 0.5) reasons.push('hors_perimetre:');
+  if (params.sUniversel >= 0.5) reasons.push(`vitesse_elevee:${Math.round(50 + params.sUniversel * 40)}km/h`);
+  if (params.sMouvement >= 0.5) reasons.push(`choc_modere:${(3 + params.sMouvement * 2).toFixed(1)}m/s2`);
+  const strong = [params.sUniversel, params.sDeclaratif, params.sGeo, params.sMouvement].filter((v) => v >= 0.6).length;
+  if (strong >= 2) reasons.push(`concordance:${strong} signaux actifs`);
+  if (params.contexteNuit) reasons.push('contexte:nuit');
+  if (params.horsPerimetre) reasons.push('contexte:hors_perimetre');
+  return reasons;
 }
 
 function tickChild(rt: ChildRuntime) {
@@ -335,7 +338,7 @@ function tickDisparition(rt: ChildRuntime) {
       ...db2.riskScores[rt.childId],
       state: 'disparition',
       score: 100,
-      reasons: ['Disparition confirmée — signal perdu'],
+      reasons: ['signal_perdu'],
       timestamp: nowIso(),
     };
   });

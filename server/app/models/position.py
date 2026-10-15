@@ -4,6 +4,7 @@ from sqlalchemy import String, Integer, BigInteger, SmallInteger, DateTime, Fore
 from sqlalchemy.orm import Mapped, mapped_column
 from geoalchemy2 import Geometry
 from app.core.database import Base
+from app.models.types import UUIDStr, pg_enum
 
 
 class FixQuality(str, enum.Enum):
@@ -17,12 +18,12 @@ class Position(Base):
     __table_args__ = {"schema": "public"}
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    child_id: Mapped[str] = mapped_column(String(36), ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    child_id: Mapped[str] = mapped_column(UUIDStr, ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
     geom: Mapped[str] = mapped_column(Geometry("Point", srid=4326), nullable=False)
     speed_kmh: Mapped[float] = mapped_column(REAL, nullable=True)
     accuracy_m: Mapped[float] = mapped_column(REAL, nullable=True)
     heading: Mapped[float] = mapped_column(REAL, nullable=True)
-    fix_quality: Mapped[FixQuality] = mapped_column(SAEnum(FixQuality), default=FixQuality.GPS_RECENT)
+    fix_quality: Mapped[FixQuality] = mapped_column(pg_enum(FixQuality, "fix_quality"), default=FixQuality.GPS_RECENT)
     battery: Mapped[int] = mapped_column(SmallInteger, nullable=True)
     imu_data: Mapped[dict] = mapped_column(JSON, nullable=True)
     ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

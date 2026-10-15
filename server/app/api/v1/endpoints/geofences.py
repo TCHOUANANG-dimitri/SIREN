@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.authz import get_child_access
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.core.errors import api_error
 from app.core.geo import point_lat_lon
 from app.crud.geofence import crud_geofence
 from app.models.user import User
@@ -77,7 +78,7 @@ async def create_geofence(child_id: str, req: GeofenceCreate, current_user: User
     access.require_principal()
     existing = await crud_geofence.list_by_child(db, child_id)
     if len(existing) >= MAX_GEOFENCES_PER_CHILD:
-        raise HTTPException(status_code=400, detail=f"Limite de {MAX_GEOFENCES_PER_CHILD} périmètres par enfant atteinte")
+        raise api_error(400, "geofence_limit", f"Limite de {MAX_GEOFENCES_PER_CHILD} périmètres par enfant atteinte", {"max": MAX_GEOFENCES_PER_CHILD})
     fence = await crud_geofence.create(db, {
         "child_id": child_id,
         "nom": req.nom.strip(),

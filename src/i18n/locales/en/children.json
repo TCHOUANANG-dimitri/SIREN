@@ -60,8 +60,8 @@
     "addressOrPosition": "Address or position",
     "searchAddress": "Search for an address…",
     "addPlace": "Add this place",
-    "perimeterTitle": "Allowed zone",
-    "perimeterSubtitle": "Neighbourhood or city: leaving this zone will be flagged.",
+    "perimeterTitle": "Everyday zone",
+    "perimeterSubtitle": "The neighbourhood or city where your child usually lives: leaving it will be flagged (unless they are at the expected place at the expected time).",
     "sleepTitle": "Sleep & emergency contacts",
     "sleepSubtitle": "Usual sleeping hours and people to notify.",
     "bedtime": "Bedtime",
@@ -82,7 +82,14 @@
     "defaultHomeName": "Home",
     "defaultSchoolName": "School",
     "saveAndContinue": "Save and continue",
-    "next": "Next →"
+    "next": "Next →",
+    "forbiddenTitle": "Places to avoid",
+    "forbiddenSubtitle": "Optional — 2 or 3 are enough (building site, night market, bus station…). If your child enters one, an alert is raised first.",
+    "forbiddenName": "Name of the place to avoid",
+    "forbiddenPlaceholder": "Building site, bus station…",
+    "forbiddenRadius": "Radius {{radius}} m",
+    "addForbidden": "Add this place to avoid",
+    "removeItem": "Remove {{name}}"
   },
   "childTabs": {
     "noPositionRight": "You don't have permission to see this child's location.",
@@ -143,7 +150,11 @@
       "score": "Score",
       "device": "Device"
     },
-    "placesLearning": "SIREN is still learning your child's usual places (confidence: {{percent}}%)."
+    "placesLearning": "SIREN is still learning your child's usual places (confidence: {{percent}}%).",
+    "placeLearned": "Learned",
+    "placeDeclared": "Declared",
+    "addPlaceHere": "The place will be created at your child's last known location, with a 100 m radius.",
+    "addPlaceNoPosition": "No known location yet: add this place from the protection setup."
   },
   "risk": {
     "subScore": {
@@ -168,8 +179,58 @@
       "hors_perimetre": {
         "label": "Context: outside zone",
         "detail": "The child is in a forbidden zone or away from an expected place at this time."
-      }
-    }
+      },
+      "zone_interdite": {
+        "label": "In a forbidden place",
+        "detail": "Your child is inside a place you declared to avoid (30 m GPS margin included). This rule always takes priority."
+      },
+      "zone_interdite_named": {
+        "label": "In a forbidden place: {{zone}}",
+        "detail": "Your child is inside \"{{zone}}\", which you declared to avoid (30 m GPS margin included). This rule always takes priority."
+      },
+      "sortie_perimetre": {
+        "label": "Outside the everyday zone",
+        "detail": "Your child has left every allowed zone. Being at the expected place at the expected time (a school outside the neighbourhood, for example) cancels this signal."
+      },
+      "sortie_perimetre_named": {
+        "label": "Outside the zone: {{zone}}",
+        "detail": "Your child has left \"{{zone}}\". Being at the expected place at the expected time (a school outside the neighbourhood, for example) cancels this signal."
+      },
+      "hors_horaire": {
+        "label": "Not at the expected place at this time",
+        "detail": "A schedule you declared (school, for example) is in progress and your child is not at that place."
+      },
+      "vitesse_critique": {
+        "label": "Very high speed: {{value}} km/h",
+        "detail": "Above 80 km/h, your child is most likely travelling in a vehicle."
+      },
+      "vitesse_elevee": {
+        "label": "High speed: {{value}} km/h",
+        "detail": "Above 50 km/h, the movement is not on foot."
+      },
+      "signal_perdu": {
+        "label": "GPS signal lost",
+        "detail": "The device can no longer locate itself. The last known location is still shown."
+      },
+      "precision_degradee": {
+        "label": "Imprecise location (± {{value}} m)",
+        "detail": "GPS accuracy is worse than 500 m: the location shown is approximate."
+      },
+      "choc_critique": {
+        "label": "Violent impact detected",
+        "detail": "The device measured an acceleration of {{value}} m/s², above the severe impact threshold."
+      },
+      "choc_modere": {
+        "label": "Impact detected",
+        "detail": "The device measured an acceleration of {{value}} m/s², above the moderate impact threshold."
+      },
+      "ecart_soudain": {
+        "label": "Sudden jump",
+        "detail": "{{distance}} m covered in {{seconds}} s between two locations: far faster than on foot."
+      },
+      "unknown": "Signal detected by the server"
+    },
+    "weight": "weight {{percent}}%"
   },
   "riskState": {
     "veille": "Normal",

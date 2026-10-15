@@ -18,6 +18,7 @@ import { useChildren, useCreateChild, useFindDevice } from '@/api/hooks/useChild
 import { ApiError } from '@/api/network';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
+import { isRemotePhoto, saveLocalChildPhoto } from '@/features/children/localPhotos';
 
 type Step = 'profil' | 'appairage' | 'verification';
 
@@ -60,7 +61,13 @@ export default function AddChildScreen() {
     try {
       await findDevice.mutateAsync(rawId);
       setDeviceIdInput(rawId.toUpperCase());
-      const child = await createChild.mutateAsync({ prenom, deviceId: rawId.toUpperCase(), photoUrl });
+      // Seule une adresse http(s) part au serveur ; une photo du téléphone reste locale.
+      const child = await createChild.mutateAsync({
+        prenom,
+        deviceId: rawId.toUpperCase(),
+        photoUrl: isRemotePhoto(photoUrl) ? photoUrl : undefined,
+      });
+      if (photoUrl && !isRemotePhoto(photoUrl)) await saveLocalChildPhoto(child.id, photoUrl).catch(() => {});
       setCreatedChildId(child.id);
       setStep('verification');
     } catch (error) {

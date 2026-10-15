@@ -38,6 +38,7 @@ android/app/*.keystore
 .env
 .env.*
 !.env.example
+!.env.docker.example
 
 # typescript
 *.tsbuildinfo

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { AlertOctagon, Share2 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import { useChildPhoto } from '@/features/children/localPhotos';
 import { Heatmap, MapView, Marker } from '@/features/tracking/map';
 import { Banner, Button, Card, Skeleton } from '@/components';
 import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
@@ -31,6 +32,7 @@ export default function PostDisappearanceScreen() {
   const { data: shares } = useShares(childId);
   const user = useAuthStore((s) => s.user);
   const child = children?.find((c) => c.id === childId);
+  const photo = useChildPhoto(child);
   const [shareError, setShareError] = useState<string | null>(null);
 
   useFocusEffect(
@@ -117,8 +119,8 @@ export default function PostDisappearanceScreen() {
           <Card style={styles.card}>
             <Text style={styles.cardTitle}>{t('emergency.missingSheet')}</Text>
             <View style={styles.ficheRow}>
-              {child?.photoUrl ? (
-                <Image source={{ uri: child.photoUrl }} style={styles.fichePhoto} accessibilityIgnoresInvertColors />
+              {photo ? (
+                <Image source={{ uri: photo }} style={styles.fichePhoto} accessibilityIgnoresInvertColors />
               ) : (
                 <View style={styles.fichePhotoPlaceholder}>
                   <Text style={styles.fichePhotoInitial}>{child?.prenom.charAt(0)}</Text>

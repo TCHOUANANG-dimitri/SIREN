@@ -45,7 +45,10 @@ export type ErrorReason =
   | 'password_incorrect'
   | 'password_weak'
   | 'email_taken'
-  | 'invalid_credentials';
+  | 'invalid_credentials'
+  | 'place_limit'
+  | 'geofence_limit'
+  | 'schedule_invalid';
 
 export class ApiError extends Error {
   readonly status: number;

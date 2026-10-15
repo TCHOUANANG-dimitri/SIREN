@@ -5,8 +5,8 @@ le dépôt**. L'application reste pleinement utilisable en mode `mock`.
 
 ## 1. Préparer le serveur
 
-1. Appliquer le schéma (`server/db_schema.sql`) sur une base neuve, **ou** la
-   migration `server/migrations/001_geofence_radius_and_device_defaults.sql`
+1. Appliquer le schéma (`data/schema.sql`, documenté dans `data/SCHEMA.md`) sur une base
+   neuve, **ou** `python server/migrations/apply.py` (migrations 001 → 003)
    sur une base existante (non destructive, rollback en fin de fichier ;
    les sessions existantes devront se reconnecter une fois).
 2. Renseigner `server/.env` à partir de `server/.env.example`. Hors

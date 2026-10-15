@@ -8,6 +8,9 @@ import { useChildren } from '@/api/hooks/useChildren';
 import { usePosition } from '@/api/hooks/useTracking';
 import type { Place } from '@/models/entities';
 import { useTranslation } from 'react-i18next';
+import { toUserMessage } from '@/api/errors';
+import { useCurrentAccess } from '@/features/sharing/useCurrentAccess';
+import { CONFIG_LIMITS, DEFAULT_PLACE_RADIUS_M } from '@/config/business';
 
 const iconFor = (place: Place) => {
   if (place.icon === 'maison') return Home;
@@ -30,6 +33,9 @@ export function PlacesTab({ childId }: { childId: string }) {
   const [editName, setEditName] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState('');
+  const [addError, setAddError] = useState<string | null>(null);
+  const { can } = useCurrentAccess(childId);
+  const canEdit = can('edit_geofences');
 
   function openEdit(place: Place) {
     setEditing(place);
@@ -42,17 +48,41 @@ export function PlacesTab({ childId }: { childId: string }) {
     setEditing(null);
   }
 
+  // Le lieu est créé à la position actuelle de l'enfant : sans position connue,
+  // on ne crée rien (jamais de coordonnées par défaut inventées).
+  const canAddHere = !!currentPosition;
+  const limitReached = (places?.length ?? 0) >= CONFIG_LIMITS.placesPerChild;
+
   async function addPlace() {
-    if (!newName.trim()) return;
-    await createPlace.mutateAsync({
-      nom: newName.trim(),
-      lat: currentPosition?.lat ?? 0,
-      lon: currentPosition?.lon ?? 0,
-      radiusM: 80,
-      icon: 'lieu',
-    });
-    setNewName('');
-    setAddOpen(false);
+    const nom = newName.trim();
+    if (!nom || !currentPosition) return;
+    if (places?.some((p) => p.nom.toLocaleLowerCase() === nom.toLocaleLowerCase())) {
+      setAddError(t('wizard.placeNameDuplicate'));
+      return;
+    }
+    setAddError(null);
+    try {
+      await createPlace.mutateAsync({
+        nom,
+        lat: currentPosition.lat,
+        lon: currentPosition.lon,
+        radiusM: DEFAULT_PLACE_RADIUS_M,
+        icon: 'lieu',
+      });
+      setNewName('');
+      setAddOpen(false);
+    } catch (e) {
+      setAddError(toUserMessage(e));
+    }
+  }
+
+  async function saveEditSafely() {
+    setAddError(null);
+    try {
+      await saveEdit();
+    } catch (e) {
+      setAddError(toUserMessage(e));
+    }
   }
 
   if (isLoading) return <View style={styles.padded}><Skeleton height={200} radius={16} /></View>;
@@ -91,7 +121,7 @@ export function PlacesTab({ childId }: { childId: string }) {
                         </View>
                       )}
                     </View>
-                    <Text style={styles.sourceBadge}>{item.source === 'appris' ? 'Appris' : 'Déclaré'}</Text>
+                    <Text style={styles.sourceBadge}>{t(item.source === 'appris' ? 'childTabs.placeLearned' : 'childTabs.placeDeclared')}</Text>
                     {item.schedule?.[0] && (
                       <Text style={styles.schedule}>
                         {item.schedule[0].heureDebut} – {item.schedule[0].heureFin}
@@ -105,20 +135,34 @@ export function PlacesTab({ childId }: { childId: string }) {
         />
       )}
 
-      <View style={styles.footer}>
-        <Button label={t('childTabs.addPlace')} icon={<Plus size={16} color={colors.onPrimary} />} onPress={() => setAddOpen(true)} />
-      </View>
+      {canEdit && (
+        <View style={styles.footer}>
+          {limitReached && <Banner kind="warning" message={t('apiErrors.reasons.place_limit', { max: CONFIG_LIMITS.placesPerChild })} />}
+          <Button
+            label={t('childTabs.addPlace')}
+            icon={<Plus size={16} color={colors.onPrimary} />}
+            onPress={() => {
+              setAddError(null);
+              setAddOpen(true);
+            }}
+            disabled={limitReached}
+          />
+        </View>
+      )}
 
       <BottomSheet visible={!!editing} onClose={() => setEditing(null)}>
         <Text style={styles.sheetTitle}>{t('childTabs.renamePlace')}</Text>
         <TextField label={t('common.name')} value={editName} onChangeText={setEditName} />
-        <Button label={t('common.save')} onPress={saveEdit} loading={patchPlace.isPending} />
+        {addError && editing && <Banner kind="error" message={addError} />}
+        <Button label={t('common.save')} onPress={saveEditSafely} loading={patchPlace.isPending} disabled={!canEdit || !editName.trim()} />
       </BottomSheet>
 
       <BottomSheet visible={addOpen} onClose={() => setAddOpen(false)}>
         <Text style={styles.sheetTitle}>{t('childTabs.addPlace')}</Text>
+        <Text style={styles.sheetHint}>{t(canAddHere ? 'childTabs.addPlaceHere' : 'childTabs.addPlaceNoPosition')}</Text>
+        {addError && !editing && <Banner kind="error" message={addError} />}
         <TextField label={t('wizard.placeName')} value={newName} onChangeText={setNewName} placeholder={t('wizard.placeNamePlaceholder')} />
-        <Button label={t('common.add')} onPress={addPlace} loading={createPlace.isPending} />
+        <Button label={t('common.add')} onPress={addPlace} loading={createPlace.isPending} disabled={!canAddHere || !newName.trim()} />
       </BottomSheet>
     </View>
   );
@@ -139,5 +183,6 @@ const useStyles = makeStyles((colors) => ({
   sourceBadge: { ...typography.caption, color: colors.muted, marginTop: 2 },
   schedule: { ...typography.caption, color: colors.muted, marginTop: 2 },
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
+  sheetHint: { ...typography.caption, color: colors.muted, marginBottom: spacing.md },
   sheetTitle: { ...typography.title2, fontFamily: fontFamily.semiBold, color: colors.ink, marginBottom: spacing.lg },
 }));

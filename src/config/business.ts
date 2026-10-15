@@ -52,3 +52,28 @@ export const LOW_BATTERY_PERCENT = 20;
 export const EMERGENCY_NUMBERS = {
   police: '117',
 } as const;
+
+/**
+ * Pondération de la fusion des sous-scores (document « Couches déclarative +
+ * universelle » v1.0 du 14/10/2026, identique à server/app/services/fusion_score.py).
+ * Affichage seulement : le score est toujours calculé par le serveur.
+ */
+export const FUSION_WEIGHTS = {
+  universel: 0.35,
+  declaratif: 0.3,
+  geo: 0.2,
+  mouvement: 0.15,
+} as const;
+
+/**
+ * Plafonds de configuration par enfant (server/app/rules/declarative.py :
+ * MAX_GEOFENCES_PER_CHILD, MAX_PLACES_PER_CHILD). Le serveur les applique ;
+ * l'app les vérifie avant l'envoi pour répondre tout de suite.
+ */
+export const CONFIG_LIMITS = {
+  geofencesPerChild: 20,
+  placesPerChild: 20,
+} as const;
+
+/** Rayon par défaut d'un lieu déclaré (m) — DEFAULT_PLACE_RADIUS_M côté serveur. */
+export const DEFAULT_PLACE_RADIUS_M = 100;

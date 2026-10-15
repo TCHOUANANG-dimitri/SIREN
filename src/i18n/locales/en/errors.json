@@ -55,7 +55,10 @@
       "password_incorrect": "Incorrect password.",
       "password_weak": "Password too weak: at least 10 characters, with upper and lower case, a number and a symbol.",
       "email_taken": "An account already exists with this email.",
-      "invalid_credentials": "Incorrect email or password."
+      "invalid_credentials": "Incorrect email or password.",
+      "place_limit": "Limit reached: {{max}} places per child. Delete a place to add another.",
+      "geofence_limit": "Limit reached: {{max}} zones per child. Delete a zone to add another.",
+      "schedule_invalid": "The arrival time must be before the leaving time."
     }
   }
 }

@@ -24,15 +24,12 @@
 
 ```bash
 cd server
-cp .env.example .env
-# Éditer .env :
-#  - Docker : remplacer localhost par db (DATABASE_URL, DATABASE_URL_SYNC)
-#    et redis (REDIS_URL, CELERY_BROKER_URL, CELERY_RESULT_BACKEND),
-#    puis ajuster DOMAIN et les secrets.
-#  - Manuel : conserver localhost.
+# Docker : les URL base/Redis/Celery sont construites par docker-compose.yml.
+cp .env.docker.example .env      # puis remplacer chaque « a-remplacer » (secrets)
+# Manuel : cp .env.example .env (hôtes localhost).
 
 # Option A — Docker (production : code embarqué dans l'image)
-docker compose up -d --build
+docker compose up -d --build     # ou, depuis la racine du dépôt : docker compose up -d --build
 curl http://localhost:8000/health
 
 # Option A' — Docker (développement : code source monté, reload automatique)
@@ -50,11 +47,11 @@ API : `http://localhost:8000` | Swagger : `http://localhost:8000/docs`
 
 | Service | Rôle |
 |---|---|
-| `migration` | `alembic upgrade head` — une passe unique qui verrouille le démarrage de `api` |
+| `migration` | `python migrations/apply.py` — migrations SQL versionnées (`schema_migrations`), passe unique qui verrouille le démarrage de `api`, `worker`, `beat` |
 | `api` | FastAPI (gunicorn + uvicorn), `/health` surveillé par healthcheck |
 | `worker` | Celery (files `celery`, `ml`, `maintenance`) |
 | `beat` | Planificateur Celery, planning dans le volume `beat_data` |
-| `db` | PostgreSQL 15 + PostGIS, schéma appliqué au 1er démarrage via `db_schema.sql` |
+| `db` | PostgreSQL 15 + PostGIS, schéma `../data/schema.sql` appliqué au 1er démarrage (volume vide) — non publié hors du réseau interne (sauf surcouche dev) |
 | `redis` | Broker/result backend (persistance AOF) |
 | `proxy` | Caddy : TLS auto, `/api/*`, `/health` et Swagger -> `api:8000` |
 
@@ -113,7 +110,7 @@ server/
 │   └── tasks/
 │       ├── celery_app.py                # Configuration Celery
 │       └── retrain.py                   # Réentraînement nocturne
-├── db_schema.sql                        # Schéma complet (19 tables, 6 vues, 6 triggers)
+├── db_schema.sql                        # Copie de data/schema.sql (24 tables + 20 partitions, 4 vues) — générée
 ├── Dockerfile                           # Image API (python:3.12-slim, utilisateur non-root)
 ├── Dockerfile.worker                    # Image worker/beat Celery
 ├── .dockerignore                        # .env et artefacts exclus de l'image
@@ -134,7 +131,10 @@ server/
 - Contrat de référence : [`docs/contrats/api-app-serveur-v1.md`](../docs/contrats/api-app-serveur-v1.md)
   (dates ISO UTC avec fuseau, km/h, mètres, scores 0–100, jours 0 = dimanche, horaires en heure locale).
 - Hors `ENVIRONMENT=development`, le serveur refuse de démarrer avec les secrets d'exemple.
-- Base existante : appliquer `migrations/001_geofence_radius_and_device_defaults.sql`.
+- Base : structure documentée dans [`data/SCHEMA.md`](../data/SCHEMA.md). Base neuve : `data/schema.sql`
+  (copie identique : `db_schema.sql`, régénérés par `scripts/db/rebuild-schema.sh`). Base existante :
+  `DATABASE_URL=… python migrations/apply.py` (001 → 003, idempotentes, sans suppression de données).
+- Tests sur vraie base : `tests/test_database.py` (voir l'en-tête : `SIREN_DB_TESTS=1`).
 
 ## Emails transactionnels
 

@@ -60,8 +60,8 @@
     "addressOrPosition": "Adresse ou position",
     "searchAddress": "Rechercher une adresse…",
     "addPlace": "Ajouter ce lieu",
-    "perimeterTitle": "Périmètre autorisé",
-    "perimeterSubtitle": "Quartier ou ville : une sortie de cette zone sera signalée.",
+    "perimeterTitle": "Périmètre de vie",
+    "perimeterSubtitle": "Quartier ou ville où l'enfant vit habituellement : une sortie de cette zone sera signalée (sauf s'il est au bon lieu à la bonne heure).",
     "sleepTitle": "Sommeil & contacts d'urgence",
     "sleepSubtitle": "Plage horaire habituelle de sommeil et personnes à prévenir.",
     "bedtime": "Coucher",
@@ -82,7 +82,14 @@
     "defaultHomeName": "Maison",
     "defaultSchoolName": "École",
     "saveAndContinue": "Enregistrer et continuer",
-    "next": "Suivant →"
+    "next": "Suivant →",
+    "forbiddenTitle": "Lieux à éviter",
+    "forbiddenSubtitle": "Facultatif — 2 ou 3 suffisent (chantier, marché de nuit, gare routière…). Si l'enfant y entre, une alerte est déclenchée en priorité.",
+    "forbiddenName": "Nom du lieu à éviter",
+    "forbiddenPlaceholder": "Chantier, gare routière…",
+    "forbiddenRadius": "Rayon {{radius}} m",
+    "addForbidden": "Ajouter ce lieu à éviter",
+    "removeItem": "Retirer {{name}}"
   },
   "childTabs": {
     "noPositionRight": "Vous n'avez pas le droit de voir la position de cet enfant.",
@@ -143,7 +150,11 @@
       "score": "Score",
       "device": "Dispositif"
     },
-    "placesLearning": "SIREN apprend encore les lieux habituels de votre enfant (confiance : {{percent}} %)."
+    "placesLearning": "SIREN apprend encore les lieux habituels de votre enfant (confiance : {{percent}} %).",
+    "placeLearned": "Appris",
+    "placeDeclared": "Déclaré",
+    "addPlaceHere": "Le lieu sera créé à la dernière position connue de l'enfant, avec un rayon de 100 m.",
+    "addPlaceNoPosition": "Aucune position connue pour l'instant : ajoutez ce lieu depuis la configuration de la protection."
   },
   "risk": {
     "subScore": {
@@ -168,8 +179,58 @@
       "hors_perimetre": {
         "label": "Contexte : hors périmètre",
         "detail": "L'enfant est dans une zone interdite ou absent d'un lieu prévu à cette heure."
-      }
-    }
+      },
+      "zone_interdite": {
+        "label": "Dans un lieu interdit",
+        "detail": "L'enfant se trouve à l'intérieur d'un lieu que vous avez déclaré à éviter (marge GPS de 30 m incluse). Cette règle est prioritaire."
+      },
+      "zone_interdite_named": {
+        "label": "Dans un lieu interdit : {{zone}}",
+        "detail": "L'enfant se trouve à l'intérieur de « {{zone}} », que vous avez déclaré à éviter (marge GPS de 30 m incluse). Cette règle est prioritaire."
+      },
+      "sortie_perimetre": {
+        "label": "Hors du périmètre de vie",
+        "detail": "L'enfant est sorti de tous les périmètres autorisés. Être au bon lieu à la bonne heure (école hors quartier, par exemple) annule ce signal."
+      },
+      "sortie_perimetre_named": {
+        "label": "Hors du périmètre : {{zone}}",
+        "detail": "L'enfant est sorti de « {{zone}} ». Être au bon lieu à la bonne heure (école hors quartier, par exemple) annule ce signal."
+      },
+      "hors_horaire": {
+        "label": "Absent du lieu prévu à cette heure",
+        "detail": "Un horaire que vous avez déclaré (école, par exemple) est en cours et l'enfant n'est pas à ce lieu."
+      },
+      "vitesse_critique": {
+        "label": "Vitesse très élevée : {{value}} km/h",
+        "detail": "Au-delà de 80 km/h, l'enfant se déplace très probablement à bord d'un véhicule."
+      },
+      "vitesse_elevee": {
+        "label": "Vitesse élevée : {{value}} km/h",
+        "detail": "Au-delà de 50 km/h, le déplacement ne se fait pas à pied."
+      },
+      "signal_perdu": {
+        "label": "Signal GPS perdu",
+        "detail": "Le dispositif n'arrive plus à se localiser. La dernière position connue reste affichée."
+      },
+      "precision_degradee": {
+        "label": "Position imprécise (± {{value}} m)",
+        "detail": "La précision GPS dépasse 500 m : la position affichée est approximative."
+      },
+      "choc_critique": {
+        "label": "Choc violent détecté",
+        "detail": "Le dispositif a mesuré une accélération de {{value}} m/s², au-delà du seuil de choc grave."
+      },
+      "choc_modere": {
+        "label": "Choc détecté",
+        "detail": "Le dispositif a mesuré une accélération de {{value}} m/s², au-delà du seuil de choc modéré."
+      },
+      "ecart_soudain": {
+        "label": "Déplacement soudain",
+        "detail": "{{distance}} m parcourus en {{seconds}} s entre deux positions : bien plus vite qu'à pied."
+      },
+      "unknown": "Signal détecté par le serveur"
+    },
+    "weight": "poids {{percent}} %"
   },
   "riskState": {
     "veille": "Veille",

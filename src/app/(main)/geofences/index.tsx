@@ -1,36 +1,39 @@
 import { formatDistanceM } from '@/utils/format';
-import { useEffect } from 'react';
-import { Alert as RNAlert, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert as RNAlert, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft, Plus, ShieldBan, ShieldCheck } from 'lucide-react-native';
-import { Card } from '@/components';
+import { Banner, Card } from '@/components';
+import { toUserMessage } from '@/api/errors';
+import { CONFIG_LIMITS } from '@/config/business';
+import { ChildSelector } from '@/features/children/ChildSelector';
+import { useSelectedChild } from '@/features/children/useSelectedChild';
 import { fontFamily, radii, shadow, spacing, typography, makeStyles, useTheme } from '@/theme';
-import { useChildren } from '@/api/hooks/useChildren';
 import { useDeleteGeofence, useGeofences } from '@/api/hooks/useGeofences';
-import { useUiStore } from '@/stores/uiStore';
 import { useTranslation } from 'react-i18next';
 
 export default function GeofencesListScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const { data: children } = useChildren();
-  const selectedChildId = useUiStore((s) => s.selectedChildId);
-  const setSelectedChildId = useUiStore((s) => s.setSelectedChildId);
-
-  useEffect(() => {
-    if (!selectedChildId && children && children.length > 0) setSelectedChildId(children[0].id);
-  }, [children, selectedChildId, setSelectedChildId]);
-
-  const activeChild = children?.find((c) => c.id === selectedChildId) ?? children?.[0];
+  const { children, activeChild, select } = useSelectedChild();
   const { data: geofences } = useGeofences(activeChild?.id);
   const deleteGeofence = useDeleteGeofence(activeChild?.id);
+  const [error, setError] = useState<string | null>(null);
+  const limitReached = (geofences?.length ?? 0) >= CONFIG_LIMITS.geofencesPerChild;
 
   function confirmDelete(id: string, nom: string) {
     RNAlert.alert(t('geofences.deleteTitle'), t('geofences.deleteConfirm', { name: nom }), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.delete'), style: 'destructive', onPress: () => deleteGeofence.mutate(id) },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: () => {
+          setError(null);
+          deleteGeofence.mutate(id, { onError: (e) => setError(toUserMessage(e)) });
+        },
+      },
     ]);
   }
 
@@ -41,18 +44,17 @@ export default function GeofencesListScreen() {
       </Pressable>
       <Text style={styles.title}>{t('geofences.title')}</Text>
 
-      {children && children.length > 1 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.switcherRow}>
-          {children.map((c) => (
-            <Pressable
-              key={c.id}
-              onPress={() => setSelectedChildId(c.id)}
-              style={[styles.chip, c.id === activeChild?.id && styles.chipActive]}
-            >
-              <Text style={[styles.chipText, c.id === activeChild?.id && styles.chipTextActive]}>{c.prenom}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+      <Text style={styles.subtitle}>{t('geofences.subtitle')}</Text>
+      <ChildSelector childrenList={children ?? []} activeId={activeChild?.id} onSelect={select} contextLabel={t('geofences.title')} />
+      {error && (
+        <View style={styles.banner}>
+          <Banner kind="error" message={error} />
+        </View>
+      )}
+      {limitReached && (
+        <View style={styles.banner}>
+          <Banner kind="warning" message={t('apiErrors.reasons.geofence_limit', { max: CONFIG_LIMITS.geofencesPerChild })} />
+        </View>
       )}
 
       {!geofences || geofences.length === 0 ? (
@@ -79,7 +81,7 @@ export default function GeofencesListScreen() {
                   <Text style={styles.cardName}>{item.nom}</Text>
                   <Text style={styles.cardMeta}>
                     {item.type === 'autorise' ? t('geofences.allowed') : t('geofences.forbidden')} · {formatDistanceM(item.radiusM)}
-                    {item.notifyOnEnter || item.notifyOnExit ? ' · Notifications actives' : ''}
+                    {item.notifyOnEnter || item.notifyOnExit ? ` · ${t('geofences.notificationsOn')}` : ''}
                   </Text>
                 </View>
               </Card>
@@ -89,8 +91,11 @@ export default function GeofencesListScreen() {
       )}
 
       <Pressable
-        style={styles.fab}
+        style={[styles.fab, (limitReached || !activeChild) && styles.fabDisabled]}
+        disabled={limitReached || !activeChild}
         onPress={() => router.push({ pathname: '/(main)/geofences/[id]', params: { id: 'new', childId: activeChild?.id ?? '' } })}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: limitReached || !activeChild }}
         accessibilityLabel={t('geofences.add')}
       >
         <Plus size={26} color={colors.onPrimary} />
@@ -102,7 +107,10 @@ export default function GeofencesListScreen() {
 const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   backButton: { marginLeft: spacing.xl, marginBottom: spacing.md },
-  title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
+  title: { ...typography.title1, fontFamily: fontFamily.bold, color: colors.ink, paddingHorizontal: spacing.xl, marginBottom: spacing.xs },
+  subtitle: { ...typography.caption, color: colors.muted, paddingHorizontal: spacing.xl, marginBottom: spacing.xs },
+  banner: { paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
+  fabDisabled: { backgroundColor: colors.muted },
   switcherRow: { gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm },
   chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceChip },
   chipActive: { backgroundColor: colors.primary },

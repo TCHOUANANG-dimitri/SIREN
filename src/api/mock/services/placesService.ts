@@ -1,7 +1,8 @@
 import { getDb, mutateDb, genId } from '../db';
-import { ApiError } from '../../errors';
+import { ApiError, reasonError } from '../../errors';
+import { CONFIG_LIMITS } from '@/config/business';
 import { simulateLatency } from '../helpers';
-import { assertChildAccess, resolveCurrentUser } from '../session';
+import { assertChildAccess, assertPrincipal, resolveCurrentUser } from '../session';
 import type { Place } from '@/models/entities';
 import i18n from '@/i18n';
 
@@ -20,6 +21,11 @@ export async function createPlace(
   await simulateLatency(300, 600);
   const user = resolveCurrentUser(token);
   assertChildAccess(childId, user);
+  // Mêmes règles que le serveur (places.py) : parent principal, 20 lieux par enfant.
+  assertPrincipal(user);
+  if (getDb().places.filter((p) => p.childId === childId).length >= CONFIG_LIMITS.placesPerChild) {
+    throw reasonError('place_limit', 400, { max: CONFIG_LIMITS.placesPerChild });
+  }
   const place: Place = { id: genId('place'), childId, source: 'declare', ...input };
   mutateDb((d) => {
     d.places.push(place);

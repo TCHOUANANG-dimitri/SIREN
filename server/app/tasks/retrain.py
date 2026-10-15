@@ -196,3 +196,21 @@ async def _purge_async():
         deleted = result.rowcount
         await db.commit()
         print(f"Purged {deleted} old positions")
+
+
+@celery_app.task(name="app.tasks.retrain.ensure_positions_partitions")
+def ensure_positions_partitions():
+    """
+    Crée les partitions mensuelles de positions des 3 prochains mois
+    (fonction SQL public.ensure_positions_partitions, migration 003). Sans elles,
+    les nouvelles positions s'accumulent dans positions_default.
+    """
+    import asyncio
+    asyncio.run(_ensure_partitions_async())
+
+
+async def _ensure_partitions_async():
+    async with async_session_factory() as db:
+        created = (await db.execute(text("SELECT public.ensure_positions_partitions(3)"))).scalar()
+        await db.commit()
+        print(f"Partitions de positions vérifiées ({created} mois)")

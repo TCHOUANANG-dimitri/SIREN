@@ -24,6 +24,11 @@ celery_app.conf.update(
             "schedule": crontab(hour=3, minute=0),
             "options": {"queue": "ml"},
         },
+        "ensure-positions-partitions": {
+            "task": "app.tasks.retrain.ensure_positions_partitions",
+            "schedule": crontab(hour=2, minute=30, day_of_month=1),
+            "options": {"queue": "maintenance"},
+        },
         "purge-old-positions": {
             "task": "app.tasks.retrain.purge_old_positions",
             "schedule": crontab(hour=4, minute=0, day_of_week=0),
