@@ -10,6 +10,8 @@ Usage :
     python run_tasks.py retrain   # réentraînement nocturne (tous les enfants éligibles)
     python run_tasks.py purge     # purge des positions > POSITION_RETENTION_DAYS
     python run_tasks.py partitions  # partitions mensuelles de positions (le 1er du mois)
+    python run_tasks.py commands  # commandes dispositif sans accusé → TIMEOUT (chaque minute)
+    python run_tasks.py ratelimit  # purge des compteurs de limitation > 48 h (chaque heure)
 """
 
 import argparse
@@ -34,6 +36,10 @@ TASKS = {
     "purge": ("app.tasks.retrain", "_purge_async"),
     # équivalent : celery beat -> "ensure-positions-partitions" (le 1er du mois à 02:30)
     "partitions": ("app.tasks.retrain", "_ensure_partitions_async"),
+    # équivalent : celery beat -> "expire-device-commands" (chaque minute)
+    "commands": ("app.tasks.retrain", "_expire_commands_async"),
+    # équivalent : celery beat -> "purge-rate-limit-events" (chaque heure)
+    "ratelimit": ("app.tasks.retrain", "_purge_rate_limit_async"),
 }
 
 

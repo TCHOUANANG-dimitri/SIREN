@@ -112,3 +112,8 @@ async def redis_listener():
         child_id: Optional[str] = payload.get("child_id")
         if child_id and payload.get("event"):
             await manager.broadcast_to_child(child_id, payload["event"], payload.get("data") or {})
+
+
+async def publish_command_update(child_id: str, data: dict):
+    # Protocole §8 étape 7 : « commande_update » vers la salle de l'enfant.
+    await _publish(child_id, "command_update", data)

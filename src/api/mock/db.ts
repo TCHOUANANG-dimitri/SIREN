@@ -32,10 +32,12 @@ export interface DbShape {
   emergencyContacts: EmergencyContact[];
   audioLogs: AudioActivationLog[];
   searchZones: Record<string, SearchZone>;
-  passwordsByEmail: Record<string, string>;
+  /** Mot de passe par identifiant de compte. */
+  passwordsByUser: Record<string, string>;
 }
 
-const STORAGE_KEY = 'siren.mockDb.v1';
+// v2 : numéros de série SIREN-XXXXX-XXXXX, téléphones E.164, mots de passe par compte.
+const STORAGE_KEY = 'siren.mockDb.v2';
 
 let state: DbShape | null = null;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;

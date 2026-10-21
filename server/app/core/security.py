@@ -34,6 +34,14 @@ def create_refresh_token(subject: str, expires_delta: Optional[timedelta] = None
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
+def create_mfa_token(subject: str) -> str:
+    """Jeton court (5 min) prouvant que le mot de passe est validé, en attente du second facteur.
+    Il n'ouvre AUCUNE session : get_current_user n'accepte que type=access."""
+    expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+    payload = {"sub": subject, "exp": expire, "type": "mfa", "jti": str(uuid.uuid4())}
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
 def decode_token(token: str) -> Optional[dict]:
     try:
         return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])

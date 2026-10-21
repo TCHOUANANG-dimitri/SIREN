@@ -69,3 +69,6 @@ data/*.backup
 data/*.dump
 data/*.storage.zip
 data/raw/
+
+# État local des déploiements (version courante / précédente, verrou)
+deploy/contabo/state/

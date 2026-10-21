@@ -1,0 +1,4 @@
+# Empreintes gitleaks ignorées (une ligne = un constat précis, jamais un fichier entier).
+# Jeton JWT FACTICE ({"sub":"1"}, signature « abc ») du test de masquage des journaux,
+# antérieur à son annotation gitleaks:allow (commit d'origine conservé dans l'historique).
+8f21a0658b06ba91da4b8c0c2ae712c68148a778:src/utils/__tests__/logger.test.ts:generic-api-key:6

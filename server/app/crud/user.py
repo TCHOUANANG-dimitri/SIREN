@@ -10,7 +10,23 @@ class CRUDUser(CRUDBase[User]):
         result = await db.execute(select(User).where(User.email == email, User.deleted_at.is_(None)))
         return result.scalar_one_or_none()
 
-    async def create_user(self, db: AsyncSession, nom: str, email: str, password: str, telephone: str = None) -> User:
+    async def get_by_phone(self, db: AsyncSession, telephone: str) -> User | None:
+        result = await db.execute(select(User).where(User.telephone == telephone, User.deleted_at.is_(None)))
+        return result.scalar_one_or_none()
+
+    async def get_by_identifier(self, db: AsyncSession, identifier: str) -> User | None:
+        """Adresse e-mail (si « @ ») ou numéro de téléphone normalisé E.164."""
+        from app.core.phone import InvalidPhone, normalize_phone
+
+        identifier = identifier.strip()
+        if "@" in identifier:
+            return await self.get_by_email(db, identifier.lower())
+        try:
+            return await self.get_by_phone(db, normalize_phone(identifier))
+        except InvalidPhone:
+            return None
+
+    async def create_user(self, db: AsyncSession, nom: str, email: str | None, password: str, telephone: str) -> User:
         return await self.create(db, {
             "nom": nom,
             "email": email,

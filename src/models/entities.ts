@@ -15,8 +15,14 @@ export type FixQuality = 'gps_recent' | 'estimee' | 'perdu';
 export interface User {
   id: string;
   nom: string;
-  email: string;
+  /** Facultatif : jamais inventé (compte créé avec le seul téléphone). */
+  email: string | null;
+  /** Format E.164, obligatoire pour tout nouveau compte (absent : compte ancien à compléter). */
   telephone?: string;
+  /** Numéro confirmé par code. */
+  phoneVerified?: boolean;
+  /** Compte ancien sans numéro : l'app demande de le compléter avant d'aller plus loin. */
+  phoneRequired?: boolean;
   role: Role;
   langue: 'fr' | 'en';
   twofaEnabled?: boolean;

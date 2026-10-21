@@ -52,7 +52,7 @@
       "twofaOff": "Vérification en deux étapes désactivée",
       "twofaTitle": "Vérification en deux étapes",
       "twofaLabel": "Code par email à la connexion",
-      "twofaFooter": "À chaque connexion, un code à usage unique est envoyé à {{email}}.",
+      "twofaFooter": "À chaque connexion, un code à usage unique est envoyé au {{phone}} (SMS ou WhatsApp), ou à votre e-mail s'il est vérifié.",
       "twofaConfirmEnable": "Saisissez votre mot de passe pour activer la vérification en deux étapes.",
       "twofaConfirmDisable": "Saisissez votre mot de passe pour désactiver la vérification en deux étapes.",
       "twofaEnabled": "Vérification en deux étapes activée. Un email de confirmation vous a été envoyé si l'envoi d'emails est disponible.",
@@ -96,6 +96,25 @@
     "deleteAccount": "Supprimer mon compte",
     "deleteAccountDesc": "Supprime votre compte et coupe tous les accès aux données de vos enfants.",
     "deleteTitle": "Supprimer le compte ?",
-    "deleteBody": "Votre compte sera supprimé, ainsi que l'accès aux données de vos enfants pour vous et vos proches. Cette action est définitive."
+    "deleteBody": "Votre compte sera supprimé, ainsi que l'accès aux données de vos enfants pour vous et vos proches. Cette action est définitive.",
+    "emailNone": "Aucune adresse",
+    "emailOptional": "L'e-mail est facultatif ; le téléphone sert à vous connecter et à recevoir vos codes.",
+    "phone": {
+      "rowLabel": "Numéro de téléphone",
+      "missing": "À compléter",
+      "verified": "vérifié",
+      "notVerified": "non vérifié",
+      "title": "Changer de numéro",
+      "body": "Votre mot de passe est demandé, puis un code est envoyé au nouveau numéro. Le changement n'a lieu qu'après validation du code ; l'ancien numéro est prévenu.",
+      "completeTitle": "Ajoutez votre numéro",
+      "completeBody": "Le téléphone est désormais obligatoire : il sert à vous connecter et à recevoir vos codes de sécurité. Il est confirmé par un code.",
+      "current": "Numéro actuel : {{phone}}",
+      "newPhone": "Nouveau numéro",
+      "sendCode": "Envoyer le code",
+      "codeSent": "Code envoyé par {{channel}} au {{phone}}.",
+      "confirm": "Confirmer le numéro",
+      "restart": "Modifier le numéro",
+      "changed": "Numéro mis à jour et vérifié."
+    }
   }
 }

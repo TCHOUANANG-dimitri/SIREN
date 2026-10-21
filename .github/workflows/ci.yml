@@ -1,0 +1,152 @@
+# SIREN — intégration continue.
+# Déclenchée sur push / pull request, et réutilisée par le déploiement (cd.yml)
+# via `workflow_call` : rien n'est déployé sans que ces contrôles passent.
+# Actions épinglées par SHA de commit (tag entre parenthèses) ; images par digest.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  POSTGIS_IMAGE: postgis/postgis@sha256:3f4a5d48e0be9580ed70ed618cd039ce57bbb2dd113053d3836e28513f1f87cd
+  GITLEAKS_IMAGE: zricethezav/gitleaks@sha256:b5918eb91b8d2473cec722f066abb4352e4ffdc4ec9f4283ec143aba9ec9ebc4
+
+jobs:
+  app:
+    name: Application — lint, types, i18n, tests, bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPO_PUBLIC_API_MODE: mock
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run i18n:check
+      - run: npm test -- --ci
+      # Construction du bundle JS Android (sans compilation native) : détecte une
+      # erreur d'import ou de résolution Metro que les tests ne verraient pas.
+      - run: npx expo export --platform android --output-dir dist-ci
+      # Bloquant : vulnérabilité CRITIQUE. Les « high » restantes relèvent toutes de la
+      # chaîne Expo/React Native/Jest et exigent une montée de version majeure du SDK
+      # (docs/TACHES_DIFFEREES.md T-DEPS-EXPO) : publiées dans le résumé, non bloquantes.
+      - name: Audit des dépendances (bloquant si critique)
+        run: npm audit --omit=dev --audit-level=critical
+      - name: Rapport d'audit complet (non bloquant)
+        if: always()
+        run: |
+          { echo '### npm audit (production)'; echo '```'; npm audit --omit=dev || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  server:
+    name: Serveur — tests et audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: server/requirements.txt
+      - run: pip install -r requirements.txt pytest httpx pip-audit
+      - run: python -m pytest -q
+      - name: Audit des dépendances Python
+        run: pip-audit -r requirements.txt --progress-spinner off
+
+  database:
+    name: Base — migrations, schéma reproductible, intégration PostGIS
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: server/requirements.txt
+      - run: pip install -r server/requirements.txt pytest httpx
+      - name: Le schéma data/schema.sql est reproductible depuis les migrations
+        # Régénère depuis la référence puis compare : une migration non reportée
+        # (ou un schéma édité à la main) fait échouer la CI.
+        run: |
+          bash scripts/db/rebuild-schema.sh
+          git diff --exit-code -- data/schema.sql server/db_schema.sql
+      - name: Base de test (schéma + migrations)
+        run: |
+          docker run -d --name siren-ci-db -e POSTGRES_USER=siren -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=siren \
+            -p 127.0.0.1:55433:5432 -v "$PWD/data/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro" "$POSTGIS_IMAGE"
+          for _ in $(seq 1 60); do
+            docker exec siren-ci-db pg_isready -h 127.0.0.1 -U siren -d siren >/dev/null 2>&1 && sleep 2 && \
+              docker exec siren-ci-db pg_isready -h 127.0.0.1 -U siren -d siren >/dev/null 2>&1 && break
+            sleep 2
+          done
+          cd server && DATABASE_URL=postgresql://siren:ci@127.0.0.1:55433/siren python migrations/apply.py
+      - name: Tests d'intégration (vraie base)
+        working-directory: server
+        env:
+          SIREN_DB_TESTS: "1"
+          DATABASE_URL: postgresql+asyncpg://siren:ci@127.0.0.1:55433/siren
+          REDIS_ENABLED: "false"
+        run: python -m pytest -q tests/test_database.py tests/test_database_v2.py
+
+  images:
+    name: Images Docker (construction sans publication)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: server
+          file: server/Dockerfile
+          push: false
+          tags: siren-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: server
+          file: server/Dockerfile.worker
+          push: false
+          tags: siren-worker:ci
+          cache-from: type=gha,scope=worker
+          cache-to: type=gha,mode=max,scope=worker
+      - name: Configuration de production valide (sans secret réel)
+        run: |
+          cp deploy/contabo/env.prod.example deploy/contabo/.env.prod
+          docker compose -f server/docker-compose.yml -f deploy/contabo/docker-compose.prod.yml \
+            --env-file deploy/contabo/.env.prod config --quiet
+          # Aucun port de base, de Redis ni d'API publié en production.
+          docker compose -f server/docker-compose.yml -f deploy/contabo/docker-compose.prod.yml \
+            --env-file deploy/contabo/.env.prod config --format json \
+            | python3 deploy/contabo/check_compose.py
+
+  secrets:
+    name: Secrets (gitleaks, historique complet)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - run: docker run --rm -v "$PWD:/repo:ro" "$GITLEAKS_IMAGE" detect --source /repo --redact --no-banner

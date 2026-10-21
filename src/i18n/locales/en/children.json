@@ -17,8 +17,7 @@
     "pairSubtitle": "Scan the QR code on the SIREN device.",
     "cameraPermission": "Allow the camera to scan the QR code.",
     "allowCamera": "Allow camera",
-    "deviceIdLabel": "Device ID *",
-    "deviceIdPlaceholder": "SIREN-XXXX-XXXX",
+    "deviceIdLabel": "Device serial number *",
     "pairingFailed": "Pairing failed. Please try again.",
     "paired": "Device paired!",
     "pairedBody": "The SIREN device is connected and ready.",
@@ -31,14 +30,27 @@
     "viewDetails": "View details for {{child}}",
     "searchingDevice": "Looking for the device…",
     "searchDevice": "Find the device",
-    "deviceIdRequired": "The device ID is required.",
-    "deviceIdTooShort": "The ID must be at least 5 characters long.",
     "manualEntry": "or enter the ID manually",
     "addChild": "Add a child",
     "selector": {
       "label": "Choose a child — {{context}}",
       "hint": "Show {{name}}"
-    }
+    },
+    "qrInvalid": "This QR code isn't a SIREN device number. Nothing was opened.",
+    "stepProfile": "Profile",
+    "stepPairing": "Pairing",
+    "stepCheck": "Check",
+    "pinLabel": "Activation PIN",
+    "pinHint": "Printed on the device box. It proves you have it in hand.",
+    "pairWithPin": "Pair the device",
+    "changeSerial": "Use another serial number",
+    "scanInstead": "or scan the QR code",
+    "serialInvalidChars": "Only letters A-Z, a-z and digits are allowed.",
+    "serialA11y": "Serial number, {{count}} of {{total}} characters",
+    "serialRemaining_one": "{{count}} more character. Upper and lower case matter.",
+    "serialRemaining_other": "{{count}} more characters. Upper and lower case matter.",
+    "serialComplete": "Number complete.",
+    "serialPlaceholder": "XXXXX-XXXXX"
   },
   "wizard": {
     "homeTitle": "Where is your home?",
@@ -154,7 +166,15 @@
     "placeLearned": "Learned",
     "placeDeclared": "Declared",
     "addPlaceHere": "The place will be created at your child's last known location, with a 100 m radius.",
-    "addPlaceNoPosition": "No known location yet: add this place from the protection setup."
+    "addPlaceNoPosition": "No known location yet: add this place from the protection setup.",
+    "pairingTitle": "Paired device",
+    "noDevice": "No paired device",
+    "pairDevice": "Pair a device",
+    "replaceDevice": "Pair another device",
+    "unpairDevice": "Unpair this device",
+    "unpairTitle": "Unpair the device?",
+    "unpairBody": "Device {{serial}} will stop reporting positions for this child. History is kept. You can pair it again later.",
+    "unpairConfirm": "Unpair"
   },
   "risk": {
     "subScore": {

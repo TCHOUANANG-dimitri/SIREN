@@ -26,6 +26,8 @@ class ScheduleIn(BaseModel):
 class ChildCreateRequest(BaseModel):
     prenom: str = Field(..., min_length=1, max_length=100)
     deviceId: str = Field(..., min_length=1, max_length=50)
+    # PIN d'activation imprimé sur la boîte (protocole dispositif §appairage) ; exigé si le dispositif en a un.
+    activationPin: Optional[str] = Field(None, min_length=4, max_length=12)
     # Contrainte ck_children_photo_url : adresse http(s) uniquement (pas de fichier local).
     photoUrl: Optional[str] = Field(None, max_length=2048, pattern=r"^https?://")
 
@@ -33,3 +35,8 @@ class ChildCreateRequest(BaseModel):
 class ChildPatchRequest(BaseModel):
     prenom: Optional[str] = Field(None, min_length=1, max_length=100)
     sleepSchedule: Optional[ScheduleIn] = None
+
+
+class DevicePairRequest(BaseModel):
+    deviceId: str = Field(..., min_length=1, max_length=50)
+    activationPin: Optional[str] = Field(None, min_length=4, max_length=12)

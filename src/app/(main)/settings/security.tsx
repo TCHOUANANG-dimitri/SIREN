@@ -28,7 +28,8 @@ type PasswordValues = z.infer<typeof passwordForm>;
 type Feedback = { kind: 'success' | 'error'; message: string } | null;
 
 /**
- * Sécurité du compte : mot de passe et vérification en deux étapes (code par email).
+ * Sécurité du compte : mot de passe et vérification en deux étapes (code par SMS,
+ * WhatsApp ou e-mail vérifié).
  * Chaque action exige le mot de passe actuel et n'affiche un succès qu'après
  * confirmation du serveur ; hors connexion, elles sont désactivées.
  */
@@ -103,7 +104,7 @@ export default function SecurityScreen() {
             </View>
           )}
 
-          <SettingsSection title={t('settings.security.twofaTitle')} footer={t('settings.security.twofaFooter', { email: user?.email ?? '' })}>
+          <SettingsSection title={t('settings.security.twofaTitle')} footer={t('settings.security.twofaFooter', { phone: user?.telephone ?? '—' })}>
             <SettingsRow
               icon={ShieldCheck}
               label={t('settings.security.twofaLabel')}

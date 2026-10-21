@@ -16,8 +16,15 @@ class OtpChallenge(Base):
 
     id: Mapped[str] = mapped_column(UUIDStr, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str] = mapped_column(UUIDStr, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    # signup_verify | login_2fa | password_reset
+    # phone_verify | signup_verify (e-mail) | login_2fa | password_reset | phone_change
     purpose: Mapped[str] = mapped_column(String(20), nullable=False)
+    # sms | whatsapp | email
+    channel: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    # Empreintes HMAC (jamais la destination ni l'IP en clair) : limitation de débit.
+    destination_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ip_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Nouveau numéro en attente de vérification (phone_change uniquement).
+    pending_value: Mapped[str | None] = mapped_column(String(32), nullable=True)
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
     code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

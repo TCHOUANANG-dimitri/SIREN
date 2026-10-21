@@ -1,0 +1,11 @@
+# Configuration gitleaks (chargée automatiquement depuis la racine du dépôt, CI job « secrets »).
+# Règles par défaut conservées ; seule exception : les valeurs d'EXEMPLE des modèles
+# d'environnement, qui commencent toutes par « a-remplacer- » et sont refusées au
+# démarrage (unsafe_production_settings) comme au déploiement (lib.sh).
+[extend]
+useDefault = true
+
+[allowlist]
+description = "valeurs d'exemple des modèles .env (jamais des secrets)"
+regexTarget = "match"
+regexes = ['''=a-remplacer-[a-z0-9-]+''']

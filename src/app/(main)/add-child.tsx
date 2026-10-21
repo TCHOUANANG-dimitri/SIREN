@@ -9,16 +9,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Camera as CameraIcon, CheckCircle2, Keyboard, Plus } from 'lucide-react-native';
-import { Banner, Button, Card, ProgressSteps, TextField } from '@/components';
+import { Banner, Button, Card, ProgressSteps, SerialInput, TextField } from '@/components';
 import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/theme';
-import { useChildren, useCreateChild, useFindDevice } from '@/api/hooks/useChildren';
+import { useChildren, useCreateChild, useFindDevice, usePairDevice } from '@/api/hooks/useChildren';
 import { ApiError } from '@/api/network';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { isRemotePhoto, saveLocalChildPhoto } from '@/features/children/localPhotos';
+import { parseQrPayload, serialFromBody } from '@/features/pairing/serial';
 
 type Step = 'profil' | 'appairage' | 'verification';
 
@@ -26,12 +27,17 @@ export default function AddChildScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const [step, setStep] = useState<Step>('profil');
+  // Avec `childId` : (ré)association d'un boîtier à un enfant existant (étape profil sautée).
+  const { childId: existingChildId } = useLocalSearchParams<{ childId?: string }>();
+  const [step, setStep] = useState<Step>(existingChildId ? 'appairage' : 'profil');
   const [prenom, setPrenom] = useState('');
   const [prenomError, setPrenomError] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
-  const [deviceIdInput, setDeviceIdInput] = useState('');
-  const [deviceIdError, setDeviceIdError] = useState('');
+  const [serialBody, setSerialBody] = useState('');
+  const [pairedSerial, setPairedSerial] = useState('');
+  // PIN d'activation imprimé sur la boîte : demandé seulement si le serveur l'exige.
+  const [pinFor, setPinFor] = useState<string | null>(null);
+  const [pin, setPin] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [pairingError, setPairingError] = useState('');
@@ -41,6 +47,7 @@ export default function AddChildScreen() {
   const { data: children } = useChildren();
   const findDevice = useFindDevice();
   const createChild = useCreateChild();
+  const pairDevice = usePairDevice(existingChildId);
   const stepIndex = { profil: 0, appairage: 1, verification: 2 }[step];
 
   async function pickPhoto() {
@@ -55,19 +62,42 @@ export default function AddChildScreen() {
     if (!result.canceled && result.assets[0]) setPhotoUrl(result.assets[0].uri);
   }
 
-  async function handleDeviceSubmit(rawId: string) {
+  /**
+   * `serial` est déjà au format exact SIREN-XXXXX-XXXXX : il est transmis tel quel
+   * (aucune conversion de casse). Le PIN n'est demandé que si le serveur l'exige.
+   */
+  async function handleDeviceSubmit(serial: string, activationPin?: string) {
     setScanned(true);
     setPairingError('');
     try {
-      await findDevice.mutateAsync(rawId);
-      setDeviceIdInput(rawId.toUpperCase());
+      if (!activationPin) {
+        const found = await findDevice.mutateAsync(serial);
+        if (found.pinRequired) {
+          setPinFor(serial);
+          setPin('');
+          setManualEntry(true);
+          setScanned(false);
+          return;
+        }
+      }
+      if (existingChildId) {
+        await pairDevice.mutateAsync({ deviceId: serial, activationPin });
+        setPairedSerial(serial);
+        setPinFor(null);
+        setCreatedChildId(existingChildId);
+        setStep('verification');
+        return;
+      }
       // Seule une adresse http(s) part au serveur ; une photo du téléphone reste locale.
       const child = await createChild.mutateAsync({
         prenom,
-        deviceId: rawId.toUpperCase(),
+        deviceId: serial,
         photoUrl: isRemotePhoto(photoUrl) ? photoUrl : undefined,
+        activationPin,
       });
       if (photoUrl && !isRemotePhoto(photoUrl)) await saveLocalChildPhoto(child.id, photoUrl).catch(() => {});
+      setPairedSerial(serial);
+      setPinFor(null);
       setCreatedChildId(child.id);
       setStep('verification');
     } catch (error) {
@@ -81,15 +111,27 @@ export default function AddChildScreen() {
   }
 
   function onBarcodeScanned({ data }: { data: string }) {
-    if (findDevice.isPending || createChild.isPending) return;
-    void handleDeviceSubmit(data);
+    if (findDevice.isPending || createChild.isPending || pairDevice.isPending) return;
+    // Le contenu du QR est une donnée : seul un numéro exact est accepté, rien n'est ouvert.
+    const serial = parseQrPayload(data);
+    if (!serial) {
+      setScanned(true);
+      setPairingError(t('children.qrInvalid'));
+      // Laisse le temps de lire le message avant de rescanner.
+      setTimeout(() => setScanned(false), 2000);
+      return;
+    }
+    void handleDeviceSubmit(serial);
   }
+
+  const busy = findDevice.isPending || createChild.isPending || pairDevice.isPending;
+  const completeSerial = serialFromBody(serialBody);
 
   return (
     <SafeAreaView style={styles.flex} edges={['top']}>
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <ProgressSteps steps={['Profil', 'Appairage', 'Vérification']} currentIndex={stepIndex} />
+        <ProgressSteps steps={[t('children.stepProfile'), t('children.stepPairing'), t('children.stepCheck')]} currentIndex={stepIndex} />
 
         {step === 'profil' && (
           <View style={styles.stepBlock}>
@@ -172,48 +214,57 @@ export default function AddChildScreen() {
                   <Text style={styles.manualLinkText}>{t('children.manualEntry')}</Text>
                 </Pressable>
               </>
+            ) : pinFor ? (
+              <>
+                <Text style={styles.serialEcho}>{pinFor}</Text>
+                <TextField
+                  label={t('children.pinLabel')}
+                  value={pin}
+                  onChangeText={(v) => setPin(v.replace(/\s/g, '').slice(0, 12))}
+                  hint={t('children.pinHint')}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={12}
+                />
+                <Button
+                  label={busy ? t('children.searchingDevice') : t('children.pairWithPin')}
+                  onPress={() => handleDeviceSubmit(pinFor, pin)}
+                  loading={busy}
+                  disabled={pin.length < 4}
+                />
+                <Button
+                  label={t('children.changeSerial')}
+                  variant="ghost"
+                  onPress={() => {
+                    setPinFor(null);
+                    setPin('');
+                    setPairingError('');
+                  }}
+                  style={{ marginTop: spacing.md }}
+                />
+              </>
             ) : (
               <>
-                <TextField
+                <SerialInput
                   label={t('children.deviceIdLabel')}
-                  value={deviceIdInput}
-                  onChangeText={(text) => {
-                    setDeviceIdInput(text);
-                    if (text.trim()) setDeviceIdError('');
+                  body={serialBody}
+                  onChangeBody={(body) => {
+                    setSerialBody(body);
+                    if (pairingError) setPairingError('');
                   }}
-                  placeholder={t('children.deviceIdPlaceholder')}
-                  autoCapitalize="characters"
-                  error={deviceIdError}
+                  editable={!busy}
                 />
-                {(findDevice.isError || createChild.isError) && (
-                  <View style={{ marginBottom: spacing.md }}>
-                    <Banner
-                      kind="error"
-                      message={
-                        findDevice.error instanceof ApiError
-                          ? findDevice.error.message
-                          : createChild.error instanceof ApiError
-                            ? createChild.error.message
-                            : t('errors.deviceNotFound')
-                      }
-                    />
-                  </View>
-                )}
                 <Button
-                  label={findDevice.isPending || createChild.isPending ? t('children.searchingDevice') : t('children.searchDevice')}
-                  onPress={() => {
-                    if (!deviceIdInput.trim()) {
-                      setDeviceIdError(t('children.deviceIdRequired'));
-                      return;
-                    }
-                    if (deviceIdInput.trim().length < 5) {
-                      setDeviceIdError(t('children.deviceIdTooShort'));
-                      return;
-                    }
-                    handleDeviceSubmit(deviceIdInput);
-                  }}
-                  loading={findDevice.isPending || createChild.isPending}
+                  label={busy ? t('children.searchingDevice') : t('children.searchDevice')}
+                  onPress={() => completeSerial && handleDeviceSubmit(completeSerial)}
+                  loading={busy}
+                  // Validation uniquement quand les 10 caractères sont saisis.
+                  disabled={!completeSerial}
                 />
+                <Pressable onPress={() => setManualEntry(false)} style={styles.manualLink} accessibilityRole="button">
+                  <CameraIcon size={14} color={colors.accent} />
+                  <Text style={styles.manualLinkText}>{t('children.scanInstead')}</Text>
+                </Pressable>
               </>
             )}
           </View>
@@ -231,7 +282,7 @@ export default function AddChildScreen() {
               <Text style={styles.cardLabel}>{t('children.device')}</Text>
               <View style={styles.cardRow}>
                 <Text style={styles.cardKey}>ID</Text>
-                <Text style={styles.cardValueMono}>{deviceIdInput}</Text>
+                <Text style={styles.cardValueMono}>{pairedSerial}</Text>
               </View>
               <View style={styles.cardRow}>
                 <Text style={styles.cardKey}>{t('common.status')}</Text>
@@ -239,12 +290,16 @@ export default function AddChildScreen() {
               </View>
             </Card>
 
-            <Button
-              label={t('children.defineProtection')}
-              onPress={() =>
-                router.replace({ pathname: '/(main)/context-wizard', params: { childId: createdChildId ?? '' } })
-              }
-            />
+            {existingChildId ? (
+              <Button label={t('common.done')} onPress={() => router.back()} />
+            ) : (
+              <Button
+                label={t('children.defineProtection')}
+                onPress={() =>
+                  router.replace({ pathname: '/(main)/context-wizard', params: { childId: createdChildId ?? '' } })
+                }
+              />
+            )}
           </View>
         )}
       </ScrollView>
@@ -298,5 +353,6 @@ const useStyles = makeStyles((colors) => ({
   cardRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
   cardKey: { ...typography.body, color: colors.slate },
   cardValueMono: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
+  serialEcho: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink, textAlign: 'center', marginBottom: spacing.lg, letterSpacing: 1 },
   cardValueOk: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.veille },
 }));

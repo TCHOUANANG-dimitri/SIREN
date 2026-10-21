@@ -214,3 +214,36 @@ async def _ensure_partitions_async():
         created = (await db.execute(text("SELECT public.ensure_positions_partitions(3)"))).scalar()
         await db.commit()
         print(f"Partitions de positions vérifiées ({created} mois)")
+
+
+@celery_app.task(name="app.tasks.retrain.expire_device_commands")
+def expire_device_commands():
+    import asyncio
+    asyncio.run(_expire_commands_async())
+
+
+async def _expire_commands_async():
+    from app.services.device_commands import command_dict, expire_pending
+    from app.services.websocket_manager import publish_command_update
+
+    async with async_session_factory() as db:
+        expired = await expire_pending(db)
+        await db.commit()
+        for command in expired:
+            await publish_command_update(command.child_id, command_dict(command))
+        print(f"Commandes expirées : {len(expired)}")
+
+
+@celery_app.task(name="app.tasks.retrain.purge_rate_limit_events")
+def purge_rate_limit_events():
+    import asyncio
+    asyncio.run(_purge_rate_limit_async())
+
+
+async def _purge_rate_limit_async():
+    from app.services.rate_limit import purge_older_than
+
+    async with async_session_factory() as db:
+        removed = await purge_older_than(db, hours=48)
+        await db.commit()
+        print(f"Compteurs de limitation purgés : {removed}")

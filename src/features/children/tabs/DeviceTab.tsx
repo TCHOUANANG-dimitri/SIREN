@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert as RNAlert, Pressable, ScrollView, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import Slider from '@react-native-community/slider';
 import { RefreshCw } from 'lucide-react-native';
 import { Banner, Button, Card, Skeleton } from '@/components';
 import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useDeviceSettings, usePatchDeviceSettings } from '@/api/hooks/useDevice';
-import { useChildStatus } from '@/api/hooks/useChildren';
+import { useChildren, useChildStatus, useUnpairDevice } from '@/api/hooks/useChildren';
 import { useCurrentAccess } from '@/features/sharing/useCurrentAccess';
 import { toUserMessage } from '@/api/errors';
 import { formatBattery, formatRelativeTime } from '@/utils/format';
@@ -31,6 +32,53 @@ export function DeviceTab({ childId }: { childId: string }) {
   const canConfigure = can('configure_device');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { data: children } = useChildren();
+  const serial = children?.find((c) => c.id === childId)?.deviceId ?? '';
+  const unpair = useUnpairDevice(childId);
+
+  function confirmUnpair() {
+    RNAlert.alert(t('childTabs.unpairTitle'), t('childTabs.unpairBody', { serial }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('childTabs.unpairConfirm'),
+        style: 'destructive',
+        onPress: () => {
+          setError(null);
+          unpair.mutate(undefined, { onError: (e) => setError(toUserMessage(e)) });
+        },
+      },
+    ]);
+  }
+
+  const pairingCard = (
+    <Card style={styles.card}>
+      <Text style={styles.cardTitle}>{t('childTabs.pairingTitle')}</Text>
+      <Text style={styles.serial} selectable>
+        {serial || t('childTabs.noDevice')}
+      </Text>
+      {canConfigure && (
+        <View style={styles.pairingActions}>
+          <Button
+            label={t(serial ? 'childTabs.replaceDevice' : 'childTabs.pairDevice')}
+            variant="secondary"
+            onPress={() => router.push({ pathname: '/(main)/add-child', params: { childId } })}
+          />
+          {!!serial && (
+            <Button label={t('childTabs.unpairDevice')} variant="ghost" onPress={confirmUnpair} loading={unpair.isPending} />
+          )}
+        </View>
+      )}
+    </Card>
+  );
+
+  if (!serial && children) {
+    return (
+      <ScrollView contentContainerStyle={styles.content}>
+        {error && <Banner kind="error" message={error} />}
+        {pairingCard}
+      </ScrollView>
+    );
+  }
 
   if (isLoading) return <View style={styles.content}><Skeleton height={200} radius={16} /><Skeleton height={120} radius={16} style={{ marginTop: spacing.md }} /></View>;
   if (isError || !settings) return <View style={styles.content}><Banner kind="error" message={t('childTabs.deviceLoadError')} /></View>;
@@ -53,6 +101,8 @@ export function DeviceTab({ childId }: { childId: string }) {
       {saved && <Banner kind="success" message={t('childTabs.settingsSentToServer')} />}
       {error && <Banner kind="error" message={error} />}
       {!canConfigure && <Banner kind="info" message={t('childTabs.principalOnlySettings')} />}
+
+      {pairingCard}
 
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>{t('childTabs.powerMode')}</Text>
@@ -147,6 +197,8 @@ const useStyles = makeStyles((colors) => ({
   sliderBounds: { flexDirection: 'row', justifyContent: 'space-between' },
   sliderBoundText: { ...typography.caption, color: colors.muted },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
+  serial: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink, letterSpacing: 1, marginBottom: spacing.md },
+  pairingActions: { gap: spacing.sm },
   infoKey: { ...typography.body, color: colors.slate },
   infoValue: { ...typography.bodyStrong, fontFamily: fontFamily.semiBold, color: colors.ink },
 }));

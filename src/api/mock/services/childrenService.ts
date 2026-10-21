@@ -1,5 +1,6 @@
 import { getDb, mutateDb, genId } from '../db';
-import { ApiError } from '../../errors';
+import { ApiError, reasonError } from '../../errors';
+import { isValidSerial } from '@/features/pairing/serial';
 import { simulateLatency } from '../helpers';
 import { assertChildAccess, resolveCurrentUser } from '../session';
 import type { Child, DeviceStatus } from '@/models/entities';
@@ -23,15 +24,12 @@ const DEFAULT_ORIGIN = { lat: 3.8667, lon: 11.5167 };
 
 export async function createChild(
   token: string | null,
-  input: { prenom: string; deviceId: string; photoUrl?: string }
+  input: { prenom: string; deviceId: string; photoUrl?: string; activationPin?: string }
 ): Promise<Child> {
   await simulateLatency(400, 900);
   const user = resolveCurrentUser(token);
   const db = getDb();
-  const device = db.devices.find((d) => d.deviceId === input.deviceId);
-  if (!device) throw new ApiError(i18n.t('errors.deviceNotFound'), 404);
-  const alreadyLinked = db.children.some((c) => c.deviceId === input.deviceId);
-  if (alreadyLinked) throw new ApiError(i18n.t('errors.deviceNotFound'), 409);
+  assertPairable(user.id, input.deviceId, input.activationPin);
 
   // Unicité du prénom au sein d'un même parent : deux familles distinctes
   // peuvent légitimement avoir un « Paul », mais un parent qui enregistre deux
@@ -112,19 +110,86 @@ export async function patchChildContext(
   return { ...child, ...patch };
 }
 
-const DEVICE_ID_PATTERN = /^SIREN-[A-Z0-9]{4}-[A-Z0-9]{4}$/i;
+/**
+ * PIN d'activation de démonstration, imprimé sur la boîte des boîtiers « neufs »
+ * créés à la volée (les boîtiers du jeu de démo n'en ont pas, comme un serveur v1).
+ */
+export const DEMO_ACTIVATION_PIN = 'K7Q2M9';
+const devicesWithPin = new Set<string>();
 
-/** Simule la recherche d'un dispositif par son identifiant lors de l'appairage (étape 2). */
+export function pinRequired(deviceId: string): boolean {
+  return devicesWithPin.has(deviceId);
+}
+
+/** Même règles que le serveur (children.resolve_device_for_pairing). */
+function assertPairable(userId: string, deviceId: string, pin: string | undefined, forChildId?: string) {
+  if (!isValidSerial(deviceId)) throw reasonError('serial_invalid', 422);
+  const db = getDb();
+  const device = db.devices.find((d) => d.deviceId === deviceId);
+  if (!device) throw reasonError('device_not_found', 404);
+  const holder = db.children.find((c) => c.deviceId === deviceId);
+  if (holder && (holder.id === forChildId || holder.parentId === userId)) throw reasonError('device_already_paired', 409);
+  if (pinRequired(deviceId)) {
+    if (!pin) throw reasonError('pin_required', 403);
+    if (pin.trim() !== DEMO_ACTIVATION_PIN) throw reasonError('pin_invalid', 403);
+    if (holder) throw reasonError('device_taken', 409);
+  } else if (holder) {
+    throw reasonError('device_not_found', 404);
+  }
+}
+
+export async function pairDevice(
+  token: string | null,
+  childId: string,
+  input: { deviceId: string; activationPin?: string }
+): Promise<Child> {
+  await simulateLatency(400, 900);
+  const user = resolveCurrentUser(token);
+  assertChildAccess(childId, user);
+  if (user.role !== 'principal') throw reasonError('principal_only', 403);
+  assertPairable(user.id, input.deviceId, input.activationPin, childId);
+  let updated: Child | undefined;
+  mutateDb((d) => {
+    const target = d.children.find((c) => c.id === childId);
+    if (target) {
+      target.deviceId = input.deviceId;
+      updated = { ...target };
+    }
+  });
+  if (!updated) throw new ApiError(i18n.t('errors.childNotFound'), 404);
+  return updated;
+}
+
+export async function unpairDevice(token: string | null, childId: string): Promise<Child> {
+  await simulateLatency(300, 600);
+  const user = resolveCurrentUser(token);
+  assertChildAccess(childId, user);
+  if (user.role !== 'principal') throw reasonError('principal_only', 403);
+  let updated: Child | undefined;
+  mutateDb((d) => {
+    const target = d.children.find((c) => c.id === childId);
+    if (target) {
+      if (!target.deviceId) throw reasonError('no_device', 404);
+      target.deviceId = '';
+      updated = { ...target };
+    }
+  });
+  if (!updated) throw new ApiError(i18n.t('errors.childNotFound'), 404);
+  return updated;
+}
+
+/** Simule la recherche d'un dispositif par son numéro lors de l'appairage (étape 2). Sensible à la casse. */
 export async function findDeviceById(deviceId: string): Promise<DeviceStatus> {
   await simulateLatency(500, 1100);
   const db = getDb();
-  const normalized = deviceId.trim().toUpperCase();
-  let device = db.devices.find((d) => d.deviceId === normalized);
+  const serial = deviceId.trim();
+  if (!isValidSerial(serial)) throw reasonError('serial_invalid', 422);
+  let device = db.devices.find((d) => d.deviceId === serial);
 
-  if (!device && DEVICE_ID_PATTERN.test(normalized)) {
-    // Démo : tout identifiant au bon format est accepté comme un dispositif neuf en ligne.
+  if (!device) {
+    // Démo : tout numéro au bon format est accepté comme un boîtier neuf, avec PIN d'activation.
     device = {
-      deviceId: normalized,
+      deviceId: serial,
       battery: 80 + Math.floor(Math.random() * 18),
       online: true,
       lastSeen: new Date().toISOString(),
@@ -134,13 +199,13 @@ export async function findDeviceById(deviceId: string): Promise<DeviceStatus> {
       energyMode: 'equilibre',
       sensitivity: 50,
     };
+    devicesWithPin.add(serial);
     mutateDb((d) => {
       d.devices.push(device!);
     });
   }
 
-  if (!device) throw new ApiError(i18n.t('errors.deviceNotFound'), 404);
-  const alreadyLinked = db.children.some((c) => c.deviceId === device!.deviceId);
-  if (alreadyLinked) throw new ApiError(i18n.t('errors.deviceNotFound'), 409);
+  // Même réponse qu'un numéro inconnu : on ne révèle pas qu'un boîtier est suivi par une autre famille.
+  if (db.children.some((c) => c.deviceId === device!.deviceId)) throw reasonError('device_not_found', 404);
   return device;
 }

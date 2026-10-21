@@ -26,7 +26,7 @@ export function useChildStatus(childId: string | undefined) {
 export function useCreateChild() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { prenom: string; deviceId: string; photoUrl?: string }) =>
+    mutationFn: (input: { prenom: string; deviceId: string; photoUrl?: string; activationPin?: string }) =>
       api.children.create(input),
     onSuccess: (child: Child) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.children });
@@ -38,6 +38,30 @@ export function useCreateChild() {
 export function useFindDevice() {
   return useMutation({
     mutationFn: (deviceId: string) => api.children.findDevice(deviceId),
+  });
+}
+
+/** (Ré)associe un dispositif à un enfant existant (parent principal). */
+export function usePairDevice(childId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { deviceId: string; activationPin?: string }) => api.children.pairDevice(childId as string, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.children });
+      queryClient.invalidateQueries({ queryKey: queryKeys.childStatus(childId ?? '') });
+    },
+  });
+}
+
+/** Dissocie le dispositif ; l'historique reste à l'enfant. */
+export function useUnpairDevice(childId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.children.unpairDevice(childId as string),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.children });
+      queryClient.removeQueries({ queryKey: queryKeys.childStatus(childId ?? '') });
+    },
   });
 }
 

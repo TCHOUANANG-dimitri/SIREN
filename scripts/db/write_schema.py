@@ -1,5 +1,11 @@
 """Assemble data/schema.sql : en-tête de portabilité + pg_dump --schema-only + migrations déjà incluses."""
+import re
 import sys
+
+# Lignes propres à l'exécution de pg_dump, retirées pour que le fichier soit reproductible
+# (contrôlé en CI par `git diff --exit-code`) : version du serveur et de pg_dump,
+# et jetons aléatoires \restrict / \unrestrict des pg_dump récents (≥ 15.14).
+VOLATILE = re.compile(r"^(-- Dumped (from database|by pg_dump) version .*|\\(un)?restrict \S+)\n", re.MULTILINE)
 
 HEADER = '''-- =============================================================================
 -- SIREN — Schéma PostgreSQL / PostGIS reconstitué (base « siren »)
@@ -55,7 +61,7 @@ SET search_path = public, extensions;
 
 
 def main(dump: str, baseline: str, target: str) -> None:
-    body = open(dump, encoding="utf-8").read()
+    body = VOLATILE.sub("", open(dump, encoding="utf-8").read())
     body = body.replace("CREATE SCHEMA public;", "CREATE SCHEMA IF NOT EXISTS public;", 1)
     body = body.replace("COMMENT ON SCHEMA public IS 'standard public schema';\n", "")
     inserts = open(baseline, encoding="utf-8").read().strip()

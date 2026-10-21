@@ -18,6 +18,8 @@ export const ACCOUNT_SCOPED_KEYS = [
   // Photos d'enfant choisies sur ce téléphone (features/children/localPhotos).
   'siren.childPhotos',
   'siren.pushToken',
+  // Trames du dispositif en attente de relais (positions : données personnelles).
+  'siren.deviceLink.outbox.v1',
 ];
 
 /**

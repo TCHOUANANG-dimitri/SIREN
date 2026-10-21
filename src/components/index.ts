@@ -15,3 +15,4 @@ export * from './PasswordStrengthMeter';
 export * from './ScreenPlaceholder';
 export * from './ErrorBoundary';
 export * from './SettingsList';
+export * from './SerialInput';

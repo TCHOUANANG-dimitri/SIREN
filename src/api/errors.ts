@@ -48,7 +48,25 @@ export type ErrorReason =
   | 'invalid_credentials'
   | 'place_limit'
   | 'geofence_limit'
-  | 'schedule_invalid';
+  | 'schedule_invalid'
+  | 'phone_invalid'
+  | 'phone_taken'
+  | 'phone_unchanged'
+  | 'channel_unavailable'
+  | 'channel_not_allowed'
+  | 'delivery_failed'
+  | 'rate_limited'
+  | 'serial_invalid'
+  | 'device_not_found'
+  | 'device_taken'
+  | 'device_already_paired'
+  | 'pin_required'
+  | 'pin_invalid'
+  | 'no_device'
+  | 'principal_only'
+  | 'command_unknown'
+  | 'command_value_invalid'
+  | 'command_not_found';
 
 export class ApiError extends Error {
   readonly status: number;

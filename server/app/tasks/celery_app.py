@@ -29,6 +29,17 @@ celery_app.conf.update(
             "schedule": crontab(hour=2, minute=30, day_of_month=1),
             "options": {"queue": "maintenance"},
         },
+        "expire-device-commands": {
+            # Protocole §8 : toute commande PENDING de plus de 2 min passe à TIMEOUT.
+            "task": "app.tasks.retrain.expire_device_commands",
+            "schedule": 60.0,
+            "options": {"queue": "maintenance"},
+        },
+        "purge-rate-limit-events": {
+            "task": "app.tasks.retrain.purge_rate_limit_events",
+            "schedule": crontab(minute=15),
+            "options": {"queue": "maintenance"},
+        },
         "purge-old-positions": {
             "task": "app.tasks.retrain.purge_old_positions",
             "schedule": crontab(hour=4, minute=0, day_of_week=0),

@@ -89,8 +89,9 @@ const useStyles = makeStyles((colors) => ({
   },
   fullWidth: { alignSelf: 'center', width: '100%', maxWidth: 680 },
   emergencySize: { minHeight: 56, borderRadius: radii.lg },
-  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
-  label: { ...typography.button, fontFamily: fontFamily.semiBold },
+  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, maxWidth: '100%' },
+  // Libellé long ou grande taille de police : retour à la ligne, jamais tronqué ni débordant.
+  label: { ...typography.button, fontFamily: fontFamily.semiBold, flexShrink: 1, textAlign: 'center' },
   emergencyLabel: { fontSize: 18 },
   disabled: { opacity: 0.5 },
 }));

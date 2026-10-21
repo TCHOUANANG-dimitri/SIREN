@@ -52,7 +52,7 @@
       "twofaOff": "Two-step verification is off",
       "twofaTitle": "Two-step verification",
       "twofaLabel": "Email code at sign-in",
-      "twofaFooter": "Each time you sign in, a one-time code is sent to {{email}}.",
+      "twofaFooter": "At each sign-in, a one-time code is sent to {{phone}} (SMS or WhatsApp), or to your email if it's verified.",
       "twofaConfirmEnable": "Enter your password to turn on two-step verification.",
       "twofaConfirmDisable": "Enter your password to turn off two-step verification.",
       "twofaEnabled": "Two-step verification is on. A confirmation email was sent if email sending is available.",
@@ -96,6 +96,25 @@
     "deleteAccount": "Delete my account",
     "deleteAccountDesc": "Deletes your account and cuts off all access to your children's data.",
     "deleteTitle": "Delete account?",
-    "deleteBody": "Your account will be deleted, along with access to your children's data for you and your trusted contacts. This cannot be undone."
+    "deleteBody": "Your account will be deleted, along with access to your children's data for you and your trusted contacts. This cannot be undone.",
+    "emailNone": "No address",
+    "emailOptional": "Email is optional; your phone is used to sign in and receive codes.",
+    "phone": {
+      "rowLabel": "Phone number",
+      "missing": "Needs to be added",
+      "verified": "verified",
+      "notVerified": "not verified",
+      "title": "Change phone number",
+      "body": "Your password is required, then a code is sent to the new number. The change only happens once the code is confirmed; the old number is notified.",
+      "completeTitle": "Add your phone number",
+      "completeBody": "A phone number is now required: it's used to sign in and to receive your security codes. It is confirmed with a code.",
+      "current": "Current number: {{phone}}",
+      "newPhone": "New number",
+      "sendCode": "Send the code",
+      "codeSent": "Code sent by {{channel}} to {{phone}}.",
+      "confirm": "Confirm the number",
+      "restart": "Edit the number",
+      "changed": "Number updated and verified."
+    }
   }
 }

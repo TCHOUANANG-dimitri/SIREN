@@ -37,10 +37,11 @@ export const mockApi: SirenApi = {
     register: auth.register,
     login: auth.login,
     refresh: auth.refresh,
-    requestOtp: ({ accessToken }) => auth.requestOtp(accessToken),
+    otpChannels: auth.otpChannels,
+    requestOtp: ({ accessToken, channel }) => auth.requestOtp(accessToken, channel),
     verifyOtp: ({ code, challengeToken }) => auth.verifyOtp({ code, challengeToken }),
+    sendSecondFactor: auth.sendSecondFactor,
     verifySecondFactor: auth.verifySecondFactor,
-    resendSecondFactor: auth.resendSecondFactor,
     forgotPassword: auth.forgotPassword,
     resetPassword: auth.resetPassword,
     logout: async () => {},
@@ -53,15 +54,19 @@ export const mockApi: SirenApi = {
     registerPushToken: async () => {},
     changePassword: (input) => auth.changePassword(token(), input),
     setTwoFactor: (input) => auth.setTwoFactor(token(), input),
+    requestPhoneChange: (input) => auth.requestPhoneChange(token(), input),
+    confirmPhoneChange: (input) => auth.confirmPhoneChange(token(), input),
   },
   children: {
     list: () => children.listChildren(token()),
     create: (input) => children.createChild(token(), input),
+    pairDevice: (childId, input) => children.pairDevice(token(), childId, input),
+    unpairDevice: (childId) => children.unpairDevice(token(), childId),
     getStatus: (childId) => children.getChildStatus(token(), childId),
     patchContext: (childId, patch) => children.patchChildContext(token(), childId, patch),
     findDevice: async (deviceId) => {
       const found = await children.findDeviceById(deviceId);
-      return { deviceId: found.deviceId, online: found.online, battery: found.battery };
+      return { deviceId: found.deviceId, online: found.online, battery: found.battery, pinRequired: children.pinRequired(found.deviceId) };
     },
   },
   tracking: {
@@ -125,6 +130,7 @@ export const mockApi: SirenApi = {
     logs: (childId) => audio.listAudioLogs(token(), childId),
   },
   device: {
+    relayFrames: (frames) => device.relayFrames(token(), frames),
     getSettings: async (childId) => {
       const status = await device.getDeviceSettings(token(), childId);
       return { energyMode: status.energyMode, sensitivity: status.sensitivity, configVersion: status.configVersion };

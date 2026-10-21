@@ -18,7 +18,21 @@
     "estimated": "Estimated location — {{when}}",
     "lost": "GPS signal lost — last point {{when}}",
     "deviceOffline": "Device offline — last point {{when}}",
-    "batteryLine": "battery {{battery}}"
+    "batteryLine": "battery {{battery}}",
+    "lastKnown": "Device's last known position ({{when}})",
+    "phone": {
+      "marker": "Your phone",
+      "show": "Show my phone's position",
+      "shown": "Blue dot: your phone (not the device).",
+      "stale": "Your phone's position from {{when}}.",
+      "update": "Update",
+      "denied": "Permission denied: the map only shows the device.",
+      "blocked": "Location is denied for SIREN in your phone settings. Allow it to see your position.",
+      "servicesOff": "Your phone's location is turned off.",
+      "openSettings": "Open settings",
+      "retry": "Check again",
+      "unavailable": "Phone position unavailable right now."
+    }
   },
   "history": {
     "play": "Play the trip",

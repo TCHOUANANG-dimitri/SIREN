@@ -11,8 +11,9 @@ import { fontFamily, spacing, typography, makeStyles } from '@/theme';
 import { useLogin } from '@/api/hooks/useAuth';
 import { toUserMessage } from '@/api/errors';
 
+// Téléphone (tout format) ou e-mail : le serveur reconnaît l'un ou l'autre.
 const schema = z.object({
-  email: z.string().trim().email('validation.emailInvalid'),
+  identifier: z.string().trim().min(3, 'validation.identifierRequired'),
   password: z.string().min(1, 'validation.passwordRequired'),
 });
 type FormValues = z.infer<typeof schema>;
@@ -30,7 +31,7 @@ export default function LoginScreen() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     mode: 'onChange',
-    defaultValues: { email: '', password: '' },
+    defaultValues: { identifier: '', password: '' },
   });
 
   async function onSubmit(values: FormValues) {
@@ -64,18 +65,19 @@ export default function LoginScreen() {
 
         <Controller
           control={control}
-          name="email"
+          name="identifier"
           render={({ field }) => (
             <TextField
-              label={t('auth.email')}
+              label={t('auth.identifier')}
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              error={errors.email?.message && t(errors.email.message)}
+              error={errors.identifier?.message && t(errors.identifier.message)}
               autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-              placeholder={t('auth.emailPlaceholder')}
+              autoCorrect={false}
+              autoComplete="username"
+              textContentType="username"
+              placeholder={t('auth.identifierPlaceholder')}
             />
           )}
         />

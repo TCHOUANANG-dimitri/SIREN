@@ -52,8 +52,6 @@ SET search_path = public, extensions;
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 15.8 (Debian 15.8-1.pgdg110+1)
--- Dumped by pg_dump version 15.8 (Debian 15.8-1.pgdg110+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -211,7 +209,8 @@ CREATE TYPE public.share_status AS ENUM (
 --
 
 CREATE FUNCTION public.create_positions_partition(p_month date) RETURNS text
-    LANGUAGE plpgsql
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'extensions'
     AS $$
 DECLARE
     v_start date := date_trunc('month', p_month)::date;
@@ -285,6 +284,7 @@ $$;
 
 CREATE FUNCTION public.ensure_positions_partitions(p_months_ahead integer DEFAULT 3) RETURNS integer
     LANGUAGE plpgsql
+    SET search_path TO 'public', 'extensions'
     AS $$
 DECLARE
     v_i integer;
@@ -343,6 +343,23 @@ BEGIN
     DELETE FROM positions WHERE ts < v_cutoff;
     GET DIAGNOSTICS v_deleted = ROW_COUNT;
     RETURN v_deleted;
+END;
+$$;
+
+
+--
+-- Name: require_user_telephone(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.require_user_telephone() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NEW.telephone IS NULL OR btrim(NEW.telephone) = '' THEN
+        RAISE EXCEPTION 'telephone_required: un numéro de téléphone est obligatoire'
+            USING ERRCODE = 'not_null_violation';
+    END IF;
+    RETURN NEW;
 END;
 $$;
 
@@ -523,7 +540,9 @@ CREATE TABLE public.positions (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 )
 PARTITION BY RANGE (ts);
 
@@ -543,6 +562,26 @@ CREATE VIEW public.current_positions AS
     p.ts AS last_seen
    FROM public.positions p
   ORDER BY p.child_id, p.ts DESC;
+
+
+--
+-- Name: device_commands; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.device_commands (
+    id uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
+    device_id character varying(50) NOT NULL,
+    child_id uuid NOT NULL,
+    requested_by uuid,
+    code character varying(20) NOT NULL,
+    valeur character varying(32),
+    status character varying(10) DEFAULT 'PENDING'::character varying NOT NULL,
+    detail character varying(200),
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    responded_at timestamp with time zone,
+    CONSTRAINT device_commands_code_check CHECK (((code)::text = ANY (ARRAY[('LOCALISER'::character varying)::text, ('MODE'::character varying)::text, ('REDEMARRER'::character varying)::text]))),
+    CONSTRAINT device_commands_status_check CHECK (((status)::text = ANY (ARRAY[('PENDING'::character varying)::text, ('SUCCESS'::character varying)::text, ('FAILED'::character varying)::text, ('TIMEOUT'::character varying)::text])))
+);
 
 
 --
@@ -578,6 +617,19 @@ ALTER SEQUENCE public.device_events_id_seq OWNED BY public.device_events.id;
 
 
 --
+-- Name: device_relay_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.device_relay_events (
+    id uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
+    device_id character varying(50) NOT NULL,
+    event_id character varying(64) NOT NULL,
+    relayed_by uuid,
+    received_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: devices; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -592,7 +644,8 @@ CREATE TABLE public.devices (
     energy_mode character varying(20) DEFAULT 'equilibre'::character varying NOT NULL,
     sensitivity character varying(20) DEFAULT '50'::character varying NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT ck_devices_energy_mode CHECK (((energy_mode)::text = ANY ((ARRAY['continu'::character varying, 'equilibre'::character varying, 'economie'::character varying])::text[]))),
+    activation_pin_hash character varying(255),
+    CONSTRAINT ck_devices_energy_mode CHECK (((energy_mode)::text = ANY (ARRAY[('continu'::character varying)::text, ('equilibre'::character varying)::text, ('economie'::character varying)::text]))),
     CONSTRAINT ck_devices_sensitivity CHECK ((((sensitivity)::text ~ '^[0-9]{1,3}$'::text) AND (((sensitivity)::integer >= 0) AND ((sensitivity)::integer <= 100)))),
     CONSTRAINT devices_battery_check CHECK (((battery >= 0) AND (battery <= 100)))
 );
@@ -787,8 +840,13 @@ CREATE TABLE public.otp_challenges (
     expires_at timestamp with time zone NOT NULL,
     consumed_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    channel character varying(10),
+    destination_hash character(64),
+    ip_hash character(64),
+    pending_value character varying(32),
     CONSTRAINT ck_otp_attempts CHECK ((attempts >= 0)),
-    CONSTRAINT otp_challenges_purpose_check CHECK (((purpose)::text = ANY ((ARRAY['signup_verify'::character varying, 'login_2fa'::character varying, 'password_reset'::character varying])::text[])))
+    CONSTRAINT ck_otp_channel CHECK (((channel IS NULL) OR ((channel)::text = ANY (ARRAY[('sms'::character varying)::text, ('whatsapp'::character varying)::text, ('email'::character varying)::text])))),
+    CONSTRAINT otp_challenges_purpose_check CHECK (((purpose)::text = ANY (ARRAY[('signup_verify'::character varying)::text, ('phone_verify'::character varying)::text, ('login_2fa'::character varying)::text, ('password_reset'::character varying)::text, ('phone_change'::character varying)::text])))
 );
 
 
@@ -874,7 +932,9 @@ CREATE TABLE public.positions_2026_06 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -893,7 +953,9 @@ CREATE TABLE public.positions_2026_07 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -912,7 +974,9 @@ CREATE TABLE public.positions_2026_08 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -931,7 +995,9 @@ CREATE TABLE public.positions_2026_09 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -950,7 +1016,9 @@ CREATE TABLE public.positions_2026_10 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -969,7 +1037,9 @@ CREATE TABLE public.positions_2026_11 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -988,7 +1058,9 @@ CREATE TABLE public.positions_2026_12 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1007,7 +1079,9 @@ CREATE TABLE public.positions_2027_01 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1026,7 +1100,9 @@ CREATE TABLE public.positions_2027_02 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1045,7 +1121,9 @@ CREATE TABLE public.positions_2027_03 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1064,7 +1142,9 @@ CREATE TABLE public.positions_2027_04 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1083,7 +1163,9 @@ CREATE TABLE public.positions_2027_05 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1102,7 +1184,9 @@ CREATE TABLE public.positions_2027_06 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1121,7 +1205,9 @@ CREATE TABLE public.positions_2027_07 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1140,7 +1226,9 @@ CREATE TABLE public.positions_2027_08 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1159,7 +1247,9 @@ CREATE TABLE public.positions_2027_09 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1178,7 +1268,9 @@ CREATE TABLE public.positions_2027_10 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1197,7 +1289,9 @@ CREATE TABLE public.positions_2027_11 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1216,7 +1310,9 @@ CREATE TABLE public.positions_2027_12 (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1235,7 +1331,9 @@ CREATE TABLE public.positions_default (
     battery smallint,
     imu_data jsonb,
     ts timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(10) DEFAULT 'device'::character varying NOT NULL,
+    CONSTRAINT ck_positions_source CHECK (((source)::text = ANY (ARRAY[('device'::character varying)::text, ('relay'::character varying)::text, ('sms'::character varying)::text])))
 );
 
 
@@ -1269,6 +1367,37 @@ CREATE SEQUENCE public.push_tokens_id_seq
 --
 
 ALTER SEQUENCE public.push_tokens_id_seq OWNED BY public.push_tokens.id;
+
+
+--
+-- Name: rate_limit_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.rate_limit_events (
+    id bigint NOT NULL,
+    scope character varying(30) NOT NULL,
+    key_hash character(64) NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: rate_limit_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.rate_limit_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: rate_limit_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.rate_limit_events_id_seq OWNED BY public.rate_limit_events.id;
 
 
 --
@@ -1337,7 +1466,7 @@ CREATE TABLE public.secondary_access (
 CREATE TABLE public.users (
     id uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
     nom character varying(150) NOT NULL,
-    email character varying(255) NOT NULL,
+    email character varying(255),
     password_hash character varying(255) NOT NULL,
     telephone character varying(30),
     role public.role_type DEFAULT 'principal'::public.role_type NOT NULL,
@@ -1351,8 +1480,9 @@ CREATE TABLE public.users (
     terms_version character varying(20),
     privacy_version character varying(20),
     legal_accepted_at timestamp with time zone,
+    telephone_verified_at timestamp with time zone,
     CONSTRAINT ck_users_email CHECK (((email)::text ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'::text)),
-    CONSTRAINT ck_users_langue CHECK (((langue)::text = ANY ((ARRAY['fr'::character varying, 'en'::character varying])::text[])))
+    CONSTRAINT ck_users_langue CHECK (((langue)::text = ANY (ARRAY[('fr'::character varying)::text, ('en'::character varying)::text])))
 );
 
 
@@ -1539,6 +1669,13 @@ ALTER TABLE ONLY public.push_tokens ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: rate_limit_events id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.rate_limit_events ALTER COLUMN id SET DEFAULT nextval('public.rate_limit_events_id_seq'::regclass);
+
+
+--
 -- Name: risk_scores id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1578,6 +1715,22 @@ ALTER TABLE ONLY public.children
 
 
 --
+-- Name: devices ck_devices_serial_format; Type: CHECK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE public.devices
+    ADD CONSTRAINT ck_devices_serial_format CHECK (((device_id)::text ~ '^SIREN-[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$'::text)) NOT VALID;
+
+
+--
+-- Name: users ck_users_telephone_e164; Type: CHECK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE public.users
+    ADD CONSTRAINT ck_users_telephone_e164 CHECK (((telephone IS NULL) OR ((telephone)::text ~ '^\+[1-9][0-9]{6,14}$'::text))) NOT VALID;
+
+
+--
 -- Name: community_reports community_reports_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1586,11 +1739,27 @@ ALTER TABLE ONLY public.community_reports
 
 
 --
+-- Name: device_commands device_commands_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.device_commands
+    ADD CONSTRAINT device_commands_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: device_events device_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.device_events
     ADD CONSTRAINT device_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: device_relay_events device_relay_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.device_relay_events
+    ADD CONSTRAINT device_relay_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -1866,6 +2035,14 @@ ALTER TABLE ONLY public.push_tokens
 
 
 --
+-- Name: rate_limit_events rate_limit_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.rate_limit_events
+    ADD CONSTRAINT rate_limit_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: refresh_tokens refresh_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1895,6 +2072,14 @@ ALTER TABLE ONLY public.schema_migrations
 
 ALTER TABLE ONLY public.secondary_access
     ADD CONSTRAINT secondary_access_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: device_relay_events uq_device_relay_event; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.device_relay_events
+    ADD CONSTRAINT uq_device_relay_event UNIQUE (device_id, event_id);
 
 
 --
@@ -2003,10 +2188,31 @@ CREATE INDEX idx_community_reports_ts ON public.community_reports USING btree (t
 
 
 --
+-- Name: idx_device_commands_child; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_device_commands_child ON public.device_commands USING btree (child_id, created_at DESC);
+
+
+--
+-- Name: idx_device_commands_pending; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_device_commands_pending ON public.device_commands USING btree (created_at) WHERE ((status)::text = 'PENDING'::text);
+
+
+--
 -- Name: idx_device_events_device; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_device_events_device ON public.device_events USING btree (device_id, ts DESC);
+
+
+--
+-- Name: idx_device_relay_events_received; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_device_relay_events_received ON public.device_relay_events USING btree (received_at);
 
 
 --
@@ -2056,6 +2262,13 @@ CREATE INDEX idx_geofences_geom ON public.geofences USING gist (geom);
 --
 
 CREATE INDEX idx_hourly_profiles_child ON public.hourly_profiles USING btree (child_id);
+
+
+--
+-- Name: idx_otp_challenges_destination; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_otp_challenges_destination ON public.otp_challenges USING btree (destination_hash, created_at DESC) WHERE (destination_hash IS NOT NULL);
 
 
 --
@@ -2112,6 +2325,13 @@ CREATE INDEX idx_positions_geom ON ONLY public.positions USING gist (geom);
 --
 
 CREATE INDEX idx_push_tokens_user ON public.push_tokens USING btree (user_id);
+
+
+--
+-- Name: idx_rate_limit_events_lookup; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_rate_limit_events_lookup ON public.rate_limit_events USING btree (scope, key_hash, created_at DESC);
 
 
 --
@@ -2441,6 +2661,13 @@ CREATE INDEX positions_default_geom_idx ON public.positions_default USING gist (
 --
 
 CREATE UNIQUE INDEX uq_children_device ON public.children USING btree (device_id) WHERE (device_id IS NOT NULL);
+
+
+--
+-- Name: uq_users_telephone_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_users_telephone_active ON public.users USING btree (telephone) WHERE ((telephone IS NOT NULL) AND (deleted_at IS NULL));
 
 
 --
@@ -2906,6 +3133,13 @@ CREATE TRIGGER trg_secondary_access_rules BEFORE INSERT OR UPDATE OF status, chi
 
 
 --
+-- Name: users trg_users_require_telephone; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_users_require_telephone BEFORE INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION public.require_user_telephone();
+
+
+--
 -- Name: users trg_users_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -2977,11 +3211,51 @@ ALTER TABLE ONLY public.community_reports
 
 
 --
+-- Name: device_commands device_commands_child_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.device_commands
+    ADD CONSTRAINT device_commands_child_id_fkey FOREIGN KEY (child_id) REFERENCES public.children(id) ON DELETE CASCADE;
+
+
+--
+-- Name: device_commands device_commands_device_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.device_commands
+    ADD CONSTRAINT device_commands_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.devices(device_id) ON DELETE CASCADE;
+
+
+--
+-- Name: device_commands device_commands_requested_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.device_commands
+    ADD CONSTRAINT device_commands_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
 -- Name: device_events device_events_device_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.device_events
     ADD CONSTRAINT device_events_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.devices(device_id) ON DELETE CASCADE;
+
+
+--
+-- Name: device_relay_events device_relay_events_device_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.device_relay_events
+    ADD CONSTRAINT device_relay_events_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.devices(device_id) ON DELETE CASCADE;
+
+
+--
+-- Name: device_relay_events device_relay_events_relayed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.device_relay_events
+    ADD CONSTRAINT device_relay_events_relayed_by_fkey FOREIGN KEY (relayed_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --
@@ -3151,10 +3425,22 @@ ALTER TABLE public.children ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.community_reports ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: device_commands; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.device_commands ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: device_events; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.device_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: device_relay_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.device_relay_events ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: devices; Type: ROW SECURITY; Schema: public; Owner: -
@@ -3355,6 +3641,12 @@ ALTER TABLE public.positions_default ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.push_tokens ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: rate_limit_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.rate_limit_events ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: refresh_tokens; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -3394,3 +3686,5 @@ SET search_path = public, extensions;
 INSERT INTO public.schema_migrations (version, checksum, applied_at) VALUES ('001', '870aa51646abe1f9600942f6f42936cbf56d3b9d9aa554b448ff09eebaabf426', now()) ON CONFLICT DO NOTHING;
 INSERT INTO public.schema_migrations (version, checksum, applied_at) VALUES ('002', '9ff862861b4cf81a559cf19fca4c1ba6920138328cb0b4670fc26ae9196a3414', now()) ON CONFLICT DO NOTHING;
 INSERT INTO public.schema_migrations (version, checksum, applied_at) VALUES ('003', '7316be443dde536d292ed5d89d3e332b30f560b1c67767a767dd4b92f7ca6ae7', now()) ON CONFLICT DO NOTHING;
+INSERT INTO public.schema_migrations (version, checksum, applied_at) VALUES ('004', '9797a3ebd6475397597d81c74bad52c32aaef895ce9fc2bb1445a5ff631bf1f5', now()) ON CONFLICT DO NOTHING;
+INSERT INTO public.schema_migrations (version, checksum, applied_at) VALUES ('005', '39dd93a01710f7aab36d2b0aee0e4c1ee43cf80b3b9b80cc5aff0bd75c75e6d9', now()) ON CONFLICT DO NOTHING;

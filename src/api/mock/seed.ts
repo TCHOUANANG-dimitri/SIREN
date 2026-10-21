@@ -21,7 +21,8 @@ export function buildSeed(): DbShape {
         id: parentId,
         nom: 'Marie Ngo',
         email: 'marie@example.com',
-        telephone: '+237 6 90 12 34 56',
+        telephone: '+237690123456',
+        phoneVerified: true,
         role: 'principal',
         langue: 'fr',
         createdAt: now(),
@@ -30,7 +31,8 @@ export function buildSeed(): DbShape {
         id: secondaryUserId,
         nom: 'Rose (Grand-mère)',
         email: 'rose@example.com',
-        telephone: '+237 6 77 22 11 00',
+        telephone: '+237677221100',
+        phoneVerified: true,
         role: 'secondaire',
         langue: 'fr',
         createdAt: now(),
@@ -40,7 +42,7 @@ export function buildSeed(): DbShape {
       {
         id: leaId,
         prenom: 'Léa',
-        deviceId: 'SIREN-A4F2-7C81',
+        deviceId: 'SIREN-A4F27-C81bd',
         parentId,
         modelConfidence: 8,
         createdAt: now(),
@@ -48,7 +50,7 @@ export function buildSeed(): DbShape {
       {
         id: noahId,
         prenom: 'Noah',
-        deviceId: 'SIREN-B821-33F0',
+        deviceId: 'SIREN-B821x-33F0q',
         parentId,
         modelConfidence: 85,
         createdAt: now(),
@@ -56,7 +58,7 @@ export function buildSeed(): DbShape {
     ],
     devices: [
       {
-        deviceId: 'SIREN-A4F2-7C81',
+        deviceId: 'SIREN-A4F27-C81bd',
         battery: 92,
         online: true,
         lastSeen: now(),
@@ -67,7 +69,7 @@ export function buildSeed(): DbShape {
         sensitivity: 50,
       },
       {
-        deviceId: 'SIREN-B821-33F0',
+        deviceId: 'SIREN-B821x-33F0q',
         battery: 78,
         online: true,
         lastSeen: now(),
@@ -78,7 +80,7 @@ export function buildSeed(): DbShape {
         sensitivity: 50,
       },
       {
-        deviceId: 'SIREN-C910-45E2',
+        deviceId: 'SIREN-C910a-45E2m',
         battery: 88,
         online: true,
         lastSeen: now(),
@@ -193,9 +195,10 @@ export function buildSeed(): DbShape {
     ],
     audioLogs: [],
     searchZones: {},
-    passwordsByEmail: {
-      'marie@example.com': 'Password123!',
-      'rose@example.com': 'Password123!',
+    // Mot de passe par identifiant de compte (connexion par téléphone OU e-mail).
+    passwordsByUser: {
+      [parentId]: 'Password123!',
+      [secondaryUserId]: 'Password123!',
     },
   };
 }

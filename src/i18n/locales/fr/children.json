@@ -17,8 +17,7 @@
     "pairSubtitle": "Scannez le QR code sur le dispositif SIREN.",
     "cameraPermission": "Autorisez la caméra pour scanner le QR code.",
     "allowCamera": "Autoriser la caméra",
-    "deviceIdLabel": "Identifiant du dispositif *",
-    "deviceIdPlaceholder": "SIREN-XXXX-XXXX",
+    "deviceIdLabel": "Numéro de série du dispositif *",
     "pairingFailed": "L'appairage a échoué. Réessayez.",
     "paired": "Dispositif associé !",
     "pairedBody": "Le dispositif SIREN est connecté et prêt.",
@@ -31,14 +30,27 @@
     "viewDetails": "Voir les détails de {{child}}",
     "searchingDevice": "Recherche du dispositif…",
     "searchDevice": "Rechercher le dispositif",
-    "deviceIdRequired": "L'identifiant du dispositif est obligatoire.",
-    "deviceIdTooShort": "L'identifiant doit contenir au moins 5 caractères.",
     "manualEntry": "ou saisir l'identifiant manuellement",
     "addChild": "Ajouter un enfant",
     "selector": {
       "label": "Choisir l'enfant — {{context}}",
       "hint": "Afficher {{name}}"
-    }
+    },
+    "qrInvalid": "Ce QR code n'est pas un numéro de dispositif SIREN. Rien n'a été ouvert.",
+    "stepProfile": "Profil",
+    "stepPairing": "Appairage",
+    "stepCheck": "Vérification",
+    "pinLabel": "PIN d'activation",
+    "pinHint": "Imprimé sur la boîte du dispositif. Il prouve que vous l'avez en main.",
+    "pairWithPin": "Associer le dispositif",
+    "changeSerial": "Changer de numéro de série",
+    "scanInstead": "ou scanner le QR code",
+    "serialInvalidChars": "Seuls les lettres A-Z, a-z et les chiffres sont acceptés.",
+    "serialA11y": "Numéro de série, {{count}} caractères sur {{total}}",
+    "serialRemaining_one": "Encore {{count}} caractère. Majuscules et minuscules comptent.",
+    "serialRemaining_other": "Encore {{count}} caractères. Majuscules et minuscules comptent.",
+    "serialComplete": "Numéro complet.",
+    "serialPlaceholder": "XXXXX-XXXXX"
   },
   "wizard": {
     "homeTitle": "Où est votre domicile ?",
@@ -154,7 +166,15 @@
     "placeLearned": "Appris",
     "placeDeclared": "Déclaré",
     "addPlaceHere": "Le lieu sera créé à la dernière position connue de l'enfant, avec un rayon de 100 m.",
-    "addPlaceNoPosition": "Aucune position connue pour l'instant : ajoutez ce lieu depuis la configuration de la protection."
+    "addPlaceNoPosition": "Aucune position connue pour l'instant : ajoutez ce lieu depuis la configuration de la protection.",
+    "pairingTitle": "Dispositif associé",
+    "noDevice": "Aucun dispositif associé",
+    "pairDevice": "Associer un dispositif",
+    "replaceDevice": "Associer un autre dispositif",
+    "unpairDevice": "Dissocier ce dispositif",
+    "unpairTitle": "Dissocier le dispositif ?",
+    "unpairBody": "Le dispositif {{serial}} ne transmettra plus de position pour cet enfant. L'historique est conservé. Vous pourrez l'associer à nouveau.",
+    "unpairConfirm": "Dissocier"
   },
   "risk": {
     "subScore": {

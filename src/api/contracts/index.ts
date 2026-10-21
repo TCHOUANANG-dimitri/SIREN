@@ -83,12 +83,14 @@ export const userSchema = z
   .object({
     id: z.string(),
     nom: z.string(),
-    email: z.string(),
+    email: nullableString,
     telephone: nullableString,
     role: z.enum(['principal', 'secondaire']),
     langue: z.string().nullable().optional(),
     twofaEnabled: z.boolean().optional(),
     emailVerified: z.boolean().nullable().optional(),
+    phoneVerified: z.boolean().nullable().optional(),
+    phoneRequired: z.boolean().nullable().optional(),
     createdAt: isoDate,
   })
   .transform(
@@ -97,6 +99,8 @@ export const userSchema = z
       nom: u.nom,
       email: u.email,
       telephone: u.telephone ?? undefined,
+      phoneVerified: u.phoneVerified ?? undefined,
+      phoneRequired: u.phoneRequired ?? !u.telephone,
       role: u.role,
       langue: u.langue === 'en' ? 'en' : 'fr',
       twofaEnabled: u.twofaEnabled ?? false,
@@ -112,6 +116,16 @@ export const authResponseSchema = z.object({
   twofaRequired: z.boolean().nullable().optional(),
 });
 
+export const OTP_CHANNELS = ['sms', 'whatsapp', 'email'] as const;
+export type OtpChannel = (typeof OTP_CHANNELS)[number];
+
+/** Canal inconnu → ignoré (jamais proposé). */
+const channelList = z
+  .array(z.string())
+  .nullable()
+  .optional()
+  .transform((list) => (list ?? []).filter((c): c is OtpChannel => (OTP_CHANNELS as readonly string[]).includes(c)));
+
 /** Code en attente : `challengeToken` absent = compatibilité v1 (code fixe de développement). */
 export const otpChallengeSchema = z
   .object({
@@ -119,18 +133,38 @@ export const otpChallengeSchema = z
     expiresIn: z.number().int().positive().nullable().optional(),
     devHint: z.string().nullable().optional(),
     required: z.boolean().nullable().optional(),
+    channel: z.string().nullable().optional(),
   })
   .transform((c) => ({
     challengeToken: c.challengeToken ?? null,
     expiresIn: c.expiresIn ?? null,
     devHint: c.devHint ?? undefined,
     required: c.required !== false,
+    channel: (OTP_CHANNELS as readonly string[]).includes(c.channel ?? '') ? (c.channel as OtpChannel) : null,
   }));
+
+/** Second facteur exigé : jeton MFA (n'ouvre aucune session) + canaux proposables. */
+export const mfaChallengeSchema = z.object({
+  twofaRequired: z.literal(true),
+  mfaToken: z.string().min(10),
+  channels: channelList,
+});
+
+export const otpChannelsSchema = z.object({ channels: channelList, codeLength: z.number().int().min(4).max(6).nullable().optional() });
 
 export const loginResponseSchema = z.union([
   z.object({ twofaRequired: z.literal(true) }).passthrough(),
   authResponseSchema,
 ]);
+
+export const relayResponseSchema = z.object({
+  results: z.array(
+    z.object({
+      status: z.enum(['accepted', 'duplicate', 'rejected', 'forbidden']).catch('rejected'),
+      reason: z.string().nullable().optional().transform((v) => v ?? undefined),
+    })
+  ),
+});
 
 export const refreshResponseSchema = z.object({
   accessToken: z.string().min(1),
@@ -222,6 +256,8 @@ export const deviceLookupSchema = z.object({
   configVersion: z.number().int().optional(),
   firmwareVersion: nullableString,
   battery: nullableNumber,
+  /** PIN d'activation imprimé sur la boîte exigé à l'appairage (absent : serveur v1, non exigé). */
+  pinRequired: z.boolean().nullable().optional().transform((v) => v ?? false),
 });
 
 export const positionSchema = z

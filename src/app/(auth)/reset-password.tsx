@@ -13,12 +13,13 @@ import { useResendOtp, useResetPassword } from '@/api/hooks/useAuth';
 import { usePendingAuthStore } from '@/stores/pendingAuthStore';
 import { toUserMessage } from '@/api/errors';
 import { passwordSchema } from '@/features/auth/passwordPolicy';
+import { OTP_CODE_LENGTH, isCompleteOtp, normalizeOtpInput } from '@/features/auth/otpCode';
 
 const RESEND_SECONDS = 60;
 
 const schema = z
   .object({
-    code: z.string().trim().regex(/^\d{6}$/, 'validation.codeFormat'),
+    code: z.string().trim().refine((v) => isCompleteOtp(v), 'validation.codeFormat'),
     password: passwordSchema,
     confirmPassword: z.string(),
   })
@@ -33,7 +34,7 @@ export default function ResetPasswordScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const { pending, destination, devHint } = usePendingAuthStore();
+  const { pending, devHint, channel } = usePendingAuthStore();
   const resetPassword = useResetPassword();
   const resend = useResendOtp();
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +97,7 @@ export default function ResetPasswordScreen() {
           </Pressable>
 
           <Text style={styles.title} accessibilityRole="header">{t('auth.resetTitle')}</Text>
-          <Text style={styles.subtitle}>{t('auth.resetSubtitle', { email: destination })}</Text>
+          <Text style={styles.subtitle}>{t('auth.resetSubtitle', { channel: channel ? t(`auth.channels.${channel}`) : '—' })}</Text>
 
           {error && <Banner kind="error" message={error} />}
 
@@ -107,13 +108,14 @@ export default function ResetPasswordScreen() {
               <TextField
                 label={t('auth.codeLabel')}
                 value={field.value}
-                onChangeText={(v) => field.onChange(v.replace(/\D/g, '').slice(0, 6))}
+                onChangeText={(v) => field.onChange(normalizeOtpInput(v))}
                 onBlur={field.onBlur}
                 error={errors.code?.message && t(errors.code.message)}
-                keyboardType="number-pad"
+                autoCapitalize="characters"
+                autoCorrect={false}
                 textContentType="oneTimeCode"
                 autoComplete="one-time-code"
-                maxLength={6}
+                maxLength={OTP_CODE_LENGTH + 4}
               />
             )}
           />

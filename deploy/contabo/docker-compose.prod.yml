@@ -1,0 +1,145 @@
+# SIREN — surcouche de PRODUCTION (VPS Contabo), à combiner avec la pile serveur :
+#
+#   docker compose -f server/docker-compose.yml -f deploy/contabo/docker-compose.prod.yml \
+#     --env-file deploy/contabo/.env.prod up -d
+#
+# (deploy.sh fait exactement cela.) Différences avec la pile de développement :
+#  - images applicatives construites par la CD et publiées sur GHCR, désignées par
+#    SIREN_VERSION (tag immuable vX.Y.Z) ; images tierces épinglées par digest ;
+#  - AUCUN port publié hors du proxy : base, Redis et API ne sont joignables que
+#    sur des réseaux Docker internes (la base n'a même pas accès à Internet) ;
+#  - l'API se connecte avec un rôle applicatif sans droit DDL (siren_app), les
+#    migrations avec le propriétaire du schéma ;
+#  - Caddy de production : HTTPS automatique, HSTS, en-têtes de sécurité.
+
+x-app-env: &app-env
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  ENVIRONMENT: production
+  VERSION: ${SIREN_VERSION:?SIREN_VERSION requis (ex. v1.2.0)}
+  # Rôle applicatif : lecture/écriture des données, aucun droit sur le schéma.
+  DATABASE_URL: postgresql+asyncpg://${APP_DB_USER:-siren_app}:${APP_DB_PASSWORD:?APP_DB_PASSWORD requis}@db:5432/${POSTGRES_DB:-siren}
+  DATABASE_URL_SYNC: postgresql://${APP_DB_USER:-siren_app}:${APP_DB_PASSWORD:?APP_DB_PASSWORD requis}@db:5432/${POSTGRES_DB:-siren}
+  REDIS_URL: redis://redis:6379/0
+  REDIS_ENABLED: "true"
+  CELERY_BROKER_URL: redis://redis:6379/1
+  CELERY_RESULT_BACKEND: redis://redis:6379/2
+  # Seul le proxy joint l'API (aucun port publié) : X-Forwarded-For vient de Caddy.
+  TRUST_PROXY_HEADERS: "true"
+  # .env.prod contient aussi le mot de passe du PROPRIÉTAIRE de la base (migrations,
+  # sauvegardes) : il est effacé ici, `environment` primant sur `env_file`. Une fuite
+  # de l'environnement de l'API ne donne ainsi que le rôle siren_app (sans DDL).
+  POSTGRES_PASSWORD: ""
+  AGE_IDENTITY: ""
+
+services:
+  migration:
+    build: !reset null
+    image: ${SIREN_IMAGE_PREFIX:?SIREN_IMAGE_PREFIX requis (ex. ghcr.io/owner/siren)}-api:${SIREN_VERSION}
+    env_file: !reset []
+    environment:
+      ENVIRONMENT: production
+      # Propriétaire du schéma : seul compte autorisé à modifier la structure.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-siren}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requis}@db:5432/${POSTGRES_DB:-siren}
+    networks: !override
+      - siren_data
+
+  api:
+    build: !reset null
+    image: ${SIREN_IMAGE_PREFIX}-api:${SIREN_VERSION}
+    ports: !reset []
+    env_file: !override
+      - path: ../deploy/contabo/.env.prod
+        required: true
+    environment: *app-env
+    networks: !override
+      - siren_edge
+      - siren_data
+      # Envoi direct des codes (SMS, WhatsApp, e-mail) et des notifications push.
+      - siren_egress
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
+  worker:
+    build: !reset null
+    image: ${SIREN_IMAGE_PREFIX}-worker:${SIREN_VERSION}
+    env_file: !override
+      - path: ../deploy/contabo/.env.prod
+        required: true
+    environment: *app-env
+    networks: !override
+      - siren_data
+      - siren_egress
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
+  beat:
+    build: !reset null
+    image: ${SIREN_IMAGE_PREFIX}-worker:${SIREN_VERSION}
+    env_file: !override
+      - path: ../deploy/contabo/.env.prod
+        required: true
+    environment: *app-env
+    networks: !override
+      - siren_data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
+  db:
+    image: postgis/postgis@sha256:3f4a5d48e0be9580ed70ed618cd039ce57bbb2dd113053d3836e28513f1f87cd
+    ports: !reset []
+    command:
+      - postgres
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - log_connections=on
+      - -c
+      - log_min_duration_statement=2000
+    networks: !override
+      - siren_data
+    security_opt:
+      - no-new-privileges:true
+    shm_size: 256mb
+
+  redis:
+    image: redis@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    ports: !reset []
+    networks: !override
+      - siren_data
+    security_opt:
+      - no-new-privileges:true
+
+  proxy:
+    image: caddy@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    # Le proxy ne reçoit QUE ses deux variables, aucun secret applicatif ni de base.
+    env_file: !reset []
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN requis}
+      CADDY_EMAIL: ${CADDY_EMAIL:?CADDY_EMAIL requis}
+    volumes: !override
+      - ../deploy/contabo/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: !override
+      - siren_edge
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  # Seul réseau exposé : proxy ↔ API.
+  siren_edge:
+    driver: bridge
+  # Données : base, Redis, API, tâches — sans aucune sortie vers Internet.
+  siren_data:
+    driver: bridge
+    internal: true
+  # Sorties sortantes des tâches (envoi des notifications push, SMS, e-mails).
+  siren_egress:
+    driver: bridge

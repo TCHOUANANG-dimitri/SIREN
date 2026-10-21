@@ -11,14 +11,18 @@ import { Banner, Button, TextField } from '@/components';
 import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useForgotPassword } from '@/api/hooks/useAuth';
 import { toUserMessage } from '@/api/errors';
+import { ChannelPicker } from '@/features/auth/ChannelPicker';
+import type { OtpChannel } from '@/api/contracts';
 
-const schema = z.object({ email: z.string().trim().email('validation.emailInvalid') });
+const schema = z.object({ identifier: z.string().trim().min(3, 'validation.identifierRequired') });
 type FormValues = z.infer<typeof schema>;
+const CHANNELS: OtpChannel[] = ['sms', 'whatsapp', 'email'];
 
 /**
- * Mot de passe oublié, étape 1. Le serveur envoie un code par email si un compte
- * existe ; la réponse est la même sinon (on ne révèle pas quels emails ont un compte).
- * Sans canal email configuré, le serveur le dit : aucun faux « email envoyé ».
+ * Mot de passe oublié, étape 1 : téléphone ou e-mail + canal de réception. Le
+ * serveur envoie un code si un compte existe ; la réponse est la même sinon (on ne
+ * révèle pas quels comptes existent). L'e-mail n'est utilisable que s'il a été
+ * vérifié. Un canal non configuré est signalé : aucun faux « code envoyé ».
  */
 export default function ForgotPasswordScreen() {
   const styles = useStyles();
@@ -26,17 +30,18 @@ export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
   const forgotPassword = useForgotPassword();
   const [error, setError] = useState<string | null>(null);
+  const [channel, setChannel] = useState<OtpChannel>('sms');
 
   const {
     control,
     handleSubmit,
     formState: { errors, isValid },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), mode: 'onChange', defaultValues: { email: '' } });
+  } = useForm<FormValues>({ resolver: zodResolver(schema), mode: 'onChange', defaultValues: { identifier: '' } });
 
   async function onSubmit(values: FormValues) {
     setError(null);
     try {
-      await forgotPassword.mutateAsync(values.email);
+      await forgotPassword.mutateAsync({ identifier: values.identifier, channel });
       router.push('/(auth)/reset-password');
     } catch (e) {
       setError(toUserMessage(e));
@@ -58,21 +63,23 @@ export default function ForgotPasswordScreen() {
 
         <Controller
           control={control}
-          name="email"
+          name="identifier"
           render={({ field }) => (
             <TextField
-              label={t('auth.email')}
+              label={t('auth.identifier')}
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              error={errors.email?.message && t(errors.email.message)}
+              error={errors.identifier?.message && t(errors.identifier.message)}
               autoCapitalize="none"
               autoCorrect={false}
-              keyboardType="email-address"
-              placeholder={t('auth.emailPlaceholder')}
+              autoComplete="username"
+              placeholder={t('auth.identifierPlaceholder')}
             />
           )}
         />
+
+        <ChannelPicker channels={CHANNELS} value={channel} onChange={setChannel} disabled={forgotPassword.isPending} />
 
         <Button
           label={t('auth.sendCode')}

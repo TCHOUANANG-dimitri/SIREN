@@ -8,69 +8,117 @@ jest.mock('../helpers', () => ({
 }));
 
 const PASSWORD = 'Yaounde2026!';
+let counter = 0;
 
-async function newAccount(twofa = false) {
-  const email = `parent-${Math.random().toString(36).slice(2)}@example.org`;
-  const session = await auth.register({ nom: 'Parent Test', email, password: PASSWORD, langue: 'fr' });
-  if (twofa) mutateDb((d) => void Object.assign(d.users.find((u) => u.id === session.user.id)!, { twofaEnabled: true }));
-  return { email, session };
+function newPhone() {
+  counter += 1;
+  return `+2376990${String(100000 + counter).slice(1)}`;
 }
 
+async function newAccount(twofa = false, extra: { email?: string } = {}) {
+  const telephone = newPhone();
+  const result = await auth.register({ nom: 'Awa', telephone, password: PASSWORD, langue: 'fr', ...extra });
+  if (twofa) {
+    mutateDb((d) => {
+      const u = d.users.find((x) => x.id === result.user.id);
+      if (u) u.twofaEnabled = true;
+    });
+  }
+  return { ...result, telephone };
+}
+
+async function mfa(identifier: string) {
+  const result = await auth.login({ identifier, password: PASSWORD });
+  if (!result.twofaRequired) throw new Error('2FA attendue');
+  return result;
+}
+
+beforeEach(async () => {
+  await initDb(buildSeed, true);
+});
+
 describe('authentification simulée (mêmes règles que le serveur)', () => {
-  beforeEach(async () => {
-    await initDb(buildSeed, true);
+  it('inscription : téléphone obligatoire et normalisé, e-mail facultatif jamais inventé', async () => {
+    const { user, telephone } = await newAccount();
+    expect(user.telephone).toBe(telephone);
+    expect(user.email).toBeNull();
+    await expect(auth.register({ nom: 'X', telephone: '12', password: PASSWORD, langue: 'fr' })).rejects.toMatchObject({ reason: 'phone_invalid' });
+    await expect(auth.register({ nom: 'X', telephone: telephone.replace('+237', ''), password: PASSWORD, langue: 'fr' })).rejects.toMatchObject({
+      reason: 'phone_taken',
+    });
   });
 
-  it('2FA : aucune session avant le code, session après', async () => {
-    const { email } = await newAccount(true);
-    const login = await auth.login({ email, password: PASSWORD });
-    expect(login.twofaRequired).toBe(true);
-    expect(login).not.toHaveProperty('accessToken');
-    if (!login.twofaRequired) throw new Error('2FA attendue');
-    await expect(auth.verifySecondFactor({ challengeToken: login.challengeToken, code: '000000' })).rejects.toMatchObject({ reason: 'otp_invalid' });
-    const session = await auth.verifySecondFactor({ challengeToken: login.challengeToken, code: auth.DEMO_OTP_CODE });
+  it('connexion par téléphone (tout format) ou par e-mail', async () => {
+    const { telephone } = await newAccount(false, { email: 'awa@example.org' });
+    await expect(auth.login({ identifier: telephone.replace('+237', '0 0237 '), password: PASSWORD })).resolves.toMatchObject({ twofaRequired: false });
+    await expect(auth.login({ identifier: 'AWA@example.org', password: PASSWORD })).resolves.toMatchObject({ twofaRequired: false });
+    await expect(auth.login({ identifier: telephone, password: 'mauvais' })).rejects.toMatchObject({ reason: 'invalid_credentials' });
+  });
+
+  it('second facteur : aucune session avant le code, e-mail non vérifié jamais proposé', async () => {
+    const { telephone } = await newAccount(true, { email: 'awa@example.org' });
+    const result = await mfa(telephone);
+    expect(result).not.toHaveProperty('accessToken');
+    expect(result.channels).toEqual(['sms', 'whatsapp']);
+    await expect(auth.sendSecondFactor({ mfaToken: result.mfaToken, channel: 'email' })).rejects.toMatchObject({ reason: 'channel_not_allowed' });
+    const challenge = await auth.sendSecondFactor({ mfaToken: result.mfaToken, channel: 'whatsapp' });
+    expect(challenge.channel).toBe('whatsapp');
+    const session = await auth.verifySecondFactor({ challengeToken: challenge.challengeToken, code: auth.DEMO_OTP_CODE.toLowerCase() });
     expect(session.accessToken).toBeTruthy();
     // Usage unique.
-    await expect(auth.verifySecondFactor({ challengeToken: login.challengeToken, code: auth.DEMO_OTP_CODE })).rejects.toMatchObject({ reason: 'otp_expired' });
+    await expect(auth.verifySecondFactor({ challengeToken: challenge.challengeToken, code: auth.DEMO_OTP_CODE })).rejects.toMatchObject({ reason: 'otp_expired' });
   });
 
-  it('5 essais maximum, puis le code est grillé même s’il est juste', async () => {
-    const { email } = await newAccount(true);
-    const login = await auth.login({ email, password: PASSWORD });
-    if (!login.twofaRequired) throw new Error('2FA attendue');
-    for (let i = 0; i < 5; i += 1) await auth.verifySecondFactor({ challengeToken: login.challengeToken, code: '999999' }).catch(() => {});
-    await expect(auth.verifySecondFactor({ challengeToken: login.challengeToken, code: auth.DEMO_OTP_CODE })).rejects.toMatchObject({
+  it('5 essais par code, puis code grillé', async () => {
+    const { telephone } = await newAccount(true);
+    const challenge = await auth.sendSecondFactor({ mfaToken: (await mfa(telephone)).mfaToken, channel: 'sms' });
+    for (let i = 0; i < 5; i += 1) {
+      await expect(auth.verifySecondFactor({ challengeToken: challenge.challengeToken, code: 'ZZZZZZ' })).rejects.toMatchObject({ reason: 'otp_invalid' });
+    }
+    await expect(auth.verifySecondFactor({ challengeToken: challenge.challengeToken, code: auth.DEMO_OTP_CODE })).rejects.toMatchObject({
       reason: 'otp_attempts_exceeded',
     });
   });
 
-  it('un nouveau code invalide le précédent', async () => {
-    const { email } = await newAccount(true);
-    const login = await auth.login({ email, password: PASSWORD });
-    if (!login.twofaRequired) throw new Error('2FA attendue');
-    const again = await auth.resendSecondFactor(login.challengeToken);
-    await expect(auth.verifySecondFactor({ challengeToken: login.challengeToken, code: auth.DEMO_OTP_CODE })).rejects.toMatchObject({ reason: 'otp_expired' });
-    await expect(auth.verifySecondFactor({ challengeToken: again.challengeToken, code: auth.DEMO_OTP_CODE })).resolves.toHaveProperty('accessToken');
+  it('un renvoi invalide le code précédent', async () => {
+    const { telephone } = await newAccount(true);
+    const { mfaToken } = await mfa(telephone);
+    const first = await auth.sendSecondFactor({ mfaToken, channel: 'sms' });
+    await auth.sendSecondFactor({ mfaToken, channel: 'whatsapp' });
+    await expect(auth.verifySecondFactor({ challengeToken: first.challengeToken, code: auth.DEMO_OTP_CODE })).rejects.toMatchObject({ reason: 'otp_expired' });
   });
 
-  it('mot de passe oublié : même réponse pour un email inconnu, réinitialisation effective', async () => {
-    const unknown = await auth.forgotPassword('inconnu@example.org');
-    expect(Object.keys(unknown).sort()).toEqual(['challengeToken', 'devHint', 'expiresIn']);
-    await expect(auth.resetPassword({ challengeToken: unknown.challengeToken, code: auth.DEMO_OTP_CODE, newPassword: 'Nouveau2026!' })).rejects.toBeTruthy();
-
-    const { email } = await newAccount();
-    const challenge = await auth.forgotPassword(email.toUpperCase());
-    await auth.resetPassword({ challengeToken: challenge.challengeToken, code: auth.DEMO_OTP_CODE, newPassword: 'Nouveau2026!' });
-    await expect(auth.login({ email, password: PASSWORD })).rejects.toMatchObject({ reason: 'invalid_credentials' });
-    await expect(auth.login({ email, password: 'Nouveau2026!' })).resolves.toMatchObject({ twofaRequired: false });
+  it('mot de passe oublié : même réponse que le compte existe ou non, puis réinitialisation', async () => {
+    const { telephone } = await newAccount();
+    const unknown = await auth.forgotPassword({ identifier: '+237699999999', channel: 'sms' });
+    const known = await auth.forgotPassword({ identifier: telephone, channel: 'sms' });
+    expect(Object.keys(unknown).sort()).toEqual(Object.keys(known).sort());
+    await expect(auth.resetPassword({ challengeToken: unknown.challengeToken, code: auth.DEMO_OTP_CODE, newPassword: 'Douala2026!x' })).rejects.toBeTruthy();
+    await auth.resetPassword({ challengeToken: known.challengeToken, code: auth.DEMO_OTP_CODE, newPassword: 'Douala2026!x' });
+    await expect(auth.login({ identifier: telephone, password: 'Douala2026!x' })).resolves.toMatchObject({ twofaRequired: false });
+    await expect(auth.login({ identifier: telephone, password: PASSWORD })).rejects.toMatchObject({ reason: 'invalid_credentials' });
   });
 
-  it('changer le mot de passe ou la 2FA exige le mot de passe actuel', async () => {
-    const { session } = await newAccount();
-    await expect(auth.changePassword(session.accessToken, { currentPassword: 'faux', newPassword: 'Nouveau2026!' })).rejects.toMatchObject({
+  it('changement de numéro : mot de passe, numéro libre, code envoyé au nouveau numéro', async () => {
+    const { accessToken } = await newAccount();
+    const { telephone: taken } = await newAccount();
+    const fresh = '+237677000999';
+    await expect(auth.requestPhoneChange(accessToken, { currentPassword: 'mauvais', newPhone: fresh, channel: 'sms' })).rejects.toMatchObject({
       reason: 'password_incorrect',
     });
-    await expect(auth.setTwoFactor(session.accessToken, { enabled: true, password: 'faux' })).rejects.toMatchObject({ reason: 'password_incorrect' });
-    await expect(auth.setTwoFactor(session.accessToken, { enabled: true, password: PASSWORD })).resolves.toMatchObject({ twofaEnabled: true });
+    await expect(auth.requestPhoneChange(accessToken, { currentPassword: PASSWORD, newPhone: taken, channel: 'sms' })).rejects.toMatchObject({
+      reason: 'phone_taken',
+    });
+    const challenge = await auth.requestPhoneChange(accessToken, { currentPassword: PASSWORD, newPhone: fresh, channel: 'sms' });
+    await expect(auth.confirmPhoneChange(accessToken, { challengeToken: challenge.challengeToken, code: 'ZZZZZZ' })).rejects.toMatchObject({
+      reason: 'otp_invalid',
+    });
+    const user = await auth.confirmPhoneChange(accessToken, { challengeToken: challenge.challengeToken, code: auth.DEMO_OTP_CODE });
+    expect(user).toMatchObject({ telephone: fresh, phoneVerified: true });
+    // Un code d'un autre usage ne vaut pas pour un changement de numéro.
+    const verify = await auth.requestOtp(accessToken, 'sms');
+    await expect(auth.confirmPhoneChange(accessToken, { challengeToken: verify.challengeToken, code: auth.DEMO_OTP_CODE })).rejects.toMatchObject({
+      reason: 'challenge_invalid',
+    });
   });
 });

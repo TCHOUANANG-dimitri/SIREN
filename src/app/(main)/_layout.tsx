@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, usePathname } from 'expo-router';
 import { useAuthGate } from '@/features/auth/useAuthGate';
 import { BiometricGate } from '@/features/auth/BiometricGate';
 import { OfflineBanner } from '@/features/tracking/OfflineBanner';
@@ -49,8 +49,13 @@ function SessionServices() {
 
 export default function MainLayout() {
   const { isAuthenticated } = useAuthGate();
+  const phoneRequired = useAuthStore((s) => !!s.user?.phoneRequired);
+  const pathname = usePathname();
 
   if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
+  // Compte ancien sans téléphone : le numéro (désormais obligatoire) est complété
+  // avant tout le reste. L'écran d'urgence reste hors de ce parcours ((emergency)).
+  if (phoneRequired && pathname !== '/settings/phone') return <Redirect href="/(main)/settings/phone" />;
 
   return (
     <BiometricGate>
@@ -68,6 +73,7 @@ export default function MainLayout() {
         <Stack.Screen name="sharing/invite" options={{ presentation: 'modal' }} />
         <Stack.Screen name="sharing/[id]" />
         <Stack.Screen name="sharing/audit" />
+        <Stack.Screen name="settings/phone" />
       </Stack>
     </BiometricGate>
   );

@@ -1,6 +1,6 @@
 import re
-from pydantic import BaseModel, EmailStr, Field, field_validator
-from typing import Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from typing import Literal, Optional
 
 # Politique CDC App §4.1 — identique à src/features/auth/passwordPolicy.ts côté app.
 PASSWORD_MIN_LENGTH = 10
@@ -20,10 +20,14 @@ def validate_password_policy(value: str) -> str:
     return value
 
 
+OtpChannel = Literal["sms", "whatsapp", "email"]
+
+
 class RegisterRequest(BaseModel):
     nom: str = Field(..., min_length=1, max_length=150)
-    email: EmailStr
-    telephone: Optional[str] = Field(None, max_length=30)
+    # Téléphone OBLIGATOIRE (normalisé E.164 par l'API) ; e-mail FACULTATIF.
+    telephone: str = Field(..., min_length=4, max_length=30)
+    email: Optional[EmailStr] = None
     password: str = Field(..., max_length=128)
     # Langue de l'interface au moment de l'inscription (emails et push suivants).
     langue: Optional[str] = Field(None, pattern="^(fr|en)$")
@@ -35,8 +39,14 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    # Numéro de téléphone (tout format, normalisé) ou adresse e-mail.
+    identifier: Optional[str] = Field(None, min_length=3, max_length=255)
+    # Compatibilité v1 : ancien champ « email ».
+    email: Optional[str] = Field(None, max_length=255)
     password: str = Field(..., max_length=128)
+
+    def login_identifier(self) -> str:
+        return (self.identifier or self.email or "").strip()
 
 
 class TokenResponse(BaseModel):
@@ -50,12 +60,20 @@ class RefreshRequest(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
+    identifier: Optional[str] = Field(None, min_length=3, max_length=255)
+    email: Optional[str] = Field(None, max_length=255)  # compatibilité v1
+    channel: OtpChannel = "sms"
+
+    def login_identifier(self) -> str:
+        return (self.identifier or self.email or "").strip()
 
 
 class OtpRequest(BaseModel):
-    destination: Optional[str] = None
+    destination: Optional[str] = None  # ignoré : la destination est toujours celle du compte
     accessToken: Optional[str] = None
+    channel: OtpChannel = "sms"
+    # phone : vérification du numéro (inscription) ; email : vérification de l'adresse.
+    target: Literal["phone", "email"] = "phone"
 
 
 class OtpVerifyRequest(BaseModel):
@@ -66,6 +84,21 @@ class OtpVerifyRequest(BaseModel):
 
 class ChallengeRequest(BaseModel):
     challengeToken: str = Field(..., min_length=10, max_length=128)
+
+
+class TwoFactorSendRequest(BaseModel):
+    mfaToken: str = Field(..., min_length=10, max_length=2048)
+    channel: OtpChannel = "sms"
+
+
+class PhoneChangeRequest(BaseModel):
+    currentPassword: str = Field(..., min_length=1, max_length=128)
+    newPhone: str = Field(..., min_length=4, max_length=30)
+    channel: Literal["sms", "whatsapp"] = "sms"
+
+
+class PhoneConfirmRequest(ChallengeRequest):
+    code: str = Field(..., min_length=4, max_length=10)
 
 
 class TwoFactorVerifyRequest(ChallengeRequest):
@@ -92,9 +125,11 @@ class TwoFactorToggleRequest(BaseModel):
 
 
 class UserPatchRequest(BaseModel):
+    # Le téléphone ne se modifie PAS ici : POST /users/me/phone (mot de passe + code).
+    model_config = ConfigDict(extra="forbid")
+
     nom: Optional[str] = Field(None, min_length=1, max_length=150)
     langue: Optional[str] = Field(None, pattern="^(fr|en)$")
-    telephone: Optional[str] = Field(None, max_length=30)
 
 
 class PushTokenRequest(BaseModel):

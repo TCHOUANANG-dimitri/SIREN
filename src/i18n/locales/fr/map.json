@@ -18,7 +18,21 @@
     "estimated": "Position estimée — {{when}}",
     "lost": "Signal GPS perdu — dernier point {{when}}",
     "deviceOffline": "Dispositif hors ligne — dernier point {{when}}",
-    "batteryLine": "batterie {{battery}}"
+    "batteryLine": "batterie {{battery}}",
+    "lastKnown": "Dernière position connue du dispositif ({{when}})",
+    "phone": {
+      "marker": "Votre téléphone",
+      "show": "Afficher la position de mon téléphone",
+      "shown": "Point bleu : votre téléphone (pas le dispositif).",
+      "stale": "Position de votre téléphone relevée {{when}}.",
+      "update": "Mettre à jour",
+      "denied": "Autorisation refusée : la carte n'affiche que le dispositif.",
+      "blocked": "La localisation de SIREN est refusée dans les réglages du téléphone. Autorisez-la pour voir votre position.",
+      "servicesOff": "La localisation du téléphone est désactivée.",
+      "openSettings": "Ouvrir les réglages",
+      "retry": "Vérifier à nouveau",
+      "unavailable": "Position du téléphone indisponible pour le moment."
+    }
   },
   "history": {
     "play": "Lire le trajet",

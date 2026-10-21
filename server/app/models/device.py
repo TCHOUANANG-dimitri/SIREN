@@ -9,6 +9,8 @@ class Device(Base):
 
     device_id: Mapped[str] = mapped_column(String(50), primary_key=True)
     secret_key_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    # PIN imprimé sur le boîtier (preuve de possession à l'appairage), haché ; null = boîtier sans PIN.
+    activation_pin_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     config_version: Mapped[int] = mapped_column(Integer, default=1)
     firmware_version: Mapped[str] = mapped_column(String(30), nullable=True)
     last_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)

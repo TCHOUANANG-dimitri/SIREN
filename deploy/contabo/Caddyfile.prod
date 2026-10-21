@@ -1,0 +1,69 @@
+# Caddy — production (HTTPS automatique Let's Encrypt sur {$DOMAIN}).
+{
+    email {$CADDY_EMAIL}
+    # Pas d'interface d'administration exposée.
+    admin off
+    # HTTP/3 (UDP 443) désactivé : ni publié par Docker ni ouvert dans UFW.
+    servers {
+        protocols h1 h2
+    }
+    # Journal général (dont les erreurs de mandataire, qui citent la requête) :
+    # même retrait du jeton que le journal d'accès ci-dessous.
+    log default {
+        output stdout
+        format filter {
+            wrap json
+            fields {
+                request>uri query {
+                    delete token
+                }
+            }
+        }
+    }
+}
+
+{$DOMAIN} {
+    encode zstd gzip
+
+    # « handle » exclusifs : sans eux, « respond » (prioritaire dans l'ordre des
+    # directives Caddy) répondrait 404 à TOUT, API comprise.
+    @api path /api/* /health /health/* /ws/*
+    handle @api {
+        reverse_proxy api:8000 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Tout le reste (dont /docs, désactivé en production côté API) : 404.
+    handle {
+        respond 404
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        ?X-Content-Type-Options nosniff
+        ?X-Frame-Options DENY
+        ?Referrer-Policy no-referrer
+        ?Content-Security-Policy "default-src 'none'; frame-ancestors 'none'"
+        -Server
+    }
+
+    request_body {
+        max_size 2MB
+    }
+
+    # Journal d'accès JSON. Le jeton du WebSocket (/api/v1/ws?token=…) est retiré de
+    # l'URI journalisée ; l'en-tête Authorization est déjà masqué par Caddy.
+    log {
+        output stdout
+        format filter {
+            wrap json
+            fields {
+                request>uri query {
+                    delete token
+                }
+            }
+        }
+    }
+}

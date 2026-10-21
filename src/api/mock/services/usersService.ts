@@ -3,7 +3,7 @@ import { simulateLatency } from '../helpers';
 import { resolveCurrentUser } from '../session';
 import type { User } from '@/models/entities';
 
-export async function patchMe(token: string | null, patch: Partial<User>): Promise<User> {
+export async function patchMe(token: string | null, patch: Partial<Pick<User, 'nom' | 'langue'>>): Promise<User> {
   await simulateLatency(300, 600);
   const user = resolveCurrentUser(token);
   mutateDb((d) => {
@@ -24,7 +24,7 @@ export async function deleteMyAccount(token: string | null): Promise<{ deleted: 
     d.geofences = d.geofences.filter((g) => !childIds.includes(g.childId));
     d.secondaryAccess = d.secondaryAccess.filter((s) => !childIds.includes(s.childId));
     d.users = d.users.filter((u) => u.id !== user.id);
-    delete d.passwordsByEmail[user.email.toLowerCase()];
+    delete d.passwordsByUser[user.id];
     for (const id of childIds) {
       delete d.positions[id];
       delete d.riskScores[id];

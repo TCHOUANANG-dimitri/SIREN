@@ -592,6 +592,20 @@ Index :
 Triggers :
 - `trg_users_updated_at` : BEFORE UPDATE → `update_updated_at()`
 
+### `device_commands` (migration 004)
+
+Commandes descendantes vers le traceur (protocole §8). `id` uuid, `device_id` → `devices`, `child_id` → `children`, `requested_by` → `users` (SET NULL), `code` ∈ `LOCALISER|MODE|REDEMARRER`, `valeur`, `status` ∈ `PENDING|SUCCESS|FAILED|TIMEOUT` (défaut PENDING), `detail`, `created_at`, `responded_at`. Index : (`child_id`, `created_at` DESC), PENDING par `created_at`. RLS activée.
+
+### `device_relay_events` (migration 004)
+
+Idempotence des trames relayées par un téléphone : `device_id`, `event_id` (empreinte SHA-256 de la trame), `relayed_by`, `received_at` ; `UNIQUE (device_id, event_id)`. RLS activée.
+
+### `rate_limit_events` (migration 004)
+
+Compteur de limitation de débit : `scope` (`login_account`, `login_ip`, `register_ip`, `forgot_ip`, `pair_fail`, `device_lookup`, `relay`, `device_cmd`, `password_check`), `key_hash` (HMAC, jamais la valeur), `created_at` ; index (`scope`, `key_hash`, `created_at` DESC) ; purge > 48 h. RLS activée.
+
+Colonnes ajoutées aux tables existantes (004–005) : `users.telephone_verified_at`, `users.email` NULL autorisé ; `otp_challenges.channel`, `destination_hash`, `ip_hash`, `pending_value` ; `devices.activation_pin_hash` ; `positions.source`.
+
 ### Partitions de `positions`
 
 `positions_2026_06`, `positions_2026_06_child_id_ts_idx`, `positions_2026_06_geom_idx`, `positions_2026_06_pkey`, `positions_2026_07`, `positions_2026_07_child_id_ts_idx`, `positions_2026_07_geom_idx`, `positions_2026_07_pkey`, `positions_2026_08`, `positions_2026_08_child_id_ts_idx`, `positions_2026_08_geom_idx`, `positions_2026_08_pkey`, `positions_2026_09`, `positions_2026_09_child_id_ts_idx`, `positions_2026_09_geom_idx`, `positions_2026_09_pkey`, `positions_2026_10`, `positions_2026_10_child_id_ts_idx`, `positions_2026_10_geom_idx`, `positions_2026_10_pkey`, `positions_2026_11`, `positions_2026_11_child_id_ts_idx`, `positions_2026_11_geom_idx`, `positions_2026_11_pkey`, `positions_2026_12`, `positions_2026_12_child_id_ts_idx`, `positions_2026_12_geom_idx`, `positions_2026_12_pkey`, `positions_2027_01`, `positions_2027_01_child_id_ts_idx`, `positions_2027_01_geom_idx`, `positions_2027_01_pkey`, `positions_2027_02`, `positions_2027_02_child_id_ts_idx`, `positions_2027_02_geom_idx`, `positions_2027_02_pkey`, `positions_2027_03`, `positions_2027_03_child_id_ts_idx`, `positions_2027_03_geom_idx`, `positions_2027_03_pkey`, `positions_2027_04`, `positions_2027_04_child_id_ts_idx`, `positions_2027_04_geom_idx`, `positions_2027_04_pkey`, `positions_2027_05`, `positions_2027_05_child_id_ts_idx`, `positions_2027_05_geom_idx`, `positions_2027_05_pkey`, `positions_2027_06`, `positions_2027_06_child_id_ts_idx`, `positions_2027_06_geom_idx`, `positions_2027_06_pkey`, `positions_2027_07`, `positions_2027_07_child_id_ts_idx`, `positions_2027_07_geom_idx`, `positions_2027_07_pkey`, `positions_2027_08`, `positions_2027_08_child_id_ts_idx`, `positions_2027_08_geom_idx`, `positions_2027_08_pkey`, `positions_2027_09`, `positions_2027_09_child_id_ts_idx`, `positions_2027_09_geom_idx`, `positions_2027_09_pkey`, `positions_2027_10`, `positions_2027_10_child_id_ts_idx`, `positions_2027_10_geom_idx`, `positions_2027_10_pkey`, `positions_2027_11`, `positions_2027_11_child_id_ts_idx`, `positions_2027_11_geom_idx`, `positions_2027_11_pkey`, `positions_2027_12`, `positions_2027_12_child_id_ts_idx`, `positions_2027_12_geom_idx`, `positions_2027_12_pkey`, `positions_default`, `positions_default_child_id_ts_idx`, `positions_default_geom_idx`, `positions_default_pkey`
@@ -632,7 +646,11 @@ Triggers :
 | Rayon de lieu par défaut 100 m | `DEFAULT 100` | `DEFAULT_PLACE_RADIUS_M` | `DEFAULT_PLACE_RADIUS_M` |
 | 20 lieux et 20 périmètres max par enfant | — | `400 place_limit` / `geofence_limit` | vérifié avant l'envoi |
 | Créneau de lieu : début < fin, jours 0–6 (0 = dimanche) | `CHECK` | `422 schedule_invalid` / validation | vérifié dans l'assistant |
-| Email valide et unique ; langue `fr`/`en` | `CHECK`, `UNIQUE` | normalisation en minuscules | — |
+| Email valide et unique **si présent** (facultatif) ; langue `fr`/`en` | `CHECK`, `UNIQUE` | normalisation en minuscules ; jamais inventé | champ facultatif |
+| Téléphone obligatoire (nouveaux comptes), E.164, unique parmi les comptes actifs | trigger `trg_users_require_telephone`, `ck_users_telephone_e164`, `uq_users_telephone_active` | `phonenumbers` → `422 phone_invalid`, `409 phone_taken` | validation E.164 avant envoi |
+| Numéro de série `SIREN-XXXXX-XXXXX`, sensible à la casse, un seul enfant par boîtier | `ck_devices_serial_format`, `uq_children_device` | `422 serial_invalid`, `409 device_taken` | saisie formatée, QR strict |
+| Commande : PENDING → SUCCESS/FAILED/TIMEOUT | `CHECK` sur `device_commands` | accusé signé, expiration 2 min | — |
+| Trame relayée une seule fois | `UNIQUE uq_device_relay_event` | empreinte SHA-256 + ± 2 s | file locale dédoublonnée |
 | Photo d'enfant : URL http(s) uniquement | `CHECK ck_children_photo_url` | validation 422 | photo locale conservée sur le téléphone |
 | Mode d'énergie `continu`/`equilibre`/`economie`, sensibilité « 0 »–« 100 » | `CHECK` | validation | sélecteurs |
 | Codes OTP : hachés, usage unique, essais ≥ 0 | `CHECK`, `UNIQUE token_hash` | expiration, 5 essais, cadence | — |
@@ -652,9 +670,11 @@ et **sans suppression de données**, rollback documenté en fin de fichier.
 | 001 | `geofences.radius_m` ; défauts `devices.energy_mode = 'equilibre'`, `sensitivity = '50'` ; révocation des anciens refresh tokens bcrypt |
 | 002 | Table `otp_challenges` ; `users.email_verified_at`, `terms_version`, `privacy_version`, `legal_accepted_at` |
 | 003 | Valeurs `device_event_type` ; défaut 100 m des lieux ; suppression des triggers d'alerte automatique ; trigger de règles de partage ; contraintes de valeurs ; fonctions et partitions mensuelles 2026-10 → 2027-12 ; RLS sur `otp_challenges` |
+| 004 | Téléphone : `users.email` facultatif, `telephone_verified_at`, `ck_users_telephone_e164` (NOT VALID), `uq_users_telephone_active`, trigger `trg_users_require_telephone` (INSERT). OTP : `channel`, `destination_hash`, `ip_hash`, `pending_value`, usages `phone_verify`/`phone_change`. Tables `rate_limit_events`, `device_commands`, `device_relay_events` (RLS). `devices.activation_pin_hash`, `ck_devices_serial_format` (NOT VALID, sensible à la casse). `create_positions_partition` en SECURITY DEFINER |
+| 005 | `positions.source` (`device` \| `relay` \| `sms`, défaut `device`) |
 
 - **Base neuve** (Docker) : `data/schema.sql` est exécuté à la création du volume
-  et enregistre 001–003 ; `apply.py` ne rejoue rien.
+  et enregistre 001–005 ; `apply.py` ne rejoue rien.
 - **Base de production Supabase** : `DATABASE_URL=… python server/migrations/apply.py`
   applique 001 → 003. Vérifié sur une restauration de la sauvegarde.
 

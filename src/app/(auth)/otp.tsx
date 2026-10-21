@@ -9,20 +9,23 @@ import { fontFamily, radii, spacing, typography, makeStyles, useTheme } from '@/
 import { useResendOtp, useVerifyOtp } from '@/api/hooks/useAuth';
 import { usePendingAuthStore } from '@/stores/pendingAuthStore';
 import { toUserMessage } from '@/api/errors';
+import { OTP_CODE_LENGTH as CODE_LENGTH, isCompleteOtp, normalizeOtpInput } from '@/features/auth/otpCode';
+import { ChannelPicker } from '@/features/auth/ChannelPicker';
+import type { OtpChannel } from '@/api/contracts';
 
-const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
 
 export default function OtpScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const { destination, devHint, pending, expiresAt } = usePendingAuthStore();
+  const { destination, devHint, pending, expiresAt, channel, channels, deliveryError } = usePendingAuthStore();
   const verifyOtp = useVerifyOtp();
   const resendOtp = useResendOtp();
   const [code, setCode] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
+  const [error, setError] = useState<string | null>(deliveryError);
+  // Premier envoi en échec : renvoi possible tout de suite.
+  const [secondsLeft, setSecondsLeft] = useState(deliveryError ? 0 : RESEND_SECONDS);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -57,10 +60,25 @@ export default function OtpScreen() {
   const minutes = expiresAt ? Math.max(1, Math.round((expiresAt - Date.now()) / 60000)) : null;
 
   function onChangeCode(value: string) {
-    const digits = value.replace(/\D/g, '').slice(0, CODE_LENGTH);
-    setCode(digits);
-    if (digits.length === CODE_LENGTH) void handleVerify(digits);
+    // Lettres et chiffres ; minuscules, espaces et tirets tolérés (code collé depuis un SMS).
+    const next = normalizeOtpInput(value);
+    setCode(next);
+    if (isCompleteOtp(next)) void handleVerify(next);
   }
+
+  function resend(target?: OtpChannel) {
+    setError(null);
+    resendOtp.mutate(target, {
+      onSuccess: () => {
+        setSecondsLeft(RESEND_SECONDS);
+        setCode('');
+      },
+      onError: (e) => setError(toUserMessage(e)),
+    });
+  }
+
+  // Jamais « code envoyé » quand le premier envoi a échoué.
+  const sentVia = channel && !deliveryError ? t(`auth.channels.${channel}`) : null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -73,7 +91,9 @@ export default function OtpScreen() {
         {t(pending.kind === 'login' ? 'auth.twofaTitle' : 'auth.otpTitle')}
       </Text>
       <Text style={styles.subtitle}>
-        {t(pending.kind === 'login' ? 'auth.twofaSubtitle' : 'auth.otpSubtitle', { destination: destination || '—' })}
+        {sentVia
+          ? t('auth.codeSentVia', { channel: sentVia, destination: destination || t('auth.yourAccount') })
+          : t(pending.kind === 'login' ? 'auth.twofaSubtitle' : 'auth.otpSubtitle', { destination: destination || '—' })}
         {minutes ? ` ${t('auth.codeValidity', { count: minutes })}` : ''}
       </Text>
 
@@ -99,8 +119,11 @@ export default function OtpScreen() {
         ref={inputRef}
         value={code}
         onChangeText={onChangeCode}
-        keyboardType="number-pad"
-        maxLength={CODE_LENGTH}
+        keyboardType="default"
+        autoCapitalize="characters"
+        autoCorrect={false}
+        spellCheck={false}
+        maxLength={CODE_LENGTH + 4}
         style={styles.hiddenInput}
         autoFocus
         textContentType="oneTimeCode"
@@ -114,26 +137,27 @@ export default function OtpScreen() {
             {t('auth.resendIn')} <Text style={styles.resendTime}>0:{secondsLeft.toString().padStart(2, '0')}</Text>
           </Text>
         ) : (
-          <Text style={[styles.resendText, styles.resendLink]} accessibilityRole="button" onPress={() => {
-            setError(null);
-            resendOtp.mutate(undefined, {
-              onSuccess: () => {
-                setSecondsLeft(RESEND_SECONDS);
-                setCode('');
-              },
-              onError: (e) => setError(toUserMessage(e)),
-            });
-          }}>
+          <Text style={[styles.resendText, styles.resendLink]} accessibilityRole="button" onPress={() => resend()}>
             {t('auth.resendCode')}
           </Text>
         )}
       </View>
 
+      {secondsLeft <= 0 && channels.length > 1 && (
+        <ChannelPicker
+          label={t('auth.resendVia')}
+          channels={channels}
+          value={channel}
+          disabled={resendOtp.isPending}
+          onChange={(next) => resend(next)}
+        />
+      )}
+
       <Button
         label={t('auth.verify')}
         onPress={() => handleVerify(code)}
         loading={verifyOtp.isPending}
-        disabled={code.length !== CODE_LENGTH}
+        disabled={!isCompleteOtp(code)}
       />
 
       {devHint && (

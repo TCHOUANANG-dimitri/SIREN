@@ -21,24 +21,39 @@ pytestmark = pytest.mark.skipif(os.environ.get("SIREN_DB_TESTS") != "1", reason=
 PASSWORD = "Yaounde2026!"
 
 
-@pytest.fixture(scope="module")
-def client():
-    from fastapi.testclient import TestClient
+@pytest.fixture
+def client(db_client):
+    return db_client
 
-    from app.main import app
 
-    with TestClient(app) as c:
-        yield c
+@pytest.fixture(autouse=True)
+def generous_ip_limits(monkeypatch):
+    # Toute la suite partage l'IP « testclient » : les plafonds par IP sont testés à part.
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "REGISTER_MAX_PER_IP_PER_HOUR", 100_000)
+    monkeypatch.setattr(settings, "OTP_MAX_PER_IP_PER_HOUR", 100_000)
+    monkeypatch.setattr(settings, "LOGIN_MAX_FAILURES_PER_IP", 100_000)
 
 
 def unique_email(prefix: str) -> str:
     return f"{prefix}.{uuid.uuid4().hex[:10]}@example.org"
 
 
-def register(client, prefix="parent"):
-    email = unique_email(prefix)
-    r = client.post("/api/v1/auth/register", json={"nom": prefix.title(), "email": email, "password": PASSWORD, "langue": "fr",
-                                                     "acceptedTermsVersion": "2026-09-30", "acceptedPrivacyVersion": "2026-09-30"})
+def unique_phone() -> str:
+    """Numéro mobile camerounais valide et unique (+237 6XX XX XX XX)."""
+    import random
+
+    return "+2376" + random.choice("5789") + "".join(random.choice("0123456789") for _ in range(7))
+
+
+def register(client, prefix="parent", email=True, phone=None):
+    email = unique_email(prefix) if email else None
+    payload = {"nom": prefix.title(), "telephone": phone or unique_phone(), "password": PASSWORD, "langue": "fr",
+               "acceptedTermsVersion": "2026-09-30", "acceptedPrivacyVersion": "2026-09-30"}
+    if email:
+        payload["email"] = email
+    r = client.post("/api/v1/auth/register", json=payload)
     assert r.status_code == 201, r.text
     body = r.json()
     return email, {"Authorization": f"Bearer {body['accessToken']}"}, body
@@ -61,9 +76,15 @@ def sql(statement: str, *args):
     return asyncio.run(run())
 
 
-def new_device() -> str:
-    device_id = f"SIREN-T{uuid.uuid4().hex[:8].upper()}"
-    sql("INSERT INTO devices (device_id, secret_key_hash) VALUES ($1, 'test')", device_id)
+def new_serial() -> str:
+    """Numéro au format SIREN-XXXXX-XXXXX, casse mélangée (sensible à la casse)."""
+    raw = uuid.uuid4().hex
+    return f"SIREN-{raw[:5].upper()}-{raw[5:10]}"
+
+
+def new_device(pin_hash: str | None = None, key_hash: str = "test") -> str:
+    device_id = new_serial()
+    sql("INSERT INTO devices (device_id, secret_key_hash, activation_pin_hash) VALUES ($1, $2, $3)", device_id, key_hash, pin_hash)
     return device_id
 
 
@@ -76,7 +97,7 @@ def test_inscription_connexion_et_consentement(client):
     assert login.status_code == 200 and login.json()["twofaRequired"] is False
     assert client.get("/api/v1/users/me", headers=headers).json()["email"] == email
     # Doublon : motif structuré.
-    again = client.post("/api/v1/auth/register", json={"nom": "X", "email": email, "password": PASSWORD})
+    again = client.post("/api/v1/auth/register", json={"nom": "X", "email": email, "telephone": unique_phone(), "password": PASSWORD})
     assert again.status_code == 409 and again.json()["detail"]["code"] == "email_taken"
 
 
@@ -147,7 +168,7 @@ def test_evenements_dispositif_acceptes(client):
 
 def test_migrations_enregistrees():
     versions = [r["version"] for r in sql("SELECT version FROM schema_migrations ORDER BY version")]
-    assert versions[:3] == ["001", "002", "003"]
+    assert versions[:5] == ["001", "002", "003", "004", "005"]
 
 
 def test_telemetrie_regles_declarative_universelle_et_alerte(client):
@@ -157,8 +178,7 @@ def test_telemetrie_regles_declarative_universelle_et_alerte(client):
     from app.core.security import hash_password
 
     _, headers, _ = register(client)
-    device_id = f"SIREN-T{uuid.uuid4().hex[:8].upper()}"
-    sql("INSERT INTO devices (device_id, secret_key_hash) VALUES ($1, $2)", device_id, hash_password("cle-dispositif"))
+    device_id = new_device(key_hash=hash_password("cle-dispositif"))
     child_id = client.post("/api/v1/children", headers=headers, json={"prenom": "Lina", "deviceId": device_id}).json()["id"]
     # Périmètre de vie autour de (4.05, 9.70), rayon 1500 m ; lieu interdit à 3 km au nord, rayon 200 m.
     client.post(f"/api/v1/children/{child_id}/geofences", headers=headers,

@@ -28,7 +28,8 @@
     "showPassword": "Afficher le mot de passe",
     "hidePassword": "Masquer le mot de passe",
     "fieldValue": "{{label}} : {{value}}",
-    "notSet": "non défini"
+    "notSet": "non défini",
+    "done": "Terminé"
   },
   "tabs": {
     "home": "Accueil",
@@ -76,9 +77,11 @@
     "passwordMismatch": "Les mots de passe ne correspondent pas",
     "passwordRequired": "Le mot de passe est requis",
     "termsRequired": "Vous devez accepter les conditions d'utilisation",
-    "codeFormat": "Le code comporte 6 chiffres.",
+    "codeFormat": "Le code comporte 6 lettres ou chiffres.",
     "required": "Ce champ est obligatoire.",
-    "passwordUnchanged": "Choisissez un mot de passe différent de l'actuel."
+    "passwordUnchanged": "Choisissez un mot de passe différent de l'actuel.",
+    "phoneInvalid": "Numéro invalide : format international, 7 à 15 chiffres après l'indicatif.",
+    "identifierRequired": "Saisissez votre téléphone ou votre e-mail."
   },
   "passwordStrength": {
     "veryWeak": "Très faible",

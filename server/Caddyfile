@@ -16,12 +16,15 @@
         header_up X-Forwarded-Proto {scheme}
     }
 
-    # Security headers
-    header / {
-        X-Content-Type-Options nosniff
-        X-Frame-Options DENY
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy strict-origin-when-cross-origin
+    # En-têtes de sécurité sur TOUTES les réponses (sans matcher : « header / » ne visait
+    # que le chemin exact « / »). « ? » = valeur par défaut, l'API pose déjà les siens
+    # (CSP stricte, HSTS hors développement, Cache-Control: no-store).
+    header {
+        ?X-Content-Type-Options nosniff
+        ?X-Frame-Options DENY
+        ?Referrer-Policy no-referrer
+        ?Content-Security-Policy "default-src 'none'; frame-ancestors 'none'"
+        -Server
     }
 
     # Access logs -> stdout (capturés par docker logs)

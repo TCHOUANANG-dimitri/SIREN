@@ -3,7 +3,7 @@ import { redact } from '../logger';
 describe('masquage des journaux', () => {
   it('masque jetons, coordonnées, téléphones, emails et textes libres', () => {
     const out = redact({
-      accessToken: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc',
+      accessToken: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc', // gitleaks:allow — jeton factice ({"sub":"1"}, signature « abc ») pour tester le masquage
       lat: 3.86,
       lon: 11.5,
       telephone: '+237 6 99 99 99 99',

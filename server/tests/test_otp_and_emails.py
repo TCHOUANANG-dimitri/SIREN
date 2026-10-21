@@ -44,9 +44,10 @@ def test_otp_errors_are_structured():
 
 
 def test_otp_code_is_random_outside_dev(monkeypatch):
-    monkeypatch.setattr(settings, "OTP_MODE", "email")
+    monkeypatch.setattr(settings, "OTP_MODE", "live")
     codes = {otp.generate_code() for _ in range(50)}
-    assert all(len(c) == 6 and c.isdigit() for c in codes)
+    # Alphanumérique, 6 caractères au plus, sans caractères ambigus (0/O, 1/I/L).
+    assert all(len(c) == 6 and set(c) <= set(otp.CODE_ALPHABET) for c in codes)
     assert len(codes) > 40
     assert settings.DEV_OTP_CODE not in codes or len(codes) > 1
 

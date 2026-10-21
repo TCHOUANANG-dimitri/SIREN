@@ -1,6 +1,6 @@
 import i18n from '@/i18n';
 import { logger } from '@/utils/logger';
-import type { SirenApi } from '../repositories';
+import type { OtpChannel, SirenApi } from '../repositories';
 import { http, seg } from '../http/client';
 import { ApiError } from '../errors';
 import {
@@ -21,12 +21,15 @@ import {
   placeSchema,
   positionSchema,
   refreshResponseSchema,
+  relayResponseSchema,
   riskHistorySchema,
   riskScoreSchema,
   searchZoneSchema,
   shareSchema,
   loginResponseSchema,
+  mfaChallengeSchema,
   otpChallengeSchema,
+  otpChannelsSchema,
   shareCreatedSchema,
   userSchema,
   zoneStateSchema,
@@ -47,9 +50,9 @@ function list<S extends Parameters<typeof parseContractList>[0]>(schema: S, data
 const children = (childId: string) => `/children/${seg(childId)}`;
 
 /** Un challenge sans jeton est inexploitable : réponse non conforme plutôt qu'écran bloqué. */
-function toChallenge(c: { challengeToken: string | null; expiresIn: number | null; devHint?: string }) {
+function toChallenge(c: { challengeToken: string | null; expiresIn: number | null; devHint?: string; channel?: OtpChannel | null }) {
   if (!c.challengeToken) throw new ApiError(i18n.t('apiErrors.contract'), 502, 'contract');
-  return { challengeToken: c.challengeToken, expiresIn: c.expiresIn, devHint: c.devHint };
+  return { challengeToken: c.challengeToken, expiresIn: c.expiresIn, devHint: c.devHint, channel: c.channel ?? null };
 }
 
 export const liveApi: SirenApi = {
@@ -57,10 +60,7 @@ export const liveApi: SirenApi = {
 
   auth: {
     async register(input) {
-      const data = await http.post('/auth/register', input, {
-        skipAuth: true,
-        messages: { conflict: i18n.t('apiErrors.reasons.email_taken') },
-      });
+      const data = await http.post('/auth/register', input, { skipAuth: true });
       const parsed = parseContract(authResponseSchema, data, 'POST /auth/register');
       return { user: parsed.user, accessToken: parsed.accessToken, refreshToken: parsed.refreshToken };
     },
@@ -71,9 +71,8 @@ export const liveApi: SirenApi = {
       });
       const parsed = parseContract(loginResponseSchema, data, 'POST /auth/login');
       if ('twofaRequired' in parsed && parsed.twofaRequired === true && !('accessToken' in parsed)) {
-        const challenge = parseContract(otpChallengeSchema, data, 'POST /auth/login (2FA)');
-        if (!challenge.challengeToken) throw new ApiError(i18n.t('apiErrors.contract'), 502, 'contract');
-        return { twofaRequired: true, challengeToken: challenge.challengeToken, expiresIn: challenge.expiresIn, devHint: challenge.devHint };
+        const mfa = parseContract(mfaChallengeSchema, data, 'POST /auth/login (2FA)');
+        return { twofaRequired: true, mfaToken: mfa.mfaToken, channels: mfa.channels };
       }
       const session = parseContract(authResponseSchema, data, 'POST /auth/login');
       return { twofaRequired: false, user: session.user, accessToken: session.accessToken, refreshToken: session.refreshToken };
@@ -82,11 +81,21 @@ export const liveApi: SirenApi = {
       const data = await http.post('/auth/refresh', { refreshToken }, { skipAuth: true });
       return parseContract(refreshResponseSchema, data, 'POST /auth/refresh');
     },
-    async requestOtp({ accessToken }) {
+    async otpChannels() {
+      const data = await http.get('/auth/otp/channels', { skipAuth: true });
+      return parseContract(otpChannelsSchema, data, 'GET /auth/otp/channels').channels;
+    },
+    async requestOtp({ accessToken, channel }) {
       // Le jeton de la session en attente identifie le compte ; il n'est jamais stocké.
-      const data = await http.post('/auth/request-otp', { accessToken }, { skipAuth: true });
+      const data = await http.post('/auth/request-otp', { accessToken, channel, target: 'phone' }, { skipAuth: true });
       const parsed = parseContract(otpChallengeSchema, data, 'POST /auth/request-otp');
-      return { required: parsed.required, challengeToken: parsed.challengeToken, expiresIn: parsed.expiresIn, devHint: parsed.devHint };
+      return {
+        required: parsed.required,
+        challengeToken: parsed.challengeToken,
+        expiresIn: parsed.expiresIn,
+        devHint: parsed.devHint,
+        channel: parsed.channel,
+      };
     },
     async verifyOtp({ code, accessToken, challengeToken }) {
       await http.post('/auth/verify-otp', { code, accessToken, challengeToken: challengeToken ?? undefined }, {
@@ -99,12 +108,12 @@ export const liveApi: SirenApi = {
       const parsed = parseContract(authResponseSchema, data, 'POST /auth/2fa/verify');
       return { user: parsed.user, accessToken: parsed.accessToken, refreshToken: parsed.refreshToken };
     },
-    async resendSecondFactor(challengeToken) {
-      const data = await http.post('/auth/2fa/resend', { challengeToken }, { skipAuth: true });
-      return toChallenge(parseContract(otpChallengeSchema, data, 'POST /auth/2fa/resend'));
+    async sendSecondFactor({ mfaToken, channel }) {
+      const data = await http.post('/auth/2fa/send', { mfaToken, channel }, { skipAuth: true });
+      return toChallenge(parseContract(otpChallengeSchema, data, 'POST /auth/2fa/send'));
     },
-    async forgotPassword(email) {
-      const data = await http.post('/auth/forgot', { email }, { skipAuth: true });
+    async forgotPassword({ identifier, channel }) {
+      const data = await http.post('/auth/forgot', { identifier, channel }, { skipAuth: true });
       return toChallenge(parseContract(otpChallengeSchema, data, 'POST /auth/forgot'));
     },
     async resetPassword(input) {
@@ -132,6 +141,12 @@ export const liveApi: SirenApi = {
     async setTwoFactor(input) {
       return parseContract(userSchema, await http.put('/users/me/2fa', input), 'PUT /users/me/2fa');
     },
+    async requestPhoneChange(input) {
+      return toChallenge(parseContract(otpChallengeSchema, await http.post('/users/me/phone', input), 'POST /users/me/phone'));
+    },
+    async confirmPhoneChange(input) {
+      return parseContract(userSchema, await http.post('/users/me/phone/confirm', input), 'POST /users/me/phone/confirm');
+    },
   },
 
   children: {
@@ -139,10 +154,15 @@ export const liveApi: SirenApi = {
       return list(childSchema, await http.get('/children'), 'GET /children');
     },
     async create(input) {
-      const data = await http.post('/children', input, {
-        messages: { not_found: i18n.t('errors.deviceNotFound'), conflict: i18n.t('errors.deviceNotFound') },
-      });
+      const data = await http.post('/children', input, { messages: { not_found: i18n.t('errors.deviceNotFound') } });
       return parseContract(childSchema, data, 'POST /children');
+    },
+    async pairDevice(childId, input) {
+      const data = await http.put(`${children(childId)}/device`, input, { messages: { not_found: i18n.t('errors.deviceNotFound') } });
+      return parseContract(childSchema, data, 'PUT /children/{id}/device');
+    },
+    async unpairDevice(childId) {
+      return parseContract(childSchema, await http.delete(`${children(childId)}/device`), 'DELETE /children/{id}/device');
     },
     async getStatus(childId) {
       const data = await http.get(`${children(childId)}/status`, {
@@ -154,11 +174,12 @@ export const liveApi: SirenApi = {
       return parseContract(childSchema, await http.patch(children(childId), patch), 'PATCH /children/{id}');
     },
     async findDevice(deviceId) {
-      const data = await http.get(`/children/devices/${seg(deviceId.trim().toUpperCase())}`, {
+      // Aucune conversion de casse : le numéro de série y est sensible.
+      const data = await http.get(`/children/devices/${seg(deviceId.trim())}`, {
         messages: { not_found: i18n.t('errors.deviceNotFound') },
       });
       const parsed = parseContract(deviceLookupSchema, data, 'GET /children/devices/{id}');
-      return { deviceId: parsed.deviceId, online: parsed.online, battery: parsed.battery };
+      return { deviceId: parsed.deviceId, online: parsed.online, battery: parsed.battery, pinRequired: parsed.pinRequired };
     },
   },
 
@@ -316,6 +337,10 @@ export const liveApi: SirenApi = {
   },
 
   device: {
+    async relayFrames(frames) {
+      const data = await http.post('/device/v1/relay', { frames: frames.map((frame) => ({ frame })) });
+      return parseContract(relayResponseSchema, data, 'POST /device/v1/relay').results;
+    },
     async getSettings(childId) {
       return parseContract(deviceSettingsSchema, await http.get(`${children(childId)}/device/settings`), 'GET /children/{id}/device/settings');
     },

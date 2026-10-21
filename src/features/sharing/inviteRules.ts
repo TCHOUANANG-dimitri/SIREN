@@ -43,7 +43,7 @@ export function samePhone(a: string | null | undefined, b: string | null | undef
 
 export function isSelf(identifier: string, kind: InviteIdentifierKind, user: Pick<User, 'email' | 'telephone'> | null): boolean {
   if (!user) return false;
-  if (kind === 'email') return identifier === user.email.trim().toLowerCase();
+  if (kind === 'email') return !!user.email && identifier === user.email.trim().toLowerCase();
   return samePhone(identifier, user.telephone);
 }
 

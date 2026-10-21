@@ -32,7 +32,7 @@ export async function createShare(
   if (!kind) throw reasonError('identifier_invalid', 422);
   if (isSelf(identifier, kind, user)) throw reasonError('self_invite', 422);
   const secondaryUser = db.users.find((u) =>
-    kind === 'email' ? u.email.toLowerCase() === identifier : samePhone(u.telephone, identifier)
+    kind === 'email' ? u.email?.toLowerCase() === identifier : samePhone(u.telephone, identifier)
   );
   if (!secondaryUser || secondaryUser.id === user.id) throw reasonError('invitee_not_found', 404);
   const alreadyInvited = db.secondaryAccess.some(

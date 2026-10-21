@@ -27,4 +27,6 @@ class Position(Base):
     battery: Mapped[int] = mapped_column(SmallInteger, nullable=True)
     imu_data: Mapped[dict] = mapped_column(JSON, nullable=True)
     ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    # device | relay | sms (migration 005)
+    source: Mapped[str] = mapped_column(String(10), nullable=False, default="device")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

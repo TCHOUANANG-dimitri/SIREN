@@ -3,7 +3,7 @@ from app.api.v1.endpoints import (
     auth, users, children, places, geofences,
     risk, alerts, sharing, community, device_ingestion,
     search_zone, emergency_contacts, audio, websocket,
-    tracking, device_settings
+    tracking, device_settings, device_commands
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -24,5 +24,6 @@ api_router.include_router(emergency_contacts.router, prefix="/children", tags=["
 api_router.include_router(audio.router, prefix="/children", tags=["Audio"])
 api_router.include_router(tracking.router, prefix="/children", tags=["Tracking"])
 api_router.include_router(device_settings.router, prefix="/children", tags=["Device Settings"])
+api_router.include_router(device_commands.router, prefix="/children", tags=["Commandes dispositif"])
 api_router.include_router(device_ingestion.router, prefix="/device", tags=["Ingestion dispositif"])
 api_router.include_router(websocket.router, prefix="/ws", tags=["Temps réel WebSocket"])

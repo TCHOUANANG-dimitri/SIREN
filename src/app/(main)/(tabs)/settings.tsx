@@ -53,7 +53,6 @@ export default function SettingsScreen() {
   const deleteAccount = useDeleteAccount();
 
   const [nom, setNom] = useState(user?.nom ?? '');
-  const [telephone, setTelephone] = useState(user?.telephone ?? '');
   const [biometricLock, setBiometricLock] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -66,14 +65,13 @@ export default function SettingsScreen() {
     const current = useAuthStore.getState().user;
     if (!current) return;
     setNom(current.nom ?? '');
-    setTelephone(current.telephone ?? '');
   }, [userId]);
 
   useEffect(() => {
     storage.getItem<boolean>(BIOMETRIC_KEY).then((bio) => setBiometricLock(!!bio)).catch(() => {});
   }, []);
 
-  const profileDirty = nom.trim() !== (user?.nom ?? '') || telephone.trim() !== (user?.telephone ?? '');
+  const profileDirty = nom.trim() !== (user?.nom ?? '');
 
   async function saveProfile() {
     setFeedback(null);
@@ -82,7 +80,7 @@ export default function SettingsScreen() {
       return;
     }
     try {
-      await patchMe.mutateAsync({ nom: nom.trim(), telephone: telephone.trim() });
+      await patchMe.mutateAsync({ nom: nom.trim() });
       setFeedback({ kind: 'success', message: t('settings.profileSaved') });
     } catch (e) {
       setFeedback({ kind: 'error', message: toUserMessage(e) });
@@ -169,20 +167,24 @@ export default function SettingsScreen() {
               <TextField label={t('common.name')} value={nom} onChangeText={setNom} autoComplete="name" />
               <TextField
                 label={t('auth.email')}
+                required={false}
                 value={user?.email ?? ''}
                 editable={false}
-                hint={user?.emailVerified === false ? t('settings.emailNotVerified') : t('settings.emailReadOnly')}
-              />
-              <TextField
-                label={t('common.phone')}
-                required={false}
-                value={telephone}
-                onChangeText={setTelephone}
-                keyboardType="phone-pad"
-                autoComplete="tel"
+                placeholder={t('settings.emailNone')}
+                hint={!user?.email ? t('settings.emailOptional') : user.emailVerified === false ? t('settings.emailNotVerified') : t('settings.emailReadOnly')}
               />
               <Button label={t('common.save')} onPress={saveProfile} loading={patchMe.isPending} disabled={!profileDirty} />
             </View>
+            <SettingsRow
+              icon={Smartphone}
+              label={t('settings.phone.rowLabel')}
+              description={
+                user?.telephone
+                  ? `${user.telephone} · ${t(user.phoneVerified ? 'settings.phone.verified' : 'settings.phone.notVerified')}`
+                  : t('settings.phone.missing')
+              }
+              onPress={() => router.push('/(main)/settings/phone')}
+            />
           </SettingsSection>
 
           <SettingsSection title={t('settings.sections.security')}>

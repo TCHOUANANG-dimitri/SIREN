@@ -48,12 +48,15 @@ export default function CommunityScreen() {
       setFeedback({ kind: 'error', text: t('community.tooShort', { min: MIN_REPORT_LENGTH }) });
       return;
     }
-    if (!phone.permissionGranted || !phone.hasFix) {
+    // Position du téléphone demandée à ce moment-là seulement (action explicite de l'utilisateur).
+    if (!phone.hasFix) await useLocationStore.getState().request();
+    const located = useLocationStore.getState();
+    if (!located.hasFix) {
       setFeedback({ kind: 'error', text: t('community.locationRequired') });
       return;
     }
     try {
-      await createReport.mutateAsync({ description: description.trim(), lat: phone.latitude, lon: phone.longitude });
+      await createReport.mutateAsync({ description: description.trim(), lat: located.latitude, lon: located.longitude });
       setDescription('');
       setFormOpen(false);
       setFeedback({ kind: 'success', text: isMockMode() ? t('community.published') : t('community.pendingModeration') });

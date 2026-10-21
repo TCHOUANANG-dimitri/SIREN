@@ -17,9 +17,12 @@ class User(Base):
 
     id: Mapped[str] = mapped_column(UUIDStr, primary_key=True, default=lambda: str(uuid.uuid4()))
     nom: Mapped[str] = mapped_column(String(150), nullable=False)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    # Facultatif (exigence D) : jamais d'adresse fictive pour satisfaire une contrainte.
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    telephone: Mapped[str] = mapped_column(String(30), nullable=True)
+    # E.164, obligatoire pour toute nouvelle inscription (trigger trg_users_require_telephone).
+    telephone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    telephone_verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     role: Mapped[RoleType] = mapped_column(pg_enum(RoleType, "role_type"), default=RoleType.PRINCIPAL)
     langue: Mapped[str] = mapped_column(String(5), default="fr")
     twofa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)

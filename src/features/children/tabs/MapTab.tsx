@@ -13,6 +13,8 @@ import { toUserMessage } from '@/api/errors';
 import { positionFreshness } from '@/features/tracking/freshness';
 import { formatBattery, formatRelativeTime } from '@/utils/format';
 import { useTranslation } from 'react-i18next';
+import { useLocationStore } from '@/stores/locationStore';
+import { PhoneLocationControl } from '@/features/tracking/PhoneLocationControl';
 
 export function MapTab({ childId }: { childId: string }) {
   const styles = useStyles();
@@ -71,6 +73,7 @@ function PreciseMap({ childId }: { childId: string }) {
   const requestFix = useRequestPositionFix(childId);
   const { data: device } = useChildStatus(childId);
   const mapRef = useRef<MapViewRef>(null);
+  const phoneFix = useLocationStore((s) => (s.permission === 'granted' ? s.fix : null));
   const [searchQuery, setSearchQuery] = useState('');
   const [fixMessage, setFixMessage] = useState<{ kind: 'info' | 'error'; text: string } | null>(null);
 
@@ -145,7 +148,20 @@ function PreciseMap({ childId }: { childId: string }) {
         style={styles.map}
         initialRegion={{ latitude: position.lat, longitude: position.lon, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
       >
-        <Marker coordinate={{ latitude: position.lat, longitude: position.lon }} pinColor={colors.primary} title={t('childTabs.currentPosition')} />
+        {/* Dispositif : « position actuelle » seulement si récente, sinon « dernière position connue » (couleur atténuée). */}
+        <Marker
+          coordinate={{ latitude: position.lat, longitude: position.lon }}
+          pinColor={freshness === 'recent' ? colors.primary : colors.muted}
+          title={freshness === 'recent' ? t('childTabs.currentPosition') : t('tracking.lastKnown', { when })}
+        />
+        {/* Téléphone : marqueur distinct, uniquement après autorisation explicite. */}
+        {phoneFix && (
+          <Marker
+            coordinate={{ latitude: phoneFix.latitude, longitude: phoneFix.longitude }}
+            pinColor={colors.accent}
+            title={t('tracking.phone.marker')}
+          />
+        )}
         {position.accuracyM !== null && (
           <Circle
             center={{ latitude: position.lat, longitude: position.lon }}
@@ -212,6 +228,7 @@ function PreciseMap({ childId }: { childId: string }) {
       </View>
 
       <View style={styles.overlayBottom}>
+        <PhoneLocationControl />
         <Button
           label={t('childTabs.requestPosition')}
           icon={<Navigation size={16} color={colors.onPrimary} />}
@@ -247,7 +264,7 @@ const useStyles = makeStyles((colors) => ({
     alignSelf: 'flex-start',
   },
   searchBadgeText: { ...typography.caption, fontFamily: fontFamily.semiBold, color: colors.onPrimary },
-  overlayBottom: { position: 'absolute', bottom: spacing.md, left: spacing.md, right: spacing.md },
+  overlayBottom: { position: 'absolute', bottom: spacing.md, left: spacing.md, right: spacing.md, gap: spacing.sm },
   zoneContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
   zoneCard: { width: '100%', alignItems: 'center' },
   zoneTitle: { ...typography.title2, fontFamily: fontFamily.semiBold, color: colors.ink, textAlign: 'center' },

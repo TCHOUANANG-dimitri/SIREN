@@ -1,0 +1,154 @@
+# SIREN — déploiement continu, SÉPARÉ de l'intégration continue.
+#
+# Déclencheurs : tag de version vX.Y.Z (publication) ou lancement manuel DEPUIS CE
+# TAG (« Use workflow from » → le tag) : la CI teste alors exactement le commit
+# construit et déployé. Une version déjà publiée sur GHCR n'est jamais reconstruite
+# (tag immuable) : un relancement redéploie les images existantes.
+# Chaîne : CI complète (ci.yml) → images publiées sur GHCR (tag immuable + SHA)
+#   → déploiement sur le VPS via SSH (environnement GitHub « production »,
+#   approbation manuelle exigée) → contrôle de santé public → retour arrière
+#   automatique à la version précédente si le contrôle échoue (deploy.sh).
+#
+# Prérequis à configurer dans GitHub (Settings → Environments → production) —
+# tant qu'ils manquent, le job de déploiement échoue sans rien modifier :
+#   variables : CONTABO_HOST, CONTABO_USER (deploy), SIREN_DOMAIN
+#   secrets   : CONTABO_SSH_KEY (clé privée dédiée au déploiement),
+#               CONTABO_KNOWN_HOSTS (empreinte du serveur, `ssh-keyscan -t ed25519 <hôte>`)
+#   règle     : « Required reviewers » sur l'environnement production.
+name: CD
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  images:
+    name: Images (GHCR)
+    needs: ci
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          [[ "$REF_TYPE" == tag ]] || { echo "::error::lancer la CD depuis un tag vX.Y.Z (ref actuelle : $VERSION)"; exit 1; }
+          [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.]+)?$ ]] || { echo "version invalide : $VERSION"; exit 1; }
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ steps.version.outputs.version }}
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: prefix
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: echo "prefix=ghcr.io/${REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - id: published
+        name: Version déjà publiée ? (tag immuable, jamais écrasé)
+        env:
+          PREFIX: ${{ steps.prefix.outputs.prefix }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if docker buildx imagetools inspect "$PREFIX-api:$VERSION" >/dev/null 2>&1 \
+            && docker buildx imagetools inspect "$PREFIX-worker:$VERSION" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"; echo "$VERSION déjà publiée : images existantes redéployées"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.published.outputs.exists != 'true'
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: server
+          file: server/Dockerfile
+          push: true
+          provenance: true
+          sbom: true
+          tags: |
+            ${{ steps.prefix.outputs.prefix }}-api:${{ steps.version.outputs.version }}
+            ${{ steps.prefix.outputs.prefix }}-api:sha-${{ github.sha }}
+          cache-from: type=gha,scope=api
+      - if: steps.published.outputs.exists != 'true'
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: server
+          file: server/Dockerfile.worker
+          push: true
+          provenance: true
+          sbom: true
+          tags: |
+            ${{ steps.prefix.outputs.prefix }}-worker:${{ steps.version.outputs.version }}
+            ${{ steps.prefix.outputs.prefix }}-worker:sha-${{ github.sha }}
+          cache-from: type=gha,scope=worker
+
+  deploy:
+    name: Déploiement production (Contabo)
+    needs: images
+    runs-on: ubuntu-24.04
+    environment:
+      name: production
+      url: https://${{ vars.SIREN_DOMAIN }}
+    timeout-minutes: 20
+    steps:
+      - name: Prérequis présents
+        env:
+          HOST: ${{ vars.CONTABO_HOST }}
+          USER_: ${{ vars.CONTABO_USER }}
+          DOMAIN: ${{ vars.SIREN_DOMAIN }}
+          KEY: ${{ secrets.CONTABO_SSH_KEY }}
+          KNOWN: ${{ secrets.CONTABO_KNOWN_HOSTS }}
+        run: |
+          missing=""
+          for name in HOST USER_ DOMAIN KEY KNOWN; do [[ -n "${!name}" ]] || missing="$missing $name"; done
+          [[ -z "$missing" ]] || { echo "::error::Configuration de l'environnement production incomplète :$missing"; exit 1; }
+      - name: Clé SSH (fichier temporaire, effacé en fin de job)
+        env:
+          KEY: ${{ secrets.CONTABO_SSH_KEY }}
+          KNOWN: ${{ secrets.CONTABO_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN" > ~/.ssh/known_hosts && chmod 644 ~/.ssh/known_hosts
+      - name: Déploiement (sauvegarde, migrations, redémarrage, santé, retour arrière)
+        env:
+          HOST: ${{ vars.CONTABO_HOST }}
+          USER_: ${{ vars.CONTABO_USER }}
+          VERSION: ${{ needs.images.outputs.version }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes "$USER_@$HOST" \
+            "cd ~/siren && git fetch --tags --quiet && git checkout --quiet '$VERSION' && deploy/contabo/deploy.sh '$VERSION'"
+      - name: Contrôle de santé public
+        env:
+          DOMAIN: ${{ vars.SIREN_DOMAIN }}
+          VERSION: ${{ needs.images.outputs.version }}
+        run: |
+          for _ in $(seq 1 20); do
+            body="$(curl -fsS --max-time 5 "https://$DOMAIN/health" || true)"
+            [[ "$body" == *"\"version\":\"$VERSION\""* ]] && { echo "sain : $body"; exit 0; }
+            sleep 6
+          done
+          echo "::error::https://$DOMAIN/health ne répond pas avec la version $VERSION"
+          exit 1
+      - name: Nettoyage
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

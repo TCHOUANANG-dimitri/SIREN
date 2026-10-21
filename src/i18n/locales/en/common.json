@@ -28,7 +28,8 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "fieldValue": "{{label}}: {{value}}",
-    "notSet": "not set"
+    "notSet": "not set",
+    "done": "Done"
   },
   "tabs": {
     "home": "Home",
@@ -76,9 +77,11 @@
     "passwordMismatch": "Passwords do not match",
     "passwordRequired": "Password is required",
     "termsRequired": "You must accept the terms of use",
-    "codeFormat": "The code has 6 digits.",
+    "codeFormat": "The code has 6 letters or digits.",
     "required": "This field is required.",
-    "passwordUnchanged": "Choose a password different from your current one."
+    "passwordUnchanged": "Choose a password different from your current one.",
+    "phoneInvalid": "Invalid number: international format, 7 to 15 digits after the country code.",
+    "identifierRequired": "Enter your phone or email."
   },
   "passwordStrength": {
     "veryWeak": "Very weak",

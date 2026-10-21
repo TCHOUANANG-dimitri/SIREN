@@ -15,7 +15,7 @@
 a2wsgi>=1.10.0,<2
 
 # --- Framework API ---
-fastapi==0.115.0
+fastapi==0.156.8
 
 # --- Base de données (Supabase = PostgreSQL externe + PostGIS) ---
 sqlalchemy==2.0.35
@@ -26,12 +26,14 @@ geoalchemy2==0.15.1
 pydantic==2.9.0
 pydantic-settings==2.5.0
 email-validator==2.2.0
+# Validation/normalisation E.164 des numéros (libphonenumber, pas de longueur supposée).
+phonenumbers==9.0.41
 
 # --- Authentification ---
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1             # plafonné : passlib 1.7.4 est incompatible avec bcrypt >= 4.1
-python-multipart==0.0.12
+python-multipart==0.0.32
 pyotp==2.9.0
 
 # --- Tâches : Celery conservé pour les décorateurs, mais exécution via cron ---

@@ -55,10 +55,28 @@
       "password_incorrect": "Incorrect password.",
       "password_weak": "Password too weak: at least 10 characters, with upper and lower case, a number and a symbol.",
       "email_taken": "An account already exists with this email.",
-      "invalid_credentials": "Incorrect email or password.",
+      "invalid_credentials": "Incorrect identifier or password.",
       "place_limit": "Limit reached: {{max}} places per child. Delete a place to add another.",
       "geofence_limit": "Limit reached: {{max}} zones per child. Delete a zone to add another.",
-      "schedule_invalid": "The arrival time must be before the leaving time."
+      "schedule_invalid": "The arrival time must be before the leaving time.",
+      "phone_invalid": "Invalid phone number. Use the international format, e.g. +237 6 90 12 34 56.",
+      "phone_taken": "This number is already used by another account.",
+      "phone_unchanged": "This is already your account's number.",
+      "channel_unavailable": "This delivery method isn't available right now. Choose another one or try again later.",
+      "channel_not_allowed": "This delivery method can't be used for your account (the email must be verified first).",
+      "delivery_failed": "The code couldn't be sent. Try again in a few minutes or choose another method.",
+      "rate_limited": "Too many attempts. Wait a few minutes before trying again.",
+      "serial_invalid": "Invalid serial number: it has 10 letters or digits (SIREN-XXXXX-XXXXX).",
+      "device_not_found": "No available device with this number. Check every character, including upper and lower case.",
+      "device_taken": "This device is paired with another account. Its owner must unpair it first.",
+      "device_already_paired": "This device is already paired with one of your children.",
+      "pin_required": "Enter the activation PIN printed on the device box.",
+      "pin_invalid": "Incorrect activation PIN.",
+      "no_device": "No device is paired with this child.",
+      "principal_only": "Only the main parent can do this.",
+      "command_unknown": "Command not available.",
+      "command_value_invalid": "Invalid command value.",
+      "command_not_found": "Command not found."
     }
   }
 }

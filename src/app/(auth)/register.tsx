@@ -12,12 +12,14 @@ import { fontFamily, spacing, typography, makeStyles, useTheme } from '@/theme';
 import { useRegister } from '@/api/hooks/useAuth';
 import { toUserMessage } from '@/api/errors';
 import { passwordSchema } from '@/features/auth/passwordPolicy';
+import { isPlausiblePhone, normalizePhoneInput } from '@/features/auth/phone';
 
 const schema = z
   .object({
     nom: z.string().trim().min(2, 'validation.nameTooShort'),
-    email: z.string().trim().email('validation.emailInvalid'),
-    telephone: z.string().trim().optional(),
+    // Téléphone obligatoire (format international, vérifié par le serveur) ; e-mail facultatif.
+    telephone: z.string().trim().refine((v) => isPlausiblePhone(v), 'validation.phoneInvalid'),
+    email: z.union([z.literal(''), z.string().trim().email('validation.emailInvalid')]),
     password: passwordSchema,
     confirmPassword: z.string(),
     acceptTerms: z.boolean(),
@@ -53,7 +55,12 @@ export default function RegisterScreen() {
   async function onSubmit(values: FormValues) {
     setServerError(null);
     try {
-      const result = await register.mutateAsync({ nom: values.nom, email: values.email, telephone: values.telephone || undefined, password: values.password });
+      const result = await register.mutateAsync({
+        nom: values.nom,
+        telephone: normalizePhoneInput(values.telephone),
+        email: values.email.trim() || undefined,
+        password: values.password,
+      });
       if (result.otpRequired) router.push('/(auth)/otp');
     } catch (error) {
       setServerError(toUserMessage(error, t('common.error')));
@@ -94,32 +101,37 @@ export default function RegisterScreen() {
         />
         <Controller
           control={control}
-          name="email"
+          name="telephone"
           render={({ field }) => (
             <TextField
-              label={t('auth.email')}
+              label={t('auth.phone')}
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              error={errors.email?.message && t(errors.email.message)}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              placeholder={t('auth.emailPlaceholder')}
+              error={errors.telephone?.message && t(errors.telephone.message)}
+              hint={t('auth.phoneHint')}
+              keyboardType="phone-pad"
+              autoComplete="tel"
+              textContentType="telephoneNumber"
+              placeholder={t('auth.phonePlaceholder')}
             />
           )}
         />
         <Controller
           control={control}
-          name="telephone"
+          name="email"
           render={({ field }) => (
             <TextField
-              label={t('auth.phone')}
+              label={t('auth.email')}
               required={false}
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              keyboardType="phone-pad"
-              placeholder={t('auth.phonePlaceholder')}
+              error={errors.email?.message && t(errors.email.message)}
+              hint={t('auth.emailOptionalHint')}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholder={t('auth.emailPlaceholder')}
             />
           )}
         />

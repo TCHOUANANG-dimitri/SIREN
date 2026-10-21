@@ -18,6 +18,9 @@ import type {
   User,
   ZoneState,
 } from '@/models/entities';
+import type { OtpChannel } from './contracts';
+
+export type { OtpChannel };
 
 /**
  * Contrat unique entre l'UI (hooks React Query) et la source de données.
@@ -37,15 +40,18 @@ export interface OtpChallenge {
   expiresIn: number | null;
   /** Code affiché en démo / développement uniquement ; toujours absent en production. */
   devHint?: string;
+  /** Canal réellement utilisé (null si inconnu). */
+  channel?: OtpChannel | null;
 }
 
 /**
  * Connexion : soit la session est ouverte, soit le serveur exige un second
- * facteur — et dans ce cas AUCUN jeton de session n'est encore délivré.
+ * facteur — et dans ce cas AUCUN jeton de session n'est délivré : seul un jeton
+ * MFA (5 min, inutilisable comme session) permet de choisir le canal du code.
  */
 export type LoginResult =
   | ({ twofaRequired: false } & AuthSession)
-  | ({ twofaRequired: true } & OtpChallenge);
+  | { twofaRequired: true; mfaToken: string; channels: OtpChannel[] };
 
 export interface OtpRequestResult extends Partial<OtpChallenge> {
   /**
@@ -57,8 +63,10 @@ export interface OtpRequestResult extends Partial<OtpChallenge> {
 
 export interface RegisterInput {
   nom: string;
-  email: string;
-  telephone?: string;
+  /** Obligatoire, normalisé E.164 par le serveur. */
+  telephone: string;
+  /** Facultatif : jamais inventé. */
+  email?: string;
   password: string;
   langue: 'fr' | 'en';
   acceptedTermsVersion: string;
@@ -67,22 +75,31 @@ export interface RegisterInput {
 
 export interface AuthRepository {
   register(input: RegisterInput): Promise<AuthSession>;
-  login(input: { email: string; password: string }): Promise<LoginResult>;
+  /** `identifier` : numéro de téléphone (tout format) ou adresse e-mail. */
+  login(input: { identifier: string; password: string }): Promise<LoginResult>;
   refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken?: string }>;
-  /** Code de confirmation de l'email après inscription (session encore en attente). */
-  requestOtp(input: { accessToken: string }): Promise<OtpRequestResult>;
+  /** Canaux configurés côté serveur (un canal absent n'est jamais proposé). */
+  otpChannels(): Promise<OtpChannel[]>;
+  /** Code de vérification du téléphone après inscription (session encore en attente). */
+  requestOtp(input: { accessToken: string; channel: OtpChannel }): Promise<OtpRequestResult>;
   verifyOtp(input: { code: string; accessToken: string; challengeToken: string | null }): Promise<void>;
+  /** Envoie (ou renvoie) le code de connexion par le canal choisi ; invalide le précédent. */
+  sendSecondFactor(input: { mfaToken: string; channel: OtpChannel }): Promise<OtpChallenge>;
   /** Second facteur de connexion : renvoie la session une fois le code validé. */
   verifySecondFactor(input: { challengeToken: string; code: string }): Promise<AuthSession>;
-  resendSecondFactor(challengeToken: string): Promise<OtpChallenge>;
   /** Même réponse que le compte existe ou non (pas d'énumération des comptes). */
-  forgotPassword(email: string): Promise<OtpChallenge>;
+  forgotPassword(input: { identifier: string; channel: OtpChannel }): Promise<OtpChallenge>;
   resetPassword(input: { challengeToken: string; code: string; newPassword: string }): Promise<void>;
   logout(refreshToken: string): Promise<void>;
 }
 
 export interface UsersRepository {
-  patchMe(patch: Partial<Pick<User, 'nom' | 'telephone' | 'langue'>>): Promise<User>;
+  /** Le téléphone ne se modifie pas ici : voir requestPhoneChange (mot de passe + code). */
+  patchMe(patch: Partial<Pick<User, 'nom' | 'langue'>>): Promise<User>;
+  /** Changement (ou ajout) du numéro, étape 1 : mot de passe vérifié, code envoyé au NOUVEAU numéro. */
+  requestPhoneChange(input: { currentPassword: string; newPhone: string; channel: 'sms' | 'whatsapp' }): Promise<OtpChallenge>;
+  /** Étape 2 : le code prouve la possession du nouveau numéro ; renvoie le compte à jour. */
+  confirmPhoneChange(input: { challengeToken: string; code: string }): Promise<User>;
   deleteMe(): Promise<void>;
   registerPushToken(input: { token: string; platform: 'fcm' | 'apns' }): Promise<void>;
   /** Les autres sessions sont révoquées ; renvoie les nouveaux jetons de cette session. */
@@ -94,11 +111,18 @@ export interface DeviceLookup {
   deviceId: string;
   online: boolean;
   battery: number | null;
+  /** Le PIN d'activation imprimé sur la boîte sera demandé. */
+  pinRequired: boolean;
 }
 
 export interface ChildrenRepository {
   list(): Promise<Child[]>;
-  create(input: { prenom: string; deviceId: string; photoUrl?: string }): Promise<Child>;
+  /** `deviceId` exact `SIREN-XXXXX-XXXXX` (sensible à la casse, jamais converti). */
+  create(input: { prenom: string; deviceId: string; photoUrl?: string; activationPin?: string }): Promise<Child>;
+  /** (Ré)associe un dispositif à un enfant existant ; l'ancien est libéré. */
+  pairDevice(childId: string, input: { deviceId: string; activationPin?: string }): Promise<Child>;
+  /** Dissocie le dispositif (parent principal) ; l'historique reste à l'enfant. */
+  unpairDevice(childId: string): Promise<Child>;
   getStatus(childId: string): Promise<DeviceStatus>;
   patchContext(childId: string, patch: Partial<Pick<Child, 'sleepSchedule'>>): Promise<Child>;
   findDevice(deviceId: string): Promise<DeviceLookup>;
@@ -177,8 +201,15 @@ export interface DeviceSettings {
   configVersion: number;
 }
 
+export interface RelayResult {
+  status: 'accepted' | 'duplicate' | 'rejected' | 'forbidden';
+  reason?: string;
+}
+
 export interface DeviceRepository {
   getSettings(childId: string): Promise<DeviceSettings>;
+  /** Trames « ; » reçues hors ligne, relayées telles quelles (au plus 100 par appel). */
+  relayFrames(frames: string[]): Promise<RelayResult[]>;
   patchSettings(
     childId: string,
     patch: { energyMode?: NonNullable<DeviceStatus['energyMode']>; sensitivity?: number }

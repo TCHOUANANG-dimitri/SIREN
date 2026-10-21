@@ -58,12 +58,12 @@ async def get_position(child_id: str, current_user: User = Depends(get_current_u
 
 @router.post("/{child_id}/position/fix", status_code=status.HTTP_202_ACCEPTED)
 async def request_position_fix(child_id: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    access = await get_child_access(db, current_user, child_id)
-    access.require("position_precise")
-    # BLOQUANT (contrat Dispositif) : aucun canal descendant serveur → boîtier n'est
-    # défini (SMS, commande en réponse à la télémétrie…). La demande est acceptée
-    # mais ne peut pas encore être relayée au dispositif ; aucun crédit n'est débité.
-    return {"accepted": True, "delivered": False}
+    # Commande LOCALISER du protocole (§8). Sans canal descendant configuré, la
+    # commande est enregistrée FAILED (no_channel) : `delivered` reste faux, jamais prétendu.
+    from app.api.v1.endpoints.device_commands import send_command
+
+    command = await send_command(db, current_user, child_id, "LOCALISER", None)
+    return {"accepted": True, "delivered": command.status == "PENDING", "commandId": command.id, "status": command.status}
 
 
 @router.get("/{child_id}/zone-state")

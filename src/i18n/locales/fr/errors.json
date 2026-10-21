@@ -55,10 +55,28 @@
       "password_incorrect": "Mot de passe incorrect.",
       "password_weak": "Mot de passe trop faible : 10 caractères minimum, avec majuscule, minuscule, chiffre et symbole.",
       "email_taken": "Un compte existe déjà avec cet email.",
-      "invalid_credentials": "Email ou mot de passe incorrect.",
+      "invalid_credentials": "Identifiant ou mot de passe incorrect.",
       "place_limit": "Limite atteinte : {{max}} lieux maximum par enfant. Supprimez un lieu pour en ajouter un autre.",
       "geofence_limit": "Limite atteinte : {{max}} périmètres maximum par enfant. Supprimez un périmètre pour en ajouter un autre.",
-      "schedule_invalid": "L'heure d'arrivée doit précéder l'heure de sortie."
+      "schedule_invalid": "L'heure d'arrivée doit précéder l'heure de sortie.",
+      "phone_invalid": "Numéro de téléphone invalide. Indiquez-le au format international, par exemple +237 6 90 12 34 56.",
+      "phone_taken": "Ce numéro est déjà utilisé par un autre compte.",
+      "phone_unchanged": "C'est déjà le numéro de votre compte.",
+      "channel_unavailable": "Ce moyen d'envoi n'est pas disponible pour le moment. Choisissez-en un autre ou réessayez plus tard.",
+      "channel_not_allowed": "Ce moyen d'envoi n'est pas possible pour votre compte (l'e-mail doit d'abord être vérifié).",
+      "delivery_failed": "Le code n'a pas pu être envoyé. Réessayez dans quelques minutes ou choisissez un autre moyen.",
+      "rate_limited": "Trop de tentatives. Patientez quelques minutes avant de réessayer.",
+      "serial_invalid": "Numéro de série invalide : il comporte 10 lettres ou chiffres (SIREN-XXXXX-XXXXX).",
+      "device_not_found": "Aucun dispositif disponible avec ce numéro. Vérifiez chaque caractère, majuscules et minuscules comprises.",
+      "device_taken": "Ce dispositif est associé à un autre compte. Son propriétaire doit d'abord le dissocier.",
+      "device_already_paired": "Ce dispositif est déjà associé à l'un de vos enfants.",
+      "pin_required": "Saisissez le PIN d'activation imprimé sur la boîte du dispositif.",
+      "pin_invalid": "PIN d'activation incorrect.",
+      "no_device": "Aucun dispositif n'est associé à cet enfant.",
+      "principal_only": "Action réservée au parent principal.",
+      "command_unknown": "Commande non disponible.",
+      "command_value_invalid": "Valeur de commande invalide.",
+      "command_not_found": "Commande introuvable."
     }
   }
 }

@@ -20,7 +20,7 @@ def test_register_rejects_weak_passwords(password):
 
 
 def test_register_accepts_policy_compliant_password():
-    RegisterRequest(nom="Parent", email="parent@example.org", password="Yaounde2026!")
+    RegisterRequest(nom="Parent", telephone="+237690000001", password="Yaounde2026!")
 
 
 @pytest.mark.parametrize(
@@ -29,8 +29,9 @@ def test_register_accepts_policy_compliant_password():
         ("development", "", "dev"),
         ("production", "", "disabled"),
         ("production", "dev", "disabled"),  # le code fixe n'est jamais accepté en production
-        ("staging", "email", "email"),
-        ("staging", "provider", "email"),  # ancien nom du mode email
+        ("staging", "live", "live"),
+        ("staging", "email", "live"),  # anciens noms du mode réel
+        ("staging", "provider", "live"),
     ],
 )
 def test_otp_mode_resolution(env, mode, expected):
@@ -72,4 +73,8 @@ def test_server_refuses_default_secrets_outside_development():
     problems = Settings(ENVIRONMENT="production").unsafe_production_settings()
     assert any("JWT_SECRET_KEY" in p for p in problems)
     strong = "x" * 48
-    assert Settings(ENVIRONMENT="production", SECRET_KEY=strong, JWT_SECRET_KEY=strong).unsafe_production_settings() == []
+    assert Settings(ENVIRONMENT="production", SECRET_KEY=strong, JWT_SECRET_KEY=strong, OTP_MODE="live").unsafe_production_settings() == []
+    # OTP_MODE vide ou inconnu : refusé (il désactiverait les codes sans le dire).
+    assert any("OTP_MODE" in p for p in Settings(ENVIRONMENT="production", SECRET_KEY=strong, JWT_SECRET_KEY=strong, OTP_MODE="").unsafe_production_settings())
+    assert Settings(ENVIRONMENT="production", SECRET_KEY=strong, JWT_SECRET_KEY=strong, OTP_MODE="disabled").unsafe_production_settings() == []
+    assert any("OTP_LENGTH" in p for p in Settings(ENVIRONMENT="production", SECRET_KEY=strong, JWT_SECRET_KEY=strong, OTP_MODE="live", OTP_LENGTH=4).unsafe_production_settings())
