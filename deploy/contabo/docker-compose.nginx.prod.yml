@@ -1,0 +1,14 @@
+# Surcouche pour un Nginx installé sur l'hôte Contabo.
+# L'API n'est accessible que depuis la machine; Nginx relaie vers ce port.
+services:
+  api:
+    ports: !override
+      - "127.0.0.1:${SIREN_API_PORT:-18080}:8000"
+    networks: !override
+      - siren_data
+      - siren_egress
+
+  proxy:
+    profiles:
+      - caddy
+    ports: !reset []

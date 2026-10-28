@@ -16,7 +16,7 @@ Internet ──443/80──▶ Caddy (proxy, TLS Let's Encrypt, HSTS)      rése
       (rôle siren_app pour l'API ; propriétaire siren pour migrations et sauvegardes)
 ```
 
-- Seul le proxy publie des ports (80/443). Docker publiant ses ports **en dehors d'UFW**, aucun autre service ne doit en publier : contrôlé en CI par `deploy/contabo/check_compose.py`.
+- En mode Caddy, seul le proxy publie des ports (80/443). Avec `SIREN_PROXY_MODE=nginx`, le service Caddy est désactivé et seule l'API est publiée sur `127.0.0.1:${SIREN_API_PORT}` pour le Nginx hôte. Docker publiant ses ports **en dehors d'UFW**, l'API ne doit jamais être liée à une adresse publique : ces règles sont contrôlées en CI par `deploy/contabo/check_compose.py`.
 - Images applicatives : `ghcr.io/<propriétaire>/siren-api|siren-worker:<vX.Y.Z>` (construites par `cd.yml`, provenance + SBOM). Images tierces épinglées par digest (`docker-compose.prod.yml`).
 - L'API se connecte en `siren_app` (DML, pas de DDL — `sql/app_role.sql`) ; les migrations en propriétaire du schéma (service `migration`).
 - Secrets : `.env.prod` est lu par l'API, le worker et beat, mais le mot de passe du propriétaire de la base (`POSTGRES_PASSWORD`) y est **effacé** ; le proxy ne reçoit que `DOMAIN` et `CADDY_EMAIL` (contrôlé par `check_compose.py`). Le paramètre `token` du WebSocket est retiré des journaux Caddy.
@@ -27,7 +27,7 @@ Internet ──443/80──▶ Caddy (proxy, TLS Let's Encrypt, HSTS)      rése
 |---|---|---|---|
 | dev | poste développeur | `server/.env` (depuis `.env.example`), `docker compose up` + `docker-compose.dev.yml` | mock ou base locale |
 | test | GitHub Actions (`ci.yml`) | variables de job, base PostGIS jetable | jeux de tests |
-| prod | VPS Contabo | `deploy/contabo/.env.prod` (mode 600, depuis `env.prod.example`) + surcouche `docker-compose.prod.yml` | réelles |
+| prod | VPS Contabo | `deploy/contabo/.env.prod` (mode 600, depuis `env.prod.example`) + surcouche `docker-compose.prod.yml`; ajouter `docker-compose.nginx.prod.yml` si Nginx tourne déjà sur l'hôte | réelles |
 
 ## 3. Prérequis (à fournir — voir T-CONTABO-DEPLOY)
 
@@ -75,6 +75,12 @@ Tant que ces éléments manquent, le job `deploy` s'arrête à « Prérequis pr�
 - **Manuel** (serveur) : `deploy/contabo/deploy.sh v1.2.0`.
 
 `deploy.sh` (verrou `flock` : une seule opération à la fois) : sauvegarde préalable → `pull` des images → migrations (propriétaire) → rôle `siren_app` (idempotent, mot de passe transmis par l'entrée standard, jamais en argument) → démarrage → contrôle `https://<domaine>/health/ready` (code 200, version attendue **et** base joignable avec le rôle applicatif). `SIREN_VERSION` n'est inscrite dans `.env.prod` qu'**après** ce contrôle : un `pull` ou une migration en échec laisse le fichier, donc la cible d'un retour arrière, inchangé. En cas d'échec du démarrage ou du contrôle : retour automatique à la version précédente, et le script échoue (la CD est rouge).
+
+### VPS avec Nginx déjà installé sur l'hôte
+
+Définir `SIREN_PROXY_MODE=nginx` dans `.env.prod`. Le script de déploiement ajoute alors `docker-compose.nginx.prod.yml` automatiquement : Caddy ne démarre pas, l'API écoute uniquement sur `127.0.0.1:${SIREN_API_PORT}` (par défaut `18080`) et Nginx doit relayer vers ce port. Ne pas lancer deux proxies sur les ports 80/443. Le site Nginx et le certificat ne se configurent qu'après le choix du domaine et la vérification qu'il pointe vers le VPS.
+
+Le modèle non activé est `deploy/contabo/nginx-siren.example.conf`. Après le choix du domaine, remplacer `siren-api.example.invalid`, copier le fichier dans `sites-available`, créer le lien dans `sites-enabled`, puis valider avec `nginx -t` avant tout rechargement. Quand le DNS résout vers le VPS et que l'API répond localement sur le port configuré, Certbot peut ajouter HTTPS au site avec son intégration Nginx. Ne pas remplacer ni désactiver les autres sites Nginx.
 
 ## 7. Retour arrière
 

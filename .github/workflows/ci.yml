@@ -134,10 +134,19 @@ jobs:
       - name: Configuration de production valide (sans secret réel)
         run: |
           cp deploy/contabo/env.prod.example deploy/contabo/.env.prod
+          trap 'rm -f deploy/contabo/.env.prod' EXIT
           docker compose -f server/docker-compose.yml -f deploy/contabo/docker-compose.prod.yml \
             --env-file deploy/contabo/.env.prod config --quiet
           # Aucun port de base, de Redis ni d'API publié en production.
           docker compose -f server/docker-compose.yml -f deploy/contabo/docker-compose.prod.yml \
+            --env-file deploy/contabo/.env.prod config --format json \
+            | python3 deploy/contabo/check_compose.py
+          sed -i 's/^SIREN_PROXY_MODE=.*/SIREN_PROXY_MODE=nginx/' deploy/contabo/.env.prod
+          docker compose -f server/docker-compose.yml -f deploy/contabo/docker-compose.prod.yml \
+            -f deploy/contabo/docker-compose.nginx.prod.yml \
+            --env-file deploy/contabo/.env.prod config --quiet
+          docker compose -f server/docker-compose.yml -f deploy/contabo/docker-compose.prod.yml \
+            -f deploy/contabo/docker-compose.nginx.prod.yml \
             --env-file deploy/contabo/.env.prod config --format json \
             | python3 deploy/contabo/check_compose.py
 

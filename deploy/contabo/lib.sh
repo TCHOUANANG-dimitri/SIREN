@@ -52,10 +52,16 @@ real_version() {
   return 0
 }
 
-# COMPOSE_EXTRA : surcouche supplémentaire (répétition locale uniquement, ex. ports du proxy).
+# SIREN_PROXY_MODE sélectionne Caddy (conteneur) ou Nginx (proxy hôte).
+# COMPOSE_EXTRA permet une surcouche additionnelle pour les répétitions locales.
 compose() {
   local extra=()
-  [[ -n "${COMPOSE_EXTRA:-}" ]] && extra=(-f "$COMPOSE_EXTRA")
+  case "$(env_value SIREN_PROXY_MODE caddy)" in
+    caddy) ;;
+    nginx) extra=(-f "$DEPLOY_DIR/docker-compose.nginx.prod.yml") ;;
+    *) die "SIREN_PROXY_MODE doit être caddy ou nginx" ;;
+  esac
+  [[ -n "${COMPOSE_EXTRA:-}" ]] && extra+=(-f "$COMPOSE_EXTRA")
   docker compose -f "$REPO_DIR/server/docker-compose.yml" -f "$DEPLOY_DIR/docker-compose.prod.yml" "${extra[@]}" \
     --env-file "$ENV_FILE" "$@"
 }

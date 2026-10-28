@@ -11,9 +11,18 @@ import sys
 config = json.load(sys.stdin)
 services = config["services"]
 problems = []
+nginx_host_mode = "proxy" not in services
 for name, service in services.items():
-    if name != "proxy" and service.get("ports"):
-        problems.append(f"{name} publie des ports : {service['ports']}")
+    for port in service.get("ports") or []:
+        # En mode Nginx hôte, seule l'API peut être publiée sur loopback.
+        if name == "api" and port.get("host_ip") == "127.0.0.1":
+            continue
+        if name != "proxy" or port.get("published") not in ("80", "443"):
+            problems.append(f"{name} publie des ports : {service['ports']}")
+if nginx_host_mode:
+    api_ports = services.get("api", {}).get("ports") or []
+    if len(api_ports) != 1 or api_ports[0].get("host_ip") != "127.0.0.1" or api_ports[0].get("target") != 8000:
+        problems.append(f"en mode Nginx, l'API doit publier uniquement 127.0.0.1:<port>:8000 : {api_ports}")
 db_networks = set((services.get("db", {}).get("networks") or {}).keys())
 for network in db_networks:
     if not config.get("networks", {}).get(network, {}).get("internal"):
@@ -21,6 +30,8 @@ for network in db_networks:
 if "siren_app" not in services.get("api", {}).get("environment", {}).get("DATABASE_URL", ""):
     problems.append("l'API ne se connecte pas avec le rôle applicatif")
 for name in ("db", "redis", "proxy"):
+    if name not in services:
+        continue
     image = services.get(name, {}).get("image", "")
     if "@sha256:" not in image:
         problems.append(f"{name} : image non épinglée par digest ({image})")
