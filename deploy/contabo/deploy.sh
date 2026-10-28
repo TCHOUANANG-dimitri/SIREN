@@ -64,10 +64,18 @@ log "rôle applicatif"
 } | compose exec -T db psql -v ON_ERROR_STOP=1 -U "$PG_USER" -d "$PG_DB" -f - >/dev/null
 
 log "démarrage des services"
+# En mode Nginx, supprimer tout conteneur proxy Caddy résiduel d'une exécution antérieure.
+if [[ "$(env_value SIREN_PROXY_MODE caddy)" != "caddy" ]]; then
+  docker rm -f server-proxy-1 >/dev/null 2>&1 || true
+fi
 # Un échec de démarrage (ex. API jamais saine) doit mener au retour arrière, pas
 # interrompre le script : sous `set -e`, l'erreur de compose l'arrêterait avant.
 started=1
-compose up -d --remove-orphans || started=0
+if [[ "$(env_value SIREN_PROXY_MODE caddy)" == "caddy" ]]; then
+  compose up -d --remove-orphans || started=0
+else
+  compose up -d --remove-orphans api worker beat || started=0
+fi
 
 if [[ "$started" == 1 ]] && wait_healthy "$HEALTH_URL" "$VERSION"; then
   set_version "$VERSION"
@@ -82,7 +90,11 @@ fi
 log "contrôle de disponibilité en échec : retour à ${PREVIOUS:-aucune}"
 if [[ -n "$PREVIOUS" && "$PREVIOUS" != "$VERSION" ]]; then
   export SIREN_VERSION="$PREVIOUS"
-  compose up -d --remove-orphans || log "redémarrage de $PREVIOUS signalé en échec par compose : contrôle de santé"
+  if [[ "$(env_value SIREN_PROXY_MODE caddy)" == "caddy" ]]; then
+    compose up -d --remove-orphans || log "redémarrage de $PREVIOUS signalé en échec par compose : contrôle de santé"
+  else
+    compose up -d --remove-orphans api worker beat || log "redémarrage de $PREVIOUS signalé en échec par compose : contrôle de santé"
+  fi
   wait_healthy "$ROLLBACK_HEALTH_URL" "$PREVIOUS" || die "le retour arrière n'est pas sain non plus : intervention manuelle (ROLLBACK dans DEPLOIEMENT_CONTABO.md)"
   die "déploiement $VERSION annulé, $PREVIOUS rétablie"
 fi
